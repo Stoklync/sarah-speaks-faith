@@ -4,14 +4,27 @@
  */
 export default async function handler(req, res) {
   const baseUrl = process.env.BASE_URL || 'https://sarah-speaks-faith.vercel.app';
+  const redirect = (url) => {
+    res.setHeader('Location', url);
+    res.status(302).end();
+  };
   try {
-    const { code, state } = req?.query || {};
+    let code = req?.query?.code;
+    let state = req?.query?.state;
+    if ((!code || !state) && req?.url) {
+      try {
+        const u = new URL(req.url, 'https://x');
+        code = code || u.searchParams.get('code');
+        state = state || u.searchParams.get('state');
+      } catch (_) {}
+    }
     const appId = process.env.META_APP_ID;
     const appSecret = process.env.META_APP_SECRET;
     const userKey = state || 'local-default';
 
     if (!code || !appId || !appSecret) {
-      return res.redirect(302, `${baseUrl}?auth_error=missing_config`);
+      redirect(`${baseUrl}?auth_error=missing_config`);
+      return;
     }
 
     const redirectUri = `${baseUrl}/api/auth/instagram/callback`;
@@ -21,12 +34,14 @@ export default async function handler(req, res) {
     const tokens = await tokenRes.json().catch(() => ({}));
 
     if (tokens.error) {
-      return res.redirect(302, `${baseUrl}?auth_error=${encodeURIComponent(tokens.error?.message || 'Instagram auth failed')}`);
+      redirect(`${baseUrl}?auth_error=${encodeURIComponent(tokens.error?.message || 'Instagram auth failed')}`);
+      return;
     }
 
     const accessToken = tokens.access_token;
     if (!accessToken) {
-      return res.redirect(302, `${baseUrl}?auth_error=no_token`);
+      redirect(`${baseUrl}?auth_error=no_token`);
+      return;
     }
 
     const supabaseUrl = process.env.SUPABASE_URL;
@@ -41,13 +56,14 @@ export default async function handler(req, res) {
         { onConflict: 'user_key,platform' }
       );
       if (error) {
-        return res.redirect(302, `${baseUrl}?auth_error=supabase_${encodeURIComponent(error.message)}`);
+        redirect(`${baseUrl}?auth_error=supabase_${encodeURIComponent(error.message)}`);
+        return;
       }
     }
 
-    return res.redirect(302, `${baseUrl}?instagram_connected=1&state=${encodeURIComponent(userKey)}`);
+    redirect(`${baseUrl}?instagram_connected=1&state=${encodeURIComponent(userKey)}`);
   } catch (err) {
     console.error('Instagram callback error:', err);
-    return res.redirect(302, `${baseUrl}?auth_error=${encodeURIComponent(err?.message || 'callback_failed')}`);
+    redirect(`${baseUrl}?auth_error=${encodeURIComponent(err?.message || 'callback_failed')}`);
   }
 }
