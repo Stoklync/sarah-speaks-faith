@@ -1,0 +1,36 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html, body { @apply bg-white dark:bg-stone-900 text-stone-800 dark:text-stone-100; }
+}
+
+/* NLE Editor layout - Timeline always visible (CapCut-style). Stage capped so timeline is in view. */
+.editor-layout {
+  display: grid;
+  grid-template-areas:
+    "stage"
+    "controls"
+    "timeline";
+  /* Stage max 40vh so timeline is visible without scrolling; timeline gets solid min height */
+  grid-template-rows: minmax(120px, 40vh) auto minmax(280px, 1fr);
+  height: 100dvh;
+  overflow: hidden;
+}
+
+@media (min-width: 1024px) {
+  .editor-layout {
+    grid-template-areas:
+      "stage controls"
+      "timeline timeline";
+    grid-template-columns: 1fr 300px;
+    /* Stage flexes; timeline fixed 320px so it's always visible without scrolling */
+    grid-template-rows: 1fr 320px;
+  }
+}
+
+.timeline-track {
+  touch-action: pan-x;
+  user-select: none;
+}
