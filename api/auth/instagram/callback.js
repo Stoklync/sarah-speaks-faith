@@ -5,8 +5,12 @@
 export default async function handler(req, res) {
   const baseUrl = process.env.BASE_URL || 'https://sarah-speaks-faith.vercel.app';
   const redirect = (url) => {
-    res.setHeader('Location', url);
-    res.status(302).end();
+    try {
+      res.setHeader('Location', url);
+      res.status(302).end();
+    } catch (e) {
+      console.error('Redirect failed:', e);
+    }
   };
   try {
     let code = req?.query?.code;
