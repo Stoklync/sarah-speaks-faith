@@ -216,12 +216,18 @@ const App = () => {
   const [newBusinessName, setNewBusinessName] = useState('');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
-  const [productionToolsExpanded, setProductionToolsExpanded] = useState(true);
   const [geminiKey, setGeminiKey] = useState(() => { try { return localStorage.getItem('faith-studio-gemini-api-key') || ''; } catch { return ''; } });
   const [openaiKey, setOpenaiKey] = useState(() => { try { return localStorage.getItem('faith-studio-openai-api-key') || ''; } catch { return ''; } });
 
-  const primaryNav = [['start', Target, 'Start Here'], ['pro', Zap, 'Pro Content Toolkit'], ['social', Share2, 'Social & Podcast'], ['traffic', Link2, 'Traffic Links'], ['analytics', BarChart2, 'Post Analytics'], ['photos', ImageIcon, 'Photo & Pin Planner']];
-  const productionNav = [['library', Film, 'Media Library'], ['editor', Scissors, 'No-Mouse Editor'], ['classic', Sliders, 'Classic Timeline'], ['camera', Camera, 'Camera Guide'], ['video-ai', Sparkles, 'Pro Enhancements'], ['audio', AudioLines, 'Smart Audio AI'], ['code', Code, 'Swift Engine']];
+  const primaryNav = [
+    ['start', Target, 'Start Here'],
+    ['video', Sliders, 'Video Editor'],
+    ['photo-edit', ImageIcon, 'Photo Editor'],
+    ['pro', Zap, 'Content Toolkit'],
+    ['social', Share2, 'Social & Podcast'],
+    ['traffic', Link2, 'Traffic Links'],
+    ['analytics', BarChart2, 'Analytics'],
+  ];
 
   const addBusiness = () => {
     if (!newBusinessName.trim()) return;
@@ -358,19 +364,6 @@ const App = () => {
               {primaryNav.map(([id, Icon, label]) => (
                 <SidebarItem key={id} icon={<Icon size={18} />} label={label} active={activeTab === id} onClick={() => { setActiveTab(id); setSidebarOpen(false); }} />
               ))}
-              <div className="pt-4 mt-4 border-t border-rose-50 dark:border-stone-700">
-                <button onClick={() => setProductionToolsExpanded(p => !p)} className="flex items-center gap-2 w-full text-left text-stone-500 dark:text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 text-sm font-medium py-2 rounded-lg hover:bg-stone-50 dark:hover:bg-stone-700/50 transition-colors">
-                  {productionToolsExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-                  <span className="text-[10px] font-bold text-stone-400 uppercase tracking-wider">Production tools</span>
-                </button>
-                {productionToolsExpanded && (
-                  <div className="space-y-1.5 mt-1.5 pl-1">
-                    {productionNav.map(([id, Icon, label]) => (
-                      <SidebarItem key={id} icon={<Icon size={18} />} label={label} active={activeTab === id} onClick={() => { setActiveTab(id); setSidebarOpen(false); }} />
-                    ))}
-                  </div>
-                )}
-              </div>
             </nav>
           </div>
           <div className="p-4 border-t border-rose-50 dark:border-stone-700 m-4">
@@ -400,24 +393,20 @@ const App = () => {
         {sidebarOpen && <div className="fixed inset-0 bg-black/40 z-20 md:hidden" onClick={() => setSidebarOpen(false)} aria-hidden />}
 
         <main className="flex-1 min-w-0 min-h-0 relative bg-white dark:bg-stone-900 transition-colors flex flex-col overflow-y-auto overflow-x-hidden">
-          {/* Hide main header in Classic Timeline — editor has its own controls, full screen for editing */}
-          {activeTab !== 'classic' && (
+          {/* Hide main header in Video Editor — editor has its own controls, full screen for editing */}
+          {activeTab !== 'video' && (
           <header className="bg-white/80 dark:bg-stone-900/80 backdrop-blur-md sticky top-0 border-b border-rose-100 dark:border-stone-700 px-4 md:px-10 z-10 flex justify-between items-center gap-2 transition-colors shrink-0 py-4 md:py-6">
             <button onClick={() => setSidebarOpen(true)} className="md:hidden p-2 -ml-2 rounded-xl text-stone-600 dark:text-stone-400 hover:bg-rose-50 dark:hover:bg-stone-700" aria-label="Open menu"><Menu size={24} /></button>
             <h2 className="font-semibold text-stone-800 dark:text-stone-100 tracking-tight flex items-center gap-3 flex-wrap flex-1 min-w-0 truncate text-lg md:text-2xl">
-              <span>{activeTab === 'start' && 'Start Here'}
-              {activeTab === 'library' && 'Media Library'}
-              {activeTab === 'photos' && 'Visual Grid & Pin Planner'}
-              {activeTab === 'editor' && 'No-Mouse Editor'}
-            {activeTab === 'camera' && 'Camera Guide'}
-            {activeTab === 'video-ai' && 'Cinematic Processing'}
-              {activeTab === 'audio' && 'Studio Audio AI'}
-              {activeTab === 'pro' && 'Pro Content Toolkit'}
-              {activeTab === 'social' && 'Omnichannel Distribution'}
-              {activeTab === 'traffic' && 'Traffic Links'}
-              {activeTab === 'analytics' && 'Post Analytics'}
-              {activeTab === 'code' && 'System Logic'}</span>
-              {(businesses || []).find(b => b && b.id === activeBusinessId) && ['photos','pro','social','traffic','analytics'].includes(activeTab) && (
+              <span>
+                {activeTab === 'start' && 'Start Here'}
+                {activeTab === 'photo-edit' && 'Photo Editor'}
+                {activeTab === 'pro' && 'Content Toolkit'}
+                {activeTab === 'social' && 'Social & Podcast'}
+                {activeTab === 'traffic' && 'Traffic Links'}
+                {activeTab === 'analytics' && 'Analytics'}
+              </span>
+              {(businesses || []).find(b => b && b.id === activeBusinessId) && ['photo-edit','pro','social','traffic','analytics'].includes(activeTab) && (
                 <span className="text-sm font-normal text-rose-600 dark:text-rose-400 normal-case bg-rose-50 dark:bg-rose-900/20 px-3 py-1 rounded-full">Creating for: {(businesses || []).find(b => b && b.id === activeBusinessId)?.name || 'Unknown'}</span>
               )}
             </h2>
@@ -494,25 +483,19 @@ const App = () => {
           </div>
         )}
 
-        <div className={`mx-auto flex-1 min-h-0 flex flex-col ${activeTab === 'classic' ? 'max-w-full w-full min-h-[100dvh] p-0 overflow-hidden' : 'max-w-7xl p-4 md:p-10 pb-24'}`} style={{ minHeight: activeTab !== 'classic' ? 400 : undefined }}>
+        <div className={`mx-auto flex-1 min-h-0 flex flex-col ${activeTab === 'video' ? 'max-w-full w-full min-h-[100dvh] p-0 overflow-hidden' : 'max-w-7xl p-4 md:p-10 pb-24'}`} style={{ minHeight: activeTab !== 'video' ? 400 : undefined }}>
             {activeTab === 'start' && <StartHere setActiveTab={setActiveTab} />}
-            {activeTab === 'library' && <MediaLibrary />}
-            {activeTab === 'photos' && <PhotoPlanner />}
-            {activeTab === 'pro' && <ProContentToolkit />}
-            {activeTab === 'social' && <SocialPublisher />}
-            {activeTab === 'traffic' && <TrafficHub />}
-            {activeTab === 'analytics' && <PostAnalytics onOpenSettings={() => setShowSettings(true)} />}
-            {activeTab === 'camera' && <CameraSettings />}
-            {activeTab === 'audio' && <AIAudioStudio />}
-            {activeTab === 'editor' && <NoMouseEditor />}
-            {activeTab === 'classic' && (
+            {activeTab === 'video' && (
               <EditorErrorBoundary>
                 <ClassicEditor />
               </EditorErrorBoundary>
             )}
-            {activeTab === 'video-ai' && <ProEnhancements />}
-            {activeTab === 'code' && <SwiftCodeView />}
-            {!['start','library','photos','pro','social','traffic','analytics','camera','audio','editor','classic','video-ai','code'].includes(activeTab) && <StartHere setActiveTab={setActiveTab} />}
+            {activeTab === 'photo-edit' && <PhotoEditor />}
+            {activeTab === 'pro' && <ProContentToolkit />}
+            {activeTab === 'social' && <SocialPublisher />}
+            {activeTab === 'traffic' && <TrafficHub />}
+            {activeTab === 'analytics' && <PostAnalytics onOpenSettings={() => setShowSettings(true)} />}
+            {!['start','video','photo-edit','pro','social','traffic','analytics'].includes(activeTab) && <StartHere setActiveTab={setActiveTab} />}
           </div>
         </main>
       </div>
@@ -1840,7 +1823,7 @@ const MARKETING_GOALS = [
 ];
 
 const ClassicEditor = () => {
-  const { selectedVideo, selectedAudio, filteredAssets, setSelectedVideoId, setSelectedAudioId, setActiveTab, activeBusinessId, businesses, addAsset, platforms = {}, caption, setCaption, tags, contactPageUrl, setContactPageUrl, marketingGoal, setMarketingGoal, setSidebarOpen } = useStudio();
+  const { selectedVideo, selectedAudio, filteredAssets, setSelectedVideoId, setSelectedAudioId, setActiveTab, activeBusinessId, businesses, addAsset, platforms = {}, caption, setCaption, tags, contactPageUrl, setContactPageUrl, marketingGoal, setMarketingGoal, setSidebarOpen, voiceIsolation, setVoiceIsolation, deReverb, setDeReverb, deReverbStrength, setDeReverbStrength, aiUpscale, setAiUpscale, cinematicGrade, setCinematicGrade } = useStudio();
   const { processVideo, revoke, cleanup, togglePlayPause: editorTogglePlay } = useEditor();
   const { addClipToTimeline } = useTimeline();
   useEditorSync();
@@ -1855,6 +1838,15 @@ const ClassicEditor = () => {
   const videos = filteredAssets.filter(a => a.type === 'video');
   const audioFiles = filteredAssets.filter(a => a.type === 'audio');
   const videoRef = useRef(null);
+  const clipUploadRef = useRef(null);
+  const audioUploadRef = useRef(null);
+  const handleInlineUpload = (e, typeFilter) => {
+    Array.from(e.target.files || []).forEach(f => {
+      const t = f.type.startsWith('video/') ? 'video' : f.type.startsWith('audio/') ? 'audio' : 'image';
+      if (!typeFilter || t === typeFilter) addAsset(f, t);
+    });
+    e.target.value = '';
+  };
   const timelineRulerRef = useRef(null);
   const timelineScrollRef = useRef(null);
   const mainTrackRef = useRef(null);
@@ -1883,7 +1875,7 @@ const ClassicEditor = () => {
   const [resizingTrack, setResizingTrack] = useState(null);
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [showAIHelper, setShowAIHelper] = useState(false);
-  const [inspectorTab, setInspectorTab] = useState('edit'); // 'edit' | 'text' | 'audio' | 'export'
+  const [inspectorTab, setInspectorTab] = useState('edit'); // 'edit' | 'text' | 'audio' | 'enhance' | 'camera' | 'export'
   const [userMuted, setUserMuted] = useState(false);
   const [tracksLinked, setTracksLinked] = useState(true);
   const [splitFeedback, setSplitFeedback] = useState(null);
@@ -3145,17 +3137,19 @@ const ClassicEditor = () => {
       <div className="relative flex flex-col min-h-0 bg-stone-900 border-t border-l border-stone-700/60" style={{ gridArea: 'controls' }}>
 
         {/* Tab bar — always visible, big touch targets */}
-        <div className="flex shrink-0 border-b border-stone-700/60 bg-stone-950">
+        <div className="flex shrink-0 border-b border-stone-700/60 bg-stone-950 overflow-x-auto">
           {[
-            { id: 'edit', icon: <Scissors size={16} />, label: 'Edit' },
-            { id: 'text', icon: <Type size={16} />, label: 'Text' },
-            { id: 'audio', icon: <Music size={16} />, label: 'Audio' },
-            { id: 'export', icon: <Download size={16} />, label: 'Export' },
+            { id: 'edit', icon: <Scissors size={14} />, label: 'Edit' },
+            { id: 'text', icon: <Type size={14} />, label: 'Text' },
+            { id: 'audio', icon: <Music size={14} />, label: 'Audio' },
+            { id: 'enhance', icon: <Wand2 size={14} />, label: 'Enhance' },
+            { id: 'camera', icon: <Camera size={14} />, label: 'Camera' },
+            { id: 'export', icon: <Download size={14} />, label: 'Export' },
           ].map(tab => (
             <button
               key={tab.id}
               onClick={() => setInspectorTab(tab.id)}
-              className={`flex-1 flex flex-col items-center justify-center gap-0.5 py-2.5 text-[11px] font-bold transition-colors border-b-2 ${inspectorTab === tab.id ? 'border-rose-500 text-rose-400 bg-rose-950/30' : 'border-transparent text-stone-500 hover:text-stone-300'}`}
+              className={`flex-1 min-w-[50px] flex flex-col items-center justify-center gap-0.5 py-2.5 text-[10px] font-bold transition-colors border-b-2 ${inspectorTab === tab.id ? 'border-rose-500 text-rose-400 bg-rose-950/30' : 'border-transparent text-stone-500 hover:text-stone-300'}`}
             >
               {tab.icon}
               {tab.label}
@@ -3192,7 +3186,8 @@ const ClassicEditor = () => {
                   <option value="">{videos.length > 0 ? 'Select video…' : 'Upload a video first →'}</option>
                   {videos.map(v => <option key={v.id} value={v.id}>{v.name}</option>)}
                 </select>
-                <button onClick={() => setActiveTab('library')} className="px-2.5 py-2 bg-rose-600 hover:bg-rose-500 rounded-lg text-xs text-white font-bold shrink-0">+ Upload</button>
+                <input ref={clipUploadRef} type="file" multiple accept="video/*,image/*" onChange={(e) => handleInlineUpload(e)} className="hidden" />
+                <button onClick={() => clipUploadRef.current?.click()} className="px-2.5 py-2 bg-rose-600 hover:bg-rose-500 rounded-lg text-xs text-white font-bold shrink-0">+ Add</button>
               </div>
 
               {/* Primary edit actions — big buttons */}
@@ -3320,15 +3315,51 @@ const ClassicEditor = () => {
           {/* ── AUDIO TAB ─────────────────────────────── */}
           {inspectorTab === 'audio' && (
             <div className="p-3 space-y-3">
+              <input ref={audioUploadRef} type="file" accept="audio/*" onChange={(e) => handleInlineUpload(e, 'audio')} className="hidden" />
               {selectedAudio ? (
                 <button onClick={addAudioFromLibrary} disabled={!selectedAudio?.url || !videoForPreview} className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold bg-emerald-900/40 border border-emerald-700/50 text-emerald-300 hover:bg-emerald-800/50 active:scale-95 disabled:opacity-40 transition-all">
                   <Music size={16} /> Add Music to Timeline
                 </button>
               ) : (
-                <button onClick={() => setActiveTab('library')} className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold bg-stone-800 border border-stone-700 text-emerald-400 hover:bg-stone-700 active:scale-95 transition-all">
-                  <Music size={16} /> Upload Music in Library
+                <button onClick={() => audioUploadRef.current?.click()} className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold bg-stone-800 border border-stone-700 text-emerald-400 hover:bg-stone-700 active:scale-95 transition-all">
+                  <Music size={16} /> Upload Music
                 </button>
               )}
+              {/* Audio file selector */}
+              {audioFiles.length > 0 && (
+                <select value={selectedAudio?.id || ''} onChange={(e) => setSelectedAudioId(Number(e.target.value) || null)} className="w-full bg-stone-800 border border-stone-700 rounded-lg px-2 py-2 text-xs text-stone-100">
+                  <option value="">Select audio…</option>
+                  {audioFiles.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+                </select>
+              )}
+              {/* Voice Isolation */}
+              <div className="bg-stone-800 border border-stone-700 rounded-xl p-3 space-y-2">
+                <p className="text-[10px] font-bold text-stone-400 uppercase tracking-wider mb-1">Audio AI</p>
+                <label className="flex items-center justify-between cursor-pointer">
+                  <div>
+                    <span className="text-xs font-bold text-stone-200">Voice Isolation</span>
+                    <span className="text-[10px] text-stone-500 block">Remove background noise on export</span>
+                  </div>
+                  <button onClick={() => setVoiceIsolation(!voiceIsolation)} className={`relative w-10 h-5 rounded-full transition-colors ${voiceIsolation ? 'bg-rose-500' : 'bg-stone-600'}`}>
+                    <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-transform ${voiceIsolation ? 'translate-x-5' : 'translate-x-0.5'}`} />
+                  </button>
+                </label>
+                <label className="flex items-center justify-between cursor-pointer">
+                  <div>
+                    <span className="text-xs font-bold text-stone-200">De-Reverb</span>
+                    <span className="text-[10px] text-stone-500 block">Remove room echo</span>
+                  </div>
+                  <button onClick={() => setDeReverb(!deReverb)} className={`relative w-10 h-5 rounded-full transition-colors ${deReverb ? 'bg-rose-500' : 'bg-stone-600'}`}>
+                    <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-transform ${deReverb ? 'translate-x-5' : 'translate-x-0.5'}`} />
+                  </button>
+                </label>
+                {deReverb && (
+                  <div>
+                    <label className="text-[10px] text-stone-500 uppercase block mb-1">Strength {deReverbStrength}%</label>
+                    <input type="range" min="0" max="100" value={deReverbStrength} onChange={(e) => setDeReverbStrength(Number(e.target.value))} className="w-full accent-rose-400" />
+                  </div>
+                )}
+              </div>
               <div className="flex items-center gap-3 px-3 py-3 bg-stone-800 border border-stone-700 rounded-xl">
                 <Volume2 size={16} className="text-stone-400 shrink-0" />
                 <input type="range" min="0" max="1" step="0.05" defaultValue="1" onChange={(e) => { const v = videoRef.current; if (v) v.volume = Number(e.target.value); }} className="flex-1 accent-rose-500" title="Volume" />
@@ -3353,6 +3384,48 @@ const ClassicEditor = () => {
                   </div>
                 </div>
               )}
+            </div>
+          )}
+
+          {/* ── ENHANCE TAB ─────────────────────────────── */}
+          {inspectorTab === 'enhance' && (
+            <div className="p-3 space-y-3">
+              <p className="text-[10px] font-bold text-stone-400 uppercase tracking-wider">Video Enhancement</p>
+              <label className="flex items-center justify-between bg-stone-800 border border-stone-700 rounded-xl p-3 cursor-pointer hover:border-stone-600 transition-colors">
+                <div>
+                  <span className="text-xs font-bold text-stone-200 flex items-center gap-1.5">4K AI Upscaling <span className="text-[9px] font-bold text-rose-400 bg-rose-900/40 px-1.5 py-0.5 rounded uppercase">Ultra HD</span></span>
+                  <span className="text-[10px] text-stone-500 block mt-0.5">Sharpen soft footage, add detail</span>
+                </div>
+                <button onClick={() => setAiUpscale(!aiUpscale)} className={`relative w-10 h-5 rounded-full transition-colors shrink-0 ${aiUpscale ? 'bg-rose-500' : 'bg-stone-600'}`}>
+                  <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-transform ${aiUpscale ? 'translate-x-5' : 'translate-x-0.5'}`} />
+                </button>
+              </label>
+              <label className="flex items-center justify-between bg-stone-800 border border-stone-700 rounded-xl p-3 cursor-pointer hover:border-stone-600 transition-colors">
+                <div>
+                  <span className="text-xs font-bold text-stone-200">Cinematic Color Grade</span>
+                  <span className="text-[10px] text-stone-500 block mt-0.5">Flat iPhone footage → moody cinematic</span>
+                </div>
+                <button onClick={() => setCinematicGrade(!cinematicGrade)} className={`relative w-10 h-5 rounded-full transition-colors shrink-0 ${cinematicGrade ? 'bg-rose-500' : 'bg-stone-600'}`}>
+                  <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-transform ${cinematicGrade ? 'translate-x-5' : 'translate-x-0.5'}`} />
+                </button>
+              </label>
+              {(aiUpscale || cinematicGrade) && (
+                <p className="text-[10px] text-emerald-400 bg-emerald-950/30 border border-emerald-800/50 rounded-lg px-3 py-2">Active — will be applied on export.</p>
+              )}
+              <div className="pt-1">
+                <p className="text-[10px] font-bold text-stone-400 uppercase tracking-wider mb-2">AI Editing Assistant</p>
+                <button onClick={() => setShowAIHelper(h => !h)} className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold bg-rose-900/40 border border-rose-700/50 text-rose-300 hover:bg-rose-800/50 active:scale-95 transition-all">
+                  <Sparkles size={15} /> AI Editing Tips
+                </button>
+                <p className="text-[10px] text-stone-500 mt-1.5 text-center">Smart zoom, cut tips, audio layering help</p>
+              </div>
+            </div>
+          )}
+
+          {/* ── CAMERA TAB ─────────────────────────────── */}
+          {inspectorTab === 'camera' && (
+            <div className="overflow-y-auto">
+              <InlineCameraGuide />
             </div>
           )}
 
@@ -4165,6 +4238,52 @@ const CAMERA_PRESETS = {
   }
 };
 
+// Compact dark version of camera guide for use inside the editor inspector panel
+const InlineCameraGuide = () => {
+  const [contentType, setCT] = useState('video');
+  const [lighting, setLighting] = useState('day');
+  const [camera, setCamera] = useState('iphone');
+  const allCams = [
+    { id: 'blackmagic', name: 'Blackmagic' },
+    { id: 'iphone', name: 'iPhone' },
+    { id: 'sony', name: 'Sony' },
+    { id: 'canon', name: 'Canon' },
+  ];
+  const effectiveCam = CAMERA_PRESETS[camera] ? camera : 'iphone';
+  const preset = CAMERA_PRESETS[effectiveCam];
+  const settings = preset?.[contentType]?.[lighting] || [];
+  return (
+    <div className="p-3 space-y-3">
+      {/* Camera picker */}
+      <div className="flex gap-1.5 flex-wrap">
+        {allCams.map(c => (
+          <button key={c.id} onClick={() => setCamera(c.id)} className={`px-2.5 py-1 rounded-lg text-[11px] font-bold border transition-colors ${camera === c.id ? 'bg-rose-600 border-rose-600 text-white' : 'bg-stone-800 border-stone-700 text-stone-400 hover:text-stone-200'}`}>{c.name}</button>
+        ))}
+      </div>
+      {/* Type + lighting */}
+      <div className="flex gap-1.5">
+        {['video','photo'].map(t => (
+          <button key={t} onClick={() => setCT(t)} className={`flex-1 py-1.5 rounded-lg text-[11px] font-bold capitalize border transition-colors ${contentType === t ? 'bg-stone-700 border-stone-500 text-stone-100' : 'bg-stone-900 border-stone-700 text-stone-500 hover:text-stone-300'}`}>{t}</button>
+        ))}
+        {['day','night'].map(l => (
+          <button key={l} onClick={() => setLighting(l)} className={`flex-1 py-1.5 rounded-lg text-[11px] font-bold capitalize border transition-colors ${lighting === l ? 'bg-amber-900/60 border-amber-700 text-amber-300' : 'bg-stone-900 border-stone-700 text-stone-500 hover:text-stone-300'}`}>{l === 'day' ? '☀️' : '🌙'} {l}</button>
+        ))}
+      </div>
+      {/* Settings table */}
+      <div className="space-y-1">
+        {settings.map((s, i) => (
+          <div key={i} className="flex items-center justify-between bg-stone-800 border border-stone-700 rounded-lg px-3 py-2">
+            <span className="text-[10px] text-stone-500 uppercase font-bold w-24 shrink-0">{s.label}</span>
+            <span className="text-xs font-bold text-stone-100 flex-1 text-right">{s.value}</span>
+            <span className="text-[10px] text-stone-500 text-right ml-2 w-24 shrink-0">{s.note}</span>
+          </div>
+        ))}
+      </div>
+      {settings.length === 0 && <p className="text-xs text-stone-500 text-center py-4">No preset for this combination yet.</p>}
+    </div>
+  );
+};
+
 const CameraSettings = () => {
   const { filteredAssets, addAsset } = useStudio();
   const [contentType, setContentType] = useState('video');
@@ -4948,7 +5067,158 @@ const PostAnalytics = ({ onOpenSettings }) => {
   );
 };
 
-// --- Swift Code View ---
+// --- Photo Editor ---
+const PHOTO_PRESETS = [
+  { id: 'natural', label: 'Natural', brightness: 100, contrast: 100, saturation: 100, warmth: 0, sharpness: 0 },
+  { id: 'warm', label: 'Warm', brightness: 105, contrast: 105, saturation: 110, warmth: 20, sharpness: 0 },
+  { id: 'cool', label: 'Cool', brightness: 100, contrast: 105, saturation: 90, warmth: -15, sharpness: 0 },
+  { id: 'moody', label: 'Moody', brightness: 90, contrast: 120, saturation: 80, warmth: -5, sharpness: 5 },
+  { id: 'vivid', label: 'Vivid', brightness: 105, contrast: 110, saturation: 140, warmth: 10, sharpness: 10 },
+  { id: 'bw', label: 'B&W', brightness: 100, contrast: 120, saturation: 0, warmth: 0, sharpness: 5 },
+];
+
+const PhotoEditor = () => {
+  const [imgSrc, setImgSrc] = useState(null);
+  const [imgName, setImgName] = useState('photo');
+  const [rotation, setRotation] = useState(0);
+  const [activePreset, setActivePreset] = useState('natural');
+  const [adj, setAdj] = useState({ brightness: 100, contrast: 100, saturation: 100, warmth: 0, sharpness: 0 });
+  const canvasRef = useRef(null);
+  const imgRef = useRef(null);
+  const fileRef = useRef(null);
+  const isDark = document.documentElement.classList.contains('dark');
+
+  const handleFile = (e) => {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    setImgName(f.name.replace(/\.[^.]+$/, ''));
+    const url = URL.createObjectURL(f);
+    setImgSrc(url);
+    e.target.value = '';
+  };
+
+  const applyPreset = (preset) => {
+    setActivePreset(preset.id);
+    setAdj({ brightness: preset.brightness, contrast: preset.contrast, saturation: preset.saturation, warmth: preset.warmth, sharpness: preset.sharpness });
+  };
+
+  const cssFilter = `brightness(${adj.brightness}%) contrast(${adj.contrast}%) saturate(${adj.saturation}%) sepia(${Math.max(0, adj.warmth) * 0.4}%) hue-rotate(${adj.warmth < 0 ? adj.warmth * 0.3 : 0}deg)`;
+
+  const downloadPhoto = () => {
+    const canvas = canvasRef.current;
+    const img = imgRef.current;
+    if (!canvas || !img) return;
+    const { naturalWidth: w, naturalHeight: h } = img;
+    const rad = (rotation * Math.PI) / 180;
+    const cos = Math.abs(Math.cos(rad));
+    const sin = Math.abs(Math.sin(rad));
+    const cw = Math.floor(w * cos + h * sin);
+    const ch = Math.floor(w * sin + h * cos);
+    canvas.width = cw;
+    canvas.height = ch;
+    const ctx = canvas.getContext('2d');
+    ctx.filter = cssFilter;
+    ctx.translate(cw / 2, ch / 2);
+    ctx.rotate(rad);
+    ctx.drawImage(img, -w / 2, -h / 2, w, h);
+    const link = document.createElement('a');
+    link.download = `${imgName}-edited.jpg`;
+    link.href = canvas.toDataURL('image/jpeg', 0.95);
+    link.click();
+  };
+
+  const Slider = ({ label, key: k, min, max, unit = '' }) => (
+    <div>
+      <div className="flex justify-between mb-1">
+        <span className="text-xs font-bold text-stone-600 dark:text-stone-400">{label}</span>
+        <span className="text-xs text-rose-600 dark:text-rose-400 font-mono">{adj[k]}{unit}</span>
+      </div>
+      <input type="range" min={min} max={max} value={adj[k]} onChange={e => { setAdj(a => ({ ...a, [k]: Number(e.target.value) })); setActivePreset(''); }} className="w-full accent-rose-500 h-1.5" />
+    </div>
+  );
+
+  return (
+    <div className="max-w-6xl mx-auto space-y-6">
+      <canvas ref={canvasRef} className="hidden" />
+
+      {!imgSrc ? (
+        <div onClick={() => fileRef.current?.click()} className="border-2 border-dashed border-rose-200 dark:border-stone-600 rounded-3xl p-16 text-center cursor-pointer hover:border-rose-400 dark:hover:border-rose-600 hover:bg-rose-50/30 dark:hover:bg-stone-800/50 transition-all">
+          <ImageIcon className="mx-auto text-rose-300 dark:text-rose-600/50 mb-4" size={48} />
+          <p className="text-lg font-semibold text-stone-700 dark:text-stone-300">Upload a photo to edit</p>
+          <p className="text-sm text-stone-400 mt-1">JPG, PNG, HEIC, WebP</p>
+          <input ref={fileRef} type="file" accept="image/*" onChange={handleFile} className="hidden" />
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6">
+          {/* Canvas preview */}
+          <div className="bg-stone-900 rounded-3xl overflow-hidden flex items-center justify-center min-h-64 relative">
+            <img
+              ref={imgRef}
+              src={imgSrc}
+              alt="editing"
+              crossOrigin="anonymous"
+              style={{ filter: cssFilter, transform: `rotate(${rotation}deg)`, maxWidth: '100%', maxHeight: '70vh', display: 'block', transition: 'filter 0.15s, transform 0.2s' }}
+              className="object-contain"
+            />
+            <button onClick={() => { setImgSrc(null); setRotation(0); setAdj({ brightness: 100, contrast: 100, saturation: 100, warmth: 0, sharpness: 0 }); setActivePreset('natural'); }} className="absolute top-3 right-3 p-2 bg-black/60 hover:bg-black/80 rounded-full text-white">
+              <X size={16} />
+            </button>
+          </div>
+
+          {/* Controls panel */}
+          <div className="space-y-5">
+            {/* Presets */}
+            <div>
+              <p className="text-xs font-bold text-stone-500 dark:text-stone-400 uppercase tracking-wider mb-2">Presets</p>
+              <div className="grid grid-cols-3 gap-1.5">
+                {PHOTO_PRESETS.map(p => (
+                  <button key={p.id} onClick={() => applyPreset(p)} className={`py-2 rounded-xl text-[11px] font-bold border transition-colors ${activePreset === p.id ? 'bg-rose-500 border-rose-500 text-white' : 'bg-stone-100 dark:bg-stone-800 border-stone-200 dark:border-stone-700 text-stone-600 dark:text-stone-300 hover:border-rose-300 dark:hover:border-rose-700'}`}>
+                    {p.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Adjustments */}
+            <div className="space-y-3">
+              <p className="text-xs font-bold text-stone-500 dark:text-stone-400 uppercase tracking-wider">Adjustments</p>
+              <Slider label="Brightness" k="brightness" min={50} max={150} unit="%" />
+              <Slider label="Contrast" k="contrast" min={50} max={200} unit="%" />
+              <Slider label="Saturation" k="saturation" min={0} max={200} unit="%" />
+              <Slider label="Warmth" k="warmth" min={-50} max={50} unit="" />
+            </div>
+
+            {/* Rotate */}
+            <div>
+              <p className="text-xs font-bold text-stone-500 dark:text-stone-400 uppercase tracking-wider mb-2">Rotate</p>
+              <div className="flex gap-2">
+                <button onClick={() => setRotation(r => r - 90)} className="flex-1 py-2 rounded-xl text-sm font-bold bg-stone-100 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 text-stone-600 dark:text-stone-300 hover:bg-rose-50 dark:hover:bg-stone-700 transition-colors">
+                  ↺ Left
+                </button>
+                <button onClick={() => setRotation(r => r + 90)} className="flex-1 py-2 rounded-xl text-sm font-bold bg-stone-100 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 text-stone-600 dark:text-stone-300 hover:bg-rose-50 dark:hover:bg-stone-700 transition-colors">
+                  ↻ Right
+                </button>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex gap-2 pt-2">
+              <button onClick={() => fileRef.current?.click()} className="flex-1 py-3 rounded-2xl text-sm font-bold bg-stone-100 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 text-stone-700 dark:text-stone-300 hover:bg-stone-200 dark:hover:bg-stone-700 transition-colors">
+                Change photo
+              </button>
+              <button onClick={downloadPhoto} className="flex-1 py-3 rounded-2xl text-sm font-bold bg-rose-500 hover:bg-rose-600 text-white transition-colors flex items-center justify-center gap-2">
+                <Download size={16} /> Save
+              </button>
+            </div>
+            <input ref={fileRef} type="file" accept="image/*" onChange={handleFile} className="hidden" />
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// --- Swift Code View (kept for legacy compatibility) ---
 const SwiftCodeView = () => (
   <div className="max-w-4xl mx-auto text-center py-20">
     <Code className="mx-auto text-rose-300 dark:text-rose-600/50 w-16 h-16 mb-6" />
