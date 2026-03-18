@@ -5,7 +5,8 @@
  */
 export default function handler(req, res) {
   const appId = process.env.META_APP_ID;
-  const baseUrl = process.env.BASE_URL || (req.headers['x-vercel-url'] ? `https://${req.headers['x-vercel-url']}` : req.headers.origin || 'http://localhost:5173');
+  let baseUrl = process.env.BASE_URL || (req.headers['x-vercel-url'] ? `https://${req.headers['x-vercel-url']}` : req.headers.origin || 'http://localhost:5173');
+  baseUrl = (baseUrl || '').replace(/\/$/, ''); // no trailing slash
   const state = req.query.state || `local-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
   if (!appId) {

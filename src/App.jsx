@@ -65,7 +65,10 @@ import {
   ChevronRight,
   Pencil,
   RotateCcw,
-  ArrowLeft
+  ArrowLeft,
+  Type,
+  Download,
+  Volume2
 } from 'lucide-react';
 
 // --- App Context ---
@@ -849,10 +852,10 @@ const TRANSITIONS = [
 ];
 
 const HOOK_TEMPLATES = [
-  { type: 'faith', text: 'Stop scrolling. You need to hear this today. 🙏', platform: 'Reels/Short' },
-  { type: 'faith', text: 'I wasn\'t going to post this, but God said share it.', platform: 'Reels/Short' },
+  { type: 'faith', text: "Here's what helped me when I felt far from God.", platform: 'Reels/Short' },
+  { type: 'faith', text: "I've been sitting with this scripture all week — here's what it showed me.", platform: 'Reels/Short' },
   { type: 'faith', text: 'This one verse changed everything for me.', platform: 'Carousel' },
-  { type: 'faith', text: "If you're struggling with ___, save this.", platform: 'Reels/Short' },
+  { type: 'faith', text: "If you're struggling with ___, this is for you.", platform: 'Reels/Short' },
   { type: 'business', text: 'The #1 mistake I see [your niche] make...', platform: 'Reels/Short' },
   { type: 'business', text: "Most people don't know this about [your product/service].", platform: 'Reels/Short' },
   { type: 'business', text: 'Save this before you buy [product category].', platform: 'Carousel' },
@@ -880,9 +883,9 @@ const GROWTH_PLAYBOOK = [
 const NICHE_HOOKS = {
   sarah: [
     { text: 'What level are you in your faith walk? Take the assessment to see your score.', cta: 'Take the assessment' },
-    { text: 'I wasn\'t going to post this, but God said share it.', cta: 'Take the assessment to see where you stand' },
-    { text: 'Stop scrolling. You need to hear this today.', cta: 'Link in bio — take your faith assessment' },
-    { text: 'The last frame looks like the first. Watch until the end.', cta: 'Take the quiz to get your score' }
+    { text: "Here's what helped me when I felt spiritually stuck.", cta: 'Take the assessment to see where you stand' },
+    { text: "This scripture pulled me through a really hard season.", cta: 'Take the faith assessment — link in bio' },
+    { text: 'Here is what changed in my faith when I finally understood this.', cta: 'Take the quiz to get your score' }
   ],
   stewardship: [
     { text: 'I analyzed 100 people\'s stewardship habits. Here\'s what stood out.', cta: 'Take the quiz to see yours' },
@@ -1896,6 +1899,7 @@ const ClassicEditor = () => {
   const [resizingTrack, setResizingTrack] = useState(null);
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [showAIHelper, setShowAIHelper] = useState(false);
+  const [inspectorTab, setInspectorTab] = useState('edit'); // 'edit' | 'text' | 'audio' | 'export'
   const [userMuted, setUserMuted] = useState(false);
   const [tracksLinked, setTracksLinked] = useState(true);
   const [splitFeedback, setSplitFeedback] = useState(null);
@@ -3132,244 +3136,248 @@ const ClassicEditor = () => {
           )}
         </div>
       </div>
-      {/* Controls — CapCut-style inspector panel */}
-      <div className="relative flex flex-col min-h-0 bg-stone-900 border-l border-stone-700/60" style={{ gridArea: 'controls' }}>
-        {/* Panel header */}
-        <div className="flex items-center gap-1.5 px-3 py-2.5 border-b border-stone-700/60 shrink-0">
-          <button onClick={() => setSidebarOpen?.(true)} className="md:hidden p-2 rounded-lg text-stone-500 hover:bg-stone-700 hover:text-white" title="Menu"><Menu size={15} /></button>
-          <button onClick={() => setActiveTab('library')} className="p-2 rounded-lg text-stone-500 hover:bg-stone-700 hover:text-white" title="Back to library"><ArrowLeft size={15} /></button>
-          <span className="text-xs font-bold text-stone-300 flex-1 truncate">Inspector</span>
-          <button onClick={() => setShowShortcuts(s => !s)} className={`p-1.5 rounded-lg ${showShortcuts ? 'bg-stone-600 text-white' : 'text-stone-500 hover:bg-stone-700 hover:text-white'}`} title="Shortcuts"><Keyboard size={13} /></button>
-          <button onClick={() => setShowAIHelper(s => !s)} className={`p-1.5 rounded-lg ${showAIHelper ? 'bg-rose-900/50 text-rose-400' : 'text-stone-500 hover:bg-stone-700 hover:text-white'}`} title="AI Helper"><Sparkles size={13} /></button>
-          <button onClick={() => setShowCreatorInsights(s => !s)} className={`p-1.5 rounded-lg ${showCreatorInsights ? 'bg-rose-900/50 text-rose-400' : 'text-stone-500 hover:bg-stone-700 hover:text-white'}`} title="Creator Insights"><Target size={13} /></button>
+      {/* Controls — tabbed editor panel */}
+      <div className="relative flex flex-col min-h-0 bg-stone-900 border-t border-l border-stone-700/60" style={{ gridArea: 'controls' }}>
+
+        {/* Tab bar — always visible, big touch targets */}
+        <div className="flex shrink-0 border-b border-stone-700/60 bg-stone-950">
+          {[
+            { id: 'edit', icon: <Scissors size={16} />, label: 'Edit' },
+            { id: 'text', icon: <Type size={16} />, label: 'Text' },
+            { id: 'audio', icon: <Music size={16} />, label: 'Audio' },
+            { id: 'export', icon: <Download size={16} />, label: 'Export' },
+          ].map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => setInspectorTab(tab.id)}
+              className={`flex-1 flex flex-col items-center justify-center gap-0.5 py-2.5 text-[11px] font-bold transition-colors border-b-2 ${inspectorTab === tab.id ? 'border-rose-500 text-rose-400 bg-rose-950/30' : 'border-transparent text-stone-500 hover:text-stone-300'}`}
+            >
+              {tab.icon}
+              {tab.label}
+            </button>
+          ))}
         </div>
-        {/* Scrollable sections */}
-        <div className="flex-1 overflow-y-auto overflow-x-hidden px-3 py-3 space-y-3 text-stone-100">
 
-          {/* VIDEO SOURCE */}
-          <div className="flex gap-1.5">
-            <select value={selectedVideo?.id || ''} onChange={(e) => setSelectedVideoId(Number(e.target.value) || null)} className="flex-1 bg-stone-800 border border-stone-700 rounded-lg px-2 py-2 text-xs text-stone-100 truncate min-w-0">
-              <option value="">{videos.length > 0 ? 'Select video…' : 'No videos — upload first'}</option>
-              {videos.map(v => <option key={v.id} value={v.id}>{v.name}</option>)}
-            </select>
-            <button onClick={() => setActiveTab('library')} className="px-2.5 py-2 bg-stone-800 border border-stone-700 rounded-lg text-xs text-rose-400 hover:bg-stone-700 font-bold shrink-0" title="Go to library">+ Add</button>
-          </div>
-
-          {/* FORMAT */}
-          <div className="grid grid-cols-3 gap-1">
-            {[{ id: '9:16', label: '9:16 Reels' }, { id: '16:9', label: '16:9 YouTube' }, { id: '1:1', label: '1:1 Feed' }].map(f => (
-              <button key={f.id} onClick={() => setExportFormat(f.id)} className={`py-1.5 rounded-lg text-[11px] font-bold border transition-colors ${exportFormat === f.id ? 'bg-rose-500 border-rose-500 text-white' : 'bg-stone-800 border-stone-700 text-stone-400 hover:border-stone-500'}`}>{f.label}</button>
+        {/* Playback row — always visible above tabs */}
+        <div className="flex items-center gap-2 px-3 py-2 border-b border-stone-700/40 shrink-0 bg-stone-900">
+          <button onClick={togglePlayPause} disabled={!videoForPreview} className="w-8 h-8 rounded-full flex items-center justify-center bg-rose-500 hover:bg-rose-400 disabled:opacity-40 text-white shrink-0" title="Play / Pause (Space)">
+            {!playing ? <Play size={13} fill="currentColor" /> : <Pause size={13} />}
+          </button>
+          <span className="font-mono text-sm font-bold text-rose-300 tabular-nums">{secToTimecode(playhead)}</span>
+          <span className="text-[10px] text-stone-600 font-mono">/ {secToTimecode(timelineDuration)}</span>
+          <div className="flex-1" />
+          {/* Format quick-switch */}
+          <div className="flex gap-1">
+            {[{ id: '9:16', label: '9:16' }, { id: '16:9', label: '16:9' }, { id: '1:1', label: '1:1' }].map(f => (
+              <button key={f.id} onClick={() => setExportFormat(f.id)} className={`px-1.5 py-1 rounded text-[10px] font-bold border transition-colors ${exportFormat === f.id ? 'bg-rose-500 border-rose-500 text-white' : 'bg-stone-800 border-stone-700 text-stone-500 hover:text-stone-300'}`}>{f.label}</button>
             ))}
           </div>
+          <button onClick={undoAll} disabled={history.length === 0} className="p-1.5 text-stone-600 hover:text-white disabled:opacity-30" title="Undo"><RotateCcw size={12} /></button>
+        </div>
 
-          {/* PLAYBACK ROW */}
-          <div className="flex items-center gap-2">
-            <button onClick={togglePlayPause} disabled={!videoForPreview} className="w-9 h-9 rounded-full flex items-center justify-center bg-rose-500 hover:bg-rose-400 disabled:opacity-40 text-white shrink-0" title="Play / Pause (Space)">
-              {!playing ? <Play size={14} fill="currentColor" /> : <Pause size={14} />}
-            </button>
-            <span className="font-mono text-sm font-bold text-rose-300 tabular-nums flex-1">{secToTimecode(playhead)}</span>
-            <input type="range" min="0" max="1" step="0.1" defaultValue="1" onChange={(e) => { const v = videoRef.current; if (v) v.volume = Number(e.target.value); }} className="w-16 accent-rose-500" title="Volume" />
-            <button onClick={undoAll} disabled={history.length === 0} className="p-1.5 rounded-lg text-stone-500 hover:bg-stone-700 hover:text-white disabled:opacity-30" title="Undo"><RotateCcw size={12} /></button>
-          </div>
+        {/* Tab content */}
+        <div className="flex-1 overflow-y-auto overflow-x-hidden text-stone-100">
 
-          {/* EDIT ACTIONS */}
-          <div>
-            <p className="text-[10px] font-bold text-stone-500 uppercase tracking-wider mb-1.5">Edit</p>
-            <div className="grid grid-cols-2 gap-1.5 mb-1.5">
-              <button onClick={splitAtPlayhead} disabled={!videoForPreview} className="flex items-center justify-center gap-1 py-2.5 rounded-lg text-xs font-bold bg-rose-900/40 border border-rose-800/50 text-rose-300 hover:bg-rose-800/50 disabled:opacity-40" title="Split here (S)"><Scissors size={11} />Split</button>
-              <button onClick={deleteSelectedSegment} disabled={!selectedSegmentId && !selectedClipId} className="py-2.5 rounded-lg text-xs font-bold bg-stone-800 border border-stone-700 text-stone-300 hover:bg-stone-700 disabled:opacity-40">Delete</button>
-            </div>
-            {splitFeedback && <p className="text-[10px] text-amber-400 italic mb-1">{splitFeedback}</p>}
-            {/* Mini tools row */}
-            <div className="flex items-center gap-1">
-              <button onClick={addMarker} disabled={!videoForPreview} className="p-2 rounded-lg bg-stone-800 border border-stone-700 text-amber-400 hover:bg-stone-700 disabled:opacity-40" title="Add marker (M)"><MapPin size={12} /></button>
-              <button onClick={goToPrevMarker} disabled={!markers.filter(m => m.time < playhead - 0.01).length || !selectedVideo} className="p-2 rounded-lg bg-stone-800 border border-stone-700 text-stone-400 hover:bg-stone-700 disabled:opacity-40" title="Prev marker"><ChevronLeft size={12} /></button>
-              <button onClick={goToNextMarker} disabled={!markers.filter(m => m.time > playhead + 0.01).length || !selectedVideo} className="p-2 rounded-lg bg-stone-800 border border-stone-700 text-stone-400 hover:bg-stone-700 disabled:opacity-40" title="Next marker"><ChevronRight size={12} /></button>
-              <button onClick={() => setSnapEnabled(s => !s)} disabled={!videoForPreview} className={`p-2 rounded-lg border transition-colors ${snapEnabled ? 'bg-rose-900/40 border-rose-800/50 text-rose-400' : 'bg-stone-800 border-stone-700 text-stone-400 hover:bg-stone-700'} disabled:opacity-40`} title={`Snap ${snapEnabled ? 'on' : 'off'}`}><Magnet size={12} /></button>
-              <button onClick={duplicateSelectedSegment} disabled={!selectedSegmentId || !selectedVideo} className="flex items-center justify-center gap-1 px-2.5 py-2 rounded-lg text-xs bg-stone-800 border border-stone-700 text-stone-400 hover:bg-stone-700 disabled:opacity-40 ml-auto" title="Duplicate"><Copy size={12} /></button>
-            </div>
-          </div>
+          {/* ── EDIT TAB ─────────────────────────────── */}
+          {inspectorTab === 'edit' && (
+            <div className="p-3 space-y-3">
+              {/* Video source */}
+              <div className="flex gap-1.5">
+                <select value={selectedVideo?.id || ''} onChange={(e) => setSelectedVideoId(Number(e.target.value) || null)} className="flex-1 bg-stone-800 border border-stone-700 rounded-lg px-2 py-2 text-xs text-stone-100 truncate min-w-0">
+                  <option value="">{videos.length > 0 ? 'Select video…' : 'Upload a video first →'}</option>
+                  {videos.map(v => <option key={v.id} value={v.id}>{v.name}</option>)}
+                </select>
+                <button onClick={() => setActiveTab('library')} className="px-2.5 py-2 bg-rose-600 hover:bg-rose-500 rounded-lg text-xs text-white font-bold shrink-0">+ Upload</button>
+              </div>
 
-          {/* ADD */}
-          <div>
-            <p className="text-[10px] font-bold text-stone-500 uppercase tracking-wider mb-1.5">Add</p>
-            <div className="grid grid-cols-2 gap-1.5 mb-1.5">
-              <button onClick={() => addTextClip('Caption')} disabled={!videoForPreview} className="py-2 rounded-lg text-xs font-bold bg-stone-800 border border-stone-700 text-blue-400 hover:bg-stone-700 disabled:opacity-40">+ Caption</button>
-              <button onClick={addTrafficOverlay} disabled={!videoForPreview} className="py-2 rounded-lg text-xs font-bold bg-stone-800 border border-stone-700 text-amber-400 hover:bg-stone-700 disabled:opacity-40">+ CTA</button>
+              {/* Primary edit actions — big buttons */}
+              <div className="grid grid-cols-2 gap-2">
+                <button onClick={splitAtPlayhead} disabled={!videoForPreview} className="flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold bg-rose-900/50 border border-rose-700/60 text-rose-300 hover:bg-rose-800/60 active:scale-95 disabled:opacity-40 transition-all" title="Split clip at playhead (S)">
+                  <Scissors size={16} /> Split Here
+                </button>
+                <button onClick={deleteSelectedSegment} disabled={!selectedSegmentId && !selectedClipId} className="flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold bg-stone-800 border border-stone-700 text-stone-300 hover:bg-stone-700 active:scale-95 disabled:opacity-40 transition-all">
+                  <Trash2 size={16} /> Delete
+                </button>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <button onClick={duplicateSelectedSegment} disabled={!selectedSegmentId || !selectedVideo} className="flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-bold bg-stone-800 border border-stone-700 text-stone-300 hover:bg-stone-700 active:scale-95 disabled:opacity-40 transition-all">
+                  <Copy size={14} /> Duplicate
+                </button>
+                <button onClick={undoAll} disabled={history.length === 0} className="flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-bold bg-stone-800 border border-stone-700 text-stone-300 hover:bg-stone-700 active:scale-95 disabled:opacity-30 transition-all">
+                  <RotateCcw size={14} /> Undo
+                </button>
+              </div>
+              {splitFeedback && <p className="text-[11px] text-amber-400 italic">{splitFeedback}</p>}
+
+              {/* Tools */}
+              <div className="flex items-center gap-2 pt-1 border-t border-stone-800">
+                <span className="text-[10px] text-stone-600 font-bold uppercase">Tools</span>
+                <button onClick={addMarker} disabled={!videoForPreview} className="p-2 rounded-lg bg-stone-800 border border-stone-700 text-amber-400 hover:bg-stone-700 disabled:opacity-40" title="Add marker"><MapPin size={13} /></button>
+                <button onClick={goToPrevMarker} disabled={!markers.filter(m => m.time < playhead - 0.01).length} className="p-2 rounded-lg bg-stone-800 border border-stone-700 text-stone-400 hover:bg-stone-700 disabled:opacity-40"><ChevronLeft size={13} /></button>
+                <button onClick={goToNextMarker} disabled={!markers.filter(m => m.time > playhead + 0.01).length} className="p-2 rounded-lg bg-stone-800 border border-stone-700 text-stone-400 hover:bg-stone-700 disabled:opacity-40"><ChevronRight size={13} /></button>
+                <button onClick={() => setSnapEnabled(s => !s)} className={`p-2 rounded-lg border ${snapEnabled ? 'bg-rose-900/40 border-rose-800/50 text-rose-400' : 'bg-stone-800 border-stone-700 text-stone-500'}`} title={`Snap ${snapEnabled ? 'on' : 'off'}`}><Magnet size={13} /></button>
+              </div>
+
+              {/* Selected clip details */}
+              {selectedSegmentId && (() => {
+                const seg = mainSegments.find(s => s.id === selectedSegmentId);
+                if (!seg) return null;
+                const currTx = TIMELINE_TRANSITIONS.find(t => t.id === (seg.transition || 'cut'));
+                return (
+                  <div className="bg-stone-800 border border-stone-700 rounded-xl p-3 space-y-2">
+                    <p className="text-[10px] font-bold text-stone-400 uppercase">Selected Clip</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <p className="text-[10px] text-stone-500 mb-1">In point</p>
+                        <input key={`in-${seg.id}`} defaultValue={secToTimecode(seg.start)} onBlur={(e) => { const t = parseTimecode(e.target.value); if (t != null && t >= 0 && t < seg.end - 0.5) { pushHistory(); setMainSegments(prev => prev.map(x => x.id === selectedSegmentId ? { ...x, start: t } : x)); }}} className="w-full font-mono px-2 py-1.5 rounded-lg border bg-stone-700 border-stone-600 text-stone-100 text-xs" />
+                      </div>
+                      <div>
+                        <p className="text-[10px] text-stone-500 mb-1">Out point</p>
+                        <input key={`out-${seg.id}`} defaultValue={secToTimecode(seg.end)} onBlur={(e) => { const t = parseTimecode(e.target.value); if (t != null && t <= duration && t > seg.start + 0.5) { pushHistory(); setMainSegments(prev => prev.map(x => x.id === selectedSegmentId ? { ...x, end: t } : x)); }}} className="w-full font-mono px-2 py-1.5 rounded-lg border bg-stone-700 border-stone-600 text-stone-100 text-xs" />
+                      </div>
+                    </div>
+                    <div className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-xs font-bold ${currTx?.seamless ? 'border-emerald-700 text-emerald-400 bg-emerald-900/20' : 'border-stone-600 text-stone-400 bg-stone-700'}`}>
+                      {currTx?.icon} {currTx?.label} transition
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
-            <div className="flex gap-1.5">
-              {selectedAudio && (
-                <button onClick={addAudioFromLibrary} disabled={!selectedAudio?.url || !videoForPreview} className="flex-1 py-2 rounded-lg text-xs font-bold bg-stone-800 border border-stone-700 text-emerald-400 hover:bg-stone-700 disabled:opacity-40">+ Music</button>
-              )}
+          )}
+
+          {/* ── TEXT TAB ─────────────────────────────── */}
+          {inspectorTab === 'text' && (
+            <div className="p-3 space-y-3">
+              <div className="grid grid-cols-2 gap-2">
+                <button onClick={() => addTextClip('Caption')} disabled={!videoForPreview} className="flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold bg-blue-900/40 border border-blue-700/50 text-blue-300 hover:bg-blue-800/50 active:scale-95 disabled:opacity-40 transition-all">
+                  <Type size={16} /> Add Caption
+                </button>
+                <button onClick={addTrafficOverlay} disabled={!videoForPreview} className="flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold bg-amber-900/40 border border-amber-700/50 text-amber-300 hover:bg-amber-800/50 active:scale-95 disabled:opacity-40 transition-all">
+                  <Link2 size={16} /> CTA Overlay
+                </button>
+              </div>
               {speechSupported && (
-                <button onClick={isListening ? stopSpeech : startSpeech} className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-bold transition-colors ${isListening ? 'bg-rose-500 text-white' : 'bg-stone-800 border border-stone-700 text-rose-400 hover:bg-stone-700'}`} title="Auto-caption">
-                  <Mic size={12} className={isListening ? 'animate-pulse' : ''} />{isListening ? 'Stop' : 'Auto-Caption'}
+                <button onClick={isListening ? stopSpeech : startSpeech} className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all active:scale-95 ${isListening ? 'bg-rose-500 text-white' : 'bg-stone-800 border border-stone-700 text-rose-400 hover:bg-stone-700'}`}>
+                  <Mic size={16} className={isListening ? 'animate-pulse' : ''} />
+                  {isListening ? 'Stop Auto-Caption' : 'Auto-Caption (Voice)'}
                 </button>
               )}
-            </div>
-          </div>
-
-          {/* HOOK STRENGTH SCORE */}
-          {videoForPreview && (() => {
-            let score = 0;
-            const tips = [];
-            const hasFastCaption = textClips.some(c => (c.start ?? 0) < 3 && c.text);
-            if (hasFastCaption) score += 28;
-            else tips.push('Add a caption in the first 3s');
-            const captionCount = textClips.filter(c => c.text).length;
-            score += Math.min(captionCount * 6, 18);
-            if (captionCount === 0) tips.push('Add captions — boosts watch time');
-            const hasCTA = textClips.some(c => c.lowerThird || (c.text && /link|bio|click/i.test(c.text)));
-            if (hasCTA) score += 18;
-            else tips.push('Add a CTA (Link in Bio)');
-            const dur = timelineDuration || 0;
-            if (dur >= 15 && dur <= 90) score += 12;
-            else if (dur > 90) tips.push('Trim under 90s for more replays');
-            if (audioSegments.length > 0) score += 10;
-            else tips.push('Add background music');
-            if (mainSegments.some(s => s.transition && s.transition !== 'cut')) score += 14;
-            else if (mainSegments.length > 1) tips.push('Use Crossfade for seamless cuts');
-            score = Math.min(100, score);
-            const barColor = score >= 80 ? 'bg-emerald-500' : score >= 55 ? 'bg-amber-400' : 'bg-rose-500';
-            const label = score >= 80 ? '🔥 Strong' : score >= 55 ? '✨ Getting there' : '💡 Needs work';
-            return (
-              <div className="bg-stone-800/70 border border-stone-700 rounded-xl p-2.5">
-                <div className="flex items-center justify-between mb-1">
-                  <p className="text-[10px] font-bold text-stone-400 uppercase tracking-wider">Hook Strength</p>
-                  <span className="text-xs font-black tabular-nums" style={{ color: score >= 80 ? '#10b981' : score >= 55 ? '#fbbf24' : '#f43f5e' }}>{score}/100</span>
-                </div>
-                <div className="h-1.5 bg-stone-700 rounded-full overflow-hidden mb-2">
-                  <div className={`h-full rounded-full transition-all ${barColor}`} style={{ width: `${score}%` }} />
-                </div>
-                <p className="text-[11px] font-semibold text-stone-300 mb-1">{label}</p>
-                {tips.length > 0 && (
-                  <ul className="space-y-0.5">
-                    {tips.slice(0, 2).map((tip, i) => (
-                      <li key={i} className="text-[10px] text-stone-500 flex gap-1"><span className="text-rose-500 shrink-0">›</span>{tip}</li>
+              {/* Existing text clips */}
+              {textClips.length > 0 && (
+                <div>
+                  <p className="text-[10px] font-bold text-stone-500 uppercase mb-2">Your Captions</p>
+                  <div className="space-y-1.5">
+                    {textClips.map(c => (
+                      <button key={c.id} onClick={() => setEditingClipId(c.id)} className={`w-full text-left px-3 py-2 rounded-lg border text-xs transition-colors ${editingClipId === c.id ? 'border-rose-500 bg-rose-950/40 text-rose-300' : 'border-stone-700 bg-stone-800 text-stone-300 hover:border-stone-600'}`}>
+                        <span className="font-bold">{secToTimecode(c.start ?? 0)}</span>
+                        <span className="text-stone-500 mx-1.5">→</span>
+                        <span className="text-stone-400">{c.text || '(empty — tap to edit)'}</span>
+                      </button>
                     ))}
-                  </ul>
-                )}
-              </div>
-            );
-          })()}
-
-          {/* SELECTED CLIP INSPECTOR — main segment */}
-          {selectedSegmentId && (() => {
-            const seg = mainSegments.find(s => s.id === selectedSegmentId);
-            if (!seg) return null;
-            const currTx = TIMELINE_TRANSITIONS.find(t => t.id === (seg.transition || 'cut'));
-            return (
-              <div>
-                <p className="text-[10px] font-bold text-stone-500 uppercase tracking-wider mb-1.5">Selected Clip</p>
-                <div className="bg-stone-800 border border-stone-700 rounded-lg p-2.5 space-y-2">
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <p className="text-[10px] text-stone-500 mb-1">In</p>
-                      <input key={`main-${seg.id}-start-${seg.start}`} defaultValue={secToTimecode(seg.start)} onBlur={(e) => { const t = parseTimecode(e.target.value); if (t != null && t >= 0 && t < seg.end - 0.5) { pushHistory(); setMainSegments(prev => prev.map(x => x.id === selectedSegmentId ? { ...x, start: t } : x)); } }} className="w-full font-mono px-2 py-1.5 rounded-lg border bg-stone-700 border-stone-600 text-stone-100 text-xs" placeholder="0:00.00" />
-                    </div>
-                    <div>
-                      <p className="text-[10px] text-stone-500 mb-1">Out</p>
-                      <input key={`main-${seg.id}-end-${seg.end}`} defaultValue={secToTimecode(seg.end)} onBlur={(e) => { const t = parseTimecode(e.target.value); if (t != null && t <= duration && t > seg.start + 0.5) { pushHistory(); setMainSegments(prev => prev.map(x => x.id === selectedSegmentId ? { ...x, end: t } : x)); } }} className="w-full font-mono px-2 py-1.5 rounded-lg border bg-stone-700 border-stone-600 text-stone-100 text-xs" placeholder="1:30.00" />
-                    </div>
-                  </div>
-                  <div className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg border text-xs font-bold ${currTx?.seamless ? 'border-emerald-700 text-emerald-400 bg-emerald-900/20' : 'border-stone-600 text-stone-400 bg-stone-700'}`}>{currTx?.icon} {currTx?.label}</div>
-                  {(seg.speed && seg.speed !== 1) && <span className="ml-2 text-amber-400 text-xs font-bold">{seg.speed}×</span>}
-                </div>
-              </div>
-            );
-          })()}
-
-          {/* SELECTED CLIP INSPECTOR — audio segment */}
-          {selectedAudioSegmentId && !selectedSegmentId && (() => {
-            const seg = audioSegments.find(s => s.id === selectedAudioSegmentId);
-            if (!seg) return null;
-            const aIdx = audioSegments.findIndex(s => s.id === selectedAudioSegmentId);
-            const updateMainOrAudio = (field, val) => {
-              pushHistory();
-              if (tracksLinked && aIdx >= 0) setMainSegments(prev => prev.map((x, i) => (i === aIdx ? { ...x, [field]: val } : x)));
-              else setAudioSegments(prev => prev.map(x => x.id === selectedAudioSegmentId ? { ...x, [field]: val } : x));
-            };
-            return (
-              <div>
-                <p className="text-[10px] font-bold text-stone-500 uppercase tracking-wider mb-1.5">Audio Clip</p>
-                <div className="bg-stone-800 border border-stone-700 rounded-lg p-2.5">
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <p className="text-[10px] text-stone-500 mb-1">In</p>
-                      <input key={`audio-${seg.id}-start-${seg.start}`} defaultValue={secToTimecode(seg.start)} onBlur={(e) => { const t = parseTimecode(e.target.value); if (t != null && t >= 0 && t < seg.end - 0.5) updateMainOrAudio('start', t); }} className="w-full font-mono px-2 py-1.5 rounded-lg border bg-stone-700 border-stone-600 text-stone-100 text-xs" placeholder="0:00.00" />
-                    </div>
-                    <div>
-                      <p className="text-[10px] text-stone-500 mb-1">Out</p>
-                      <input key={`audio-${seg.id}-end-${seg.end}`} defaultValue={secToTimecode(seg.end)} onBlur={(e) => { const t = parseTimecode(e.target.value); if (t != null && t <= duration && t > seg.start + 0.5) updateMainOrAudio('end', t); }} className="w-full font-mono px-2 py-1.5 rounded-lg border bg-stone-700 border-stone-600 text-stone-100 text-xs" placeholder="1:30.00" />
-                    </div>
                   </div>
                 </div>
-              </div>
-            );
-          })()}
+              )}
+              {textClips.length === 0 && !videoForPreview && (
+                <p className="text-xs text-stone-500 text-center py-4">Load a video first, then add captions</p>
+              )}
+            </div>
+          )}
 
-          {/* SELECTED CLIP INSPECTOR — layered clip */}
-          {selectedClipId && (() => {
-            let clip, trackId, track;
-            for (const t of timelineTracks || []) {
-              clip = (t.clips || []).find(c => c.id === selectedClipId);
-              if (clip) { trackId = t.id; track = t; break; }
-            }
-            if (!clip || !track) return null;
-            const asset = assets?.find(a => a.id === clip.assetId);
-            const pip = clip.pip ?? { position: 'bottomRight', size: 0.3 };
-            return (
-              <div>
-                <p className="text-[10px] font-bold text-stone-500 uppercase tracking-wider mb-1.5">Clip: {asset?.name?.slice(0, 14) || '…'}</p>
-                <div className="bg-stone-800 border border-stone-700 rounded-lg p-2.5 space-y-3">
-                  <div>
-                    <p className="text-[10px] text-stone-500 mb-1">Opacity</p>
-                    <input type="range" min="0" max="1" step="0.05" value={clip.opacity ?? 1} onChange={(e) => updateClip(trackId, clip.id, { opacity: Number(e.target.value) })} className="w-full accent-rose-500" />
-                  </div>
-                  <div>
-                    <p className="text-[10px] text-stone-500 mb-1">Volume</p>
-                    <input type="range" min="0" max="1" step="0.1" value={clip.volume ?? 1} onChange={(e) => updateClip(trackId, clip.id, { volume: Number(e.target.value) })} className="w-full accent-rose-500" />
-                  </div>
-                  {(track.label === 'Overlay' || pip) && (
-                    <>
-                      <div>
-                        <p className="text-[10px] text-stone-500 mb-1">PiP Position</p>
-                        <select value={pip.position || 'bottomRight'} onChange={(e) => updateClip(trackId, clip.id, { pip: { ...pip, position: e.target.value } })} className="w-full text-xs px-2 py-1.5 rounded-lg border bg-stone-700 border-stone-600 text-stone-100">
-                          <option value="topLeft">Top Left</option><option value="topRight">Top Right</option><option value="bottomLeft">Bottom Left</option><option value="bottomRight">Bottom Right</option>
-                        </select>
+          {/* ── AUDIO TAB ─────────────────────────────── */}
+          {inspectorTab === 'audio' && (
+            <div className="p-3 space-y-3">
+              {selectedAudio ? (
+                <button onClick={addAudioFromLibrary} disabled={!selectedAudio?.url || !videoForPreview} className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold bg-emerald-900/40 border border-emerald-700/50 text-emerald-300 hover:bg-emerald-800/50 active:scale-95 disabled:opacity-40 transition-all">
+                  <Music size={16} /> Add Music to Timeline
+                </button>
+              ) : (
+                <button onClick={() => setActiveTab('library')} className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold bg-stone-800 border border-stone-700 text-emerald-400 hover:bg-stone-700 active:scale-95 transition-all">
+                  <Music size={16} /> Upload Music in Library
+                </button>
+              )}
+              <div className="flex items-center gap-3 px-3 py-3 bg-stone-800 border border-stone-700 rounded-xl">
+                <Volume2 size={16} className="text-stone-400 shrink-0" />
+                <input type="range" min="0" max="1" step="0.05" defaultValue="1" onChange={(e) => { const v = videoRef.current; if (v) v.volume = Number(e.target.value); }} className="flex-1 accent-rose-500" title="Volume" />
+                <button type="button" onClick={() => setUserMuted(m => !m)} className={`text-xs font-bold px-2.5 py-1 rounded-lg transition-colors ${userMuted ? 'text-rose-400 bg-rose-900/40' : 'text-stone-500 hover:text-rose-400'}`}>{userMuted ? 'Unmute' : 'Mute'}</button>
+              </div>
+              {/* Recording */}
+              <button onClick={isRecording ? stopRecord : () => startRecord(true, true)} disabled={!!recordError} className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all active:scale-95 ${isRecording ? 'bg-red-500 text-white' : 'bg-stone-800 border border-stone-700 text-rose-400 hover:bg-stone-700'} disabled:opacity-40`}>
+                <Camera size={16} className={isRecording ? 'animate-pulse' : ''} />
+                {isRecording ? 'Stop Recording' : 'Record Video'}
+              </button>
+              {audioSegments.length > 0 && (
+                <div>
+                  <p className="text-[10px] font-bold text-stone-500 uppercase mb-2">Audio Clips</p>
+                  <div className="space-y-1.5">
+                    {audioSegments.map(seg => (
+                      <div key={seg.id} onClick={() => setSelectedAudioSegmentId(seg.id === selectedAudioSegmentId ? null : seg.id)} className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-xs cursor-pointer transition-colors ${seg.id === selectedAudioSegmentId ? 'border-emerald-600 bg-emerald-950/30 text-emerald-300' : 'border-stone-700 bg-stone-800 text-stone-400 hover:border-stone-600'}`}>
+                        <Music size={12} className="shrink-0 text-emerald-400" />
+                        <span className="flex-1 truncate">{secToTimecode(seg.start)} – {secToTimecode(seg.end)}</span>
+                        <button onClick={(e) => { e.stopPropagation(); deleteSelectedAudioSegment(); }} className="text-stone-600 hover:text-rose-400"><X size={12} /></button>
                       </div>
-                      <div>
-                        <p className="text-[10px] text-stone-500 mb-1">PiP Size</p>
-                        <input type="range" min="0.15" max="0.6" step="0.05" value={pip.size ?? 0.3} onChange={(e) => updateClip(trackId, clip.id, { pip: { ...pip, size: Number(e.target.value) } })} className="w-full accent-rose-500" />
-                      </div>
-                    </>
-                  )}
-                  <div>
-                    <p className="text-[10px] text-stone-500 mb-1">Move to Track</p>
-                    <select value="" onChange={(e) => { const i = Number(e.target.value); if (!isNaN(i) && i >= 0 && moveClipToTrack) moveClipToTrack(trackId, clip.id, i); e.target.value = ''; }} className="w-full text-xs px-2 py-1.5 rounded-lg border bg-stone-700 border-stone-600 text-stone-100">
-                      <option value="">Move to…</option>
-                      <option value="0">Main</option><option value="1">Overlay</option><option value="2">Logos</option><option value="3">Audio</option>
-                    </select>
+                    ))}
                   </div>
                 </div>
-              </div>
-            );
-          })()}
+              )}
+            </div>
+          )}
 
-          {/* EXPORT */}
-          <div className="pb-3">
-            <p className="text-[10px] font-bold text-stone-500 uppercase tracking-wider mb-1.5">Export</p>
-            <select value={exportFormat} onChange={(e) => setExportFormat(e.target.value)} className="w-full text-xs font-mono px-2 py-2 rounded-lg border border-stone-700 bg-stone-800 text-stone-100 mb-2">
-              {EXPORT_FORMATS.map(f => <option key={f.id} value={f.id}>{f.w ? `${f.label} ${f.w}×${f.h}` : `${f.label} (original)`}</option>)}
-            </select>
-            <label className="flex items-center gap-1.5 text-[10px] text-stone-400 cursor-pointer mb-2.5">
-              <input type="checkbox" checked={appendContactUrlToMetadata} onChange={(e) => setAppendContactUrlToMetadata(e.target.checked)} className="rounded" />
-              Append contact URL to metadata
-            </label>
-            <button onClick={exportVideo} disabled={exporting || !selectedVideo} className="w-full py-2.5 rounded-lg text-sm font-bold bg-rose-500 hover:bg-rose-400 text-white disabled:opacity-40 shadow-lg shadow-rose-900/30 transition-colors">
-              {exporting ? (exportProgress > 0 ? `Exporting ${Math.round(exportProgress * 100)}%…` : 'Rendering…') : 'Export'}
-            </button>
-          </div>
+          {/* ── EXPORT TAB ─────────────────────────────── */}
+          {inspectorTab === 'export' && (
+            <div className="p-3 space-y-3">
+              {/* Hook strength */}
+              {videoForPreview && (() => {
+                let score = 0;
+                const tips = [];
+                const hasFastCaption = textClips.some(c => (c.start ?? 0) < 3 && c.text);
+                if (hasFastCaption) score += 28;
+                else tips.push('Add a caption in first 3s');
+                const captionCount = textClips.filter(c => c.text).length;
+                score += Math.min(captionCount * 6, 18);
+                if (captionCount === 0) tips.push('Add captions — boosts watch time');
+                const hasCTA = textClips.some(c => c.lowerThird || (c.text && /link|bio|click/i.test(c.text)));
+                if (hasCTA) score += 18;
+                else tips.push('Add a CTA (Link in Bio)');
+                const dur = timelineDuration || 0;
+                if (dur >= 15 && dur <= 90) score += 12;
+                else if (dur > 90) tips.push('Trim under 90s');
+                if (audioSegments.length > 0) score += 10;
+                else tips.push('Add background music');
+                if (mainSegments.some(s => s.transition && s.transition !== 'cut')) score += 14;
+                else if (mainSegments.length > 1) tips.push('Use Crossfade');
+                score = Math.min(100, score);
+                const barColor = score >= 80 ? 'bg-emerald-500' : score >= 55 ? 'bg-amber-400' : 'bg-rose-500';
+                return (
+                  <div className="bg-stone-800 border border-stone-700 rounded-xl p-3">
+                    <div className="flex items-center justify-between mb-1.5">
+                      <p className="text-xs font-bold text-stone-300">Hook Strength</p>
+                      <span className="text-sm font-black" style={{ color: score >= 80 ? '#10b981' : score >= 55 ? '#fbbf24' : '#f43f5e' }}>{score}/100</span>
+                    </div>
+                    <div className="h-2 bg-stone-700 rounded-full overflow-hidden mb-2">
+                      <div className={`h-full rounded-full transition-all ${barColor}`} style={{ width: `${score}%` }} />
+                    </div>
+                    {tips.length > 0 && tips.slice(0, 2).map((tip, i) => (
+                      <p key={i} className="text-[11px] text-stone-500 flex gap-1"><span className="text-rose-500">›</span>{tip}</p>
+                    ))}
+                  </div>
+                );
+              })()}
+              {/* Export format */}
+              <div>
+                <p className="text-[10px] font-bold text-stone-500 uppercase mb-2">Format</p>
+                <select value={exportFormat} onChange={(e) => setExportFormat(e.target.value)} className="w-full text-xs px-3 py-2.5 rounded-xl border border-stone-700 bg-stone-800 text-stone-100 mb-2">
+                  {EXPORT_FORMATS.map(f => <option key={f.id} value={f.id}>{f.w ? `${f.label} ${f.w}×${f.h}` : `${f.label} (original)`}</option>)}
+                </select>
+                <label className="flex items-center gap-2 text-xs text-stone-400 cursor-pointer">
+                  <input type="checkbox" checked={appendContactUrlToMetadata} onChange={(e) => setAppendContactUrlToMetadata(e.target.checked)} className="rounded" />
+                  Append contact URL to metadata
+                </label>
+              </div>
+              <button onClick={exportVideo} disabled={exporting || !selectedVideo} className="w-full py-4 rounded-xl text-base font-bold bg-rose-500 hover:bg-rose-400 text-white disabled:opacity-40 shadow-lg shadow-rose-900/30 transition-all active:scale-95">
+                {exporting ? (exportProgress > 0 ? `Exporting ${Math.round(exportProgress * 100)}%…` : 'Rendering…') : '⬇ Export Video'}
+              </button>
+            </div>
+          )}
 
         </div>
         {showCreatorInsights && (

@@ -1,0 +1,59 @@
+/* Custom styles for ECON homework HTML output */
+
+/* Better typography and spacing */
+body {
+  font-family: "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+  line-height: 1.6;
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 1.5rem 2rem;
+}
+
+/* Section headers */
+h1, h2, h3 {
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  margin-top: 2rem;
+  color: #2c3e50;
+}
+
+h1 { border-bottom: 2px solid #3498db; padding-bottom: 0.5rem; }
+
+/* Payoff tables - clean, readable */
+table {
+  border-collapse: collapse;
+  margin: 1rem 0;
+  font-size: 1rem;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+th, td {
+  border: 1px solid #bdc3c7;
+  padding: 0.5rem 0.75rem;
+}
+th {
+  background: #ecf0f1;
+  font-weight: 600;
+}
+
+/* Decision tree diagram - centered, spacious */
+.mermaid {
+  margin: 1.5rem 0;
+  text-align: center;
+  padding: 1rem;
+  background: #fafafa;
+  border-radius: 8px;
+  min-height: 200px;
+}
+
+/* Text tree fallback - monospace for alignment */
+pre {
+  font-family: "Consolas", "Monaco", "Courier New", monospace;
+  font-size: 0.9rem;
+  padding: 1rem;
+  background: #f8f9fa;
+  border-radius: 6px;
+  overflow-x: auto;
+}
+
+/* Lists - clearer hierarchy */
+ul { margin: 0.5rem 0; }
+li { margin: 0.25rem 0; }

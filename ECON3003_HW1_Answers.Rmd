@@ -1,0 +1,259 @@
+---
+title: "ECON 3003 – Homework #1 Solutions"
+author: "Sarah"
+date: "`r format(Sys.Date(), '%B %d, %Y')`"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    number_sections: true
+    theme: cosmo
+    css: custom_styles.css
+    includes:
+      in_header: mermaid_header.html
+  pdf_document:
+    toc: false
+    number_sections: true
+    latex_engine: xelatex
+header-includes:
+  - \usepackage{amsmath}
+  - \usepackage{booktabs}
+  - \usepackage{array}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+library(knitr)
+```
+
+\newpage
+
+# Question 1 [7 pts] – Extensive Form Game
+
+**Strategic situation:** Javonie guesses which door Lycenia is behind; Malik (host) chooses a color; Javonie picks a door.
+
+**Players:** Lycenia (L), Malik (M), Javonie (J)
+
+**Order of play:**
+
+1. Lycenia chooses A or B (Javonie not present)
+2. Malik observes Lycenia's choice and chooses Red or Green
+3. Javonie observes Malik's color (but not Lycenia's choice) and chooses A or B
+
+**Payoffs:** (Javonie, Lycenia, Malik)
+
+- Javonie: \$100 if correct door, \$0 if wrong
+- Lycenia: \$100 if Javonie wrong, \$0 if correct
+- Malik: 10 if Javonie picks A, 0 if Javonie picks B
+
+**Extensive form (decision tree):**
+
+<div class="mermaid">
+flowchart TB
+    L[Lycenia] --> A[Door A]
+    L --> B[Door B]
+    A --> M1[Malik]
+    B --> M2[Malik]
+    M1 --> R1[Red]
+    M1 --> G1[Green]
+    M2 --> R2[Red]
+    M2 --> G2[Green]
+    R1 --> J1[Javonie]
+    G1 --> J2[Javonie]
+    R2 --> J3[Javonie]
+    G2 --> J4[Javonie]
+    J1 -->|A| P1["(100,0,10)"]
+    J1 -->|B| P2["(0,100,0)"]
+    J2 -->|A| P3["(100,0,10)"]
+    J2 -->|B| P4["(0,100,0)"]
+    J3 -->|A| P5["(0,100,10)"]
+    J3 -->|B| P6["(100,0,0)"]
+    J4 -->|A| P7["(0,100,10)"]
+    J4 -->|B| P8["(100,0,0)"]
+</div>
+
+**Text version (if diagram doesn't render):**
+
+```
+                    Lycenia
+                   /      \
+              Door A      Door B
+                 |           |
+               Malik       Malik
+              /     \     /     \
+           Red   Green Red   Green
+             |     |     |     |
+          Javonie (info sets: sees Red vs sees Green)
+             |     |     |     |
+          A   B   A   B  ...  (terminal payoffs below)
+```
+
+*(Information sets: Javonie's nodes after Red form one set; her nodes after Green form another. She knows the color but not Lycenia's door.)*
+
+**Terminal payoffs (J, L, M):**
+
+- Lycenia A, Malik Red: J picks A $\rightarrow$ (100, 0, 10); J picks B $\rightarrow$ (0, 100, 0)
+- Lycenia A, Malik Green: J picks A $\rightarrow$ (100, 0, 10); J picks B $\rightarrow$ (0, 100, 0)
+- Lycenia B, Malik Red: J picks A $\rightarrow$ (0, 100, 10); J picks B $\rightarrow$ (100, 0, 0)
+- Lycenia B, Malik Green: J picks A $\rightarrow$ (0, 100, 10); J picks B $\rightarrow$ (100, 0, 0)
+
+**Information sets:**
+
+- Lycenia: one decision node (no information set)
+- Malik: two nodes (knows Lycenia's choice)
+- Javonie: two information sets — one when Malik chose Red, one when Malik chose Green (she does not know Lycenia's choice)
+
+\newpage
+
+# Question 2 [8 pts] – Normal Form from Extensive Form
+
+*Note: The extensive-form diagram is in the PDF. The method is:*
+
+1. Identify each player's strategies (complete plans of action for every node/information set)
+2. Build the normal-form matrix with strategies as rows/columns
+3. Enter payoffs for each strategy profile
+
+**General procedure:**
+
+- For each information set, list the actions
+- A strategy for a player is a function from each of their information sets to an action
+- Enumerate all such strategies and fill the payoff matrix
+
+*(Apply this to the specific tree in the assignment.)*
+
+\newpage
+
+# Question 3 [6 pts total]
+
+**Game:**
+
+```{r q3-table, results='asis'}
+q3 <- data.frame(
+  Row = c("U", "D", "Payoff"),
+  L = c("3, 3", "4, 1", "(P1, P2)"),
+  R = c("2, 0", "8, -1", "")
+)
+kable(q3, col.names = c("", "L", "R"), align = c("l", "c", "c"), booktabs = TRUE)
+```
+
+## (i) Strictly and weakly dominated strategies [2]
+
+**Player 2:**
+- If P1 plays U: L gives 3, R gives 0 $\rightarrow$ L $>$ R
+- If P1 plays D: L gives 1, R gives $-1$ $\rightarrow$ L $>$ R
+
+So **R is strictly dominated by L** for Player 2.
+
+**Player 1:**
+- If P2 plays L: U gives 3, D gives 4 $\rightarrow$ D $>$ U
+- If P2 plays R: U gives 2, D gives 8 $\rightarrow$ D $>$ U
+
+So **U is strictly dominated by D** for Player 1.
+
+**Weakly dominated:** None.
+
+## (ii) Pure strategy Nash equilibrium [2]
+
+After removing dominated strategies, only **(D, L)** remains.
+
+**Check:**
+- Given P2 plays L, P1's best reply is D (4 $>$ 3)
+- Given P1 plays D, P2's best reply is L (1 $>$ $-1$)
+
+**Nash equilibrium: (D, L) with payoff (4, 1).**
+
+## (iii) Dominant strategy equilibrium? [2]
+
+Yes. **D** is a dominant strategy for Player 1, and **L** is a dominant strategy for Player 2. So **(D, L)** is a **dominant strategy equilibrium** as well as Nash.
+
+\newpage
+
+# Question 4 [8 pts total]
+
+**Game:**
+
+```{r q4-table, results='asis'}
+q4 <- data.frame(
+  Row = c("U", "M", "D", "Payoff"),
+  L = c("5, 9", "3, 2", "2, 8", "(P1, P2)"),
+  C = c("0, 1", "0, 9", "0, 1", ""),
+  R = c("4, 3", "1, 1", "8, 4", "")
+)
+kable(q4, col.names = c("", "L", "C", "R"), align = c("l", "c", "c", "c"), booktabs = TRUE)
+```
+
+## (i) Weakly and strictly dominated strategies [2]
+
+**Player 2:** R is strictly dominated by L (L $\geq$ R in every row, strict when P1 plays U or D).
+
+**Player 1:** No strategy strictly dominated in the full game. After removing R, M and D are strictly dominated by U when P2 plays L.
+
+## (ii) Pure strategy Nash equilibria [4]
+
+**Best responses:**
+- BR$_1$(L) = U; BR$_1$(C) = U, M, D; BR$_1$(R) = D
+- BR$_2$(U) = L; BR$_2$(M) = C; BR$_2$(D) = L
+
+**Mutual best replies:**
+- (U, L): BR$_1$(L) = U, BR$_2$(U) = L $\checkmark$
+- (M, C): BR$_1$(C) includes M, BR$_2$(M) = C $\checkmark$
+
+**Nash equilibria: (U, L) with payoff (5, 9) and (M, C) with payoff (0, 9).**
+
+## (iii) Iterated dominance [2]
+
+**Iterated elimination:**
+1. R strictly dominated by L for P2 $\rightarrow$ remove R
+2. M and D strictly dominated by U for P1 $\rightarrow$ remove M and D
+3. P2 prefers L (9 $>$ 1)
+
+**Iterated dominance equilibrium: (U, L) with payoff (5, 9).**
+
+So **(U, L)** can be reached by iterated dominance; **(M, C)** cannot.
+
+\newpage
+
+# Question 5 [16 pts total]
+
+**Game:**
+
+```{r q5-table, results='asis'}
+q5 <- data.frame(
+  Row = c("U", "D", "Payoff"),
+  L = c("3, 2", "4, 3", "(P1, P2)"),
+  R = c("2, 1", "1, 4", "")
+)
+kable(q5, col.names = c("", "L", "R"), align = c("l", "c", "c"), booktabs = TRUE)
+```
+
+## (i) Pure strategy Nash equilibrium? [4]
+
+**Best responses:**
+- BR$_1$(L) = D; BR$_1$(R) = U
+- BR$_2$(U) = L; BR$_2$(D) = R
+
+No profile is a mutual best reply. **No Nash equilibrium in pure strategies.**
+
+## (ii) Mixed strategy Nash equilibrium [10]
+
+Let P1 play U with probability $p$, D with $1-p$. Let P2 play L with probability $q$, R with $1-q$.
+
+**P2 indifference:**
+$$
+2p + 3(1-p) = 1p + 4(1-p) \Rightarrow -p + 3 = -3p + 4 \Rightarrow 2p = 1 \Rightarrow p^* = \frac{1}{2}
+$$
+
+**P1 indifference:**
+$$
+3q + 2(1-q) = 4q + 1(1-q) \Rightarrow q + 2 = 3q + 1 \Rightarrow 2q = 1 \Rightarrow q^* = \frac{1}{2}
+$$
+
+**Mixed strategy Nash equilibrium:**
+- P1: $(\tfrac{1}{2} U, \tfrac{1}{2} D)$
+- P2: $(\tfrac{1}{2} L, \tfrac{1}{2} R)$
+
+**Expected payoffs:** (2.5, 2.5)
+
+## (iii) Pareto optimality [2]
+
+Pure outcomes: (3,2), (2,1), (4,3), (1,4). The profile (4,3) Pareto dominates (2.5, 2.5). So the mixed strategy Nash equilibrium is **not Pareto optimal**.

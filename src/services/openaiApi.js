@@ -44,7 +44,7 @@ Respond in this exact format (keep it short):
 **Best time to post:** [day + time range based on their top performers, or general tip if not enough data]
 **Next move:** [1–2 specific actions they should try next]
 **What's working:** [pattern from top posts]
-**Hook tip:** [suggestion for next video/post hook — make it punchy]
+**Hook tip:** [suggestion for next video/post hook — authentic and testimony-driven; avoid "stop scrolling", "God told me to post this", or "this is your sign"]
 **Engagement tip:** [how to boost comments, saves, or shares]
 **Platform focus:** [which platform to prioritize and why]
 

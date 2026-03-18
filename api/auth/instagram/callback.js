@@ -3,7 +3,8 @@
  * Requires: META_APP_ID, META_APP_SECRET, BASE_URL, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
  */
 export default async function handler(req, res) {
-  const baseUrl = process.env.BASE_URL || 'https://sarah-speaks-faith.vercel.app';
+  let baseUrl = process.env.BASE_URL || 'https://sarah-speaks-faith.vercel.app';
+  baseUrl = (baseUrl || '').replace(/\/$/, ''); // no trailing slash
   const redirect = (url) => {
     try {
       res.setHeader('Location', url);

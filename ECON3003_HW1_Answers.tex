@@ -1,0 +1,377 @@
+% Options for packages loaded elsewhere
+\PassOptionsToPackage{unicode}{hyperref}
+\PassOptionsToPackage{hyphens}{url}
+\documentclass[
+]{article}
+\usepackage{xcolor}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb}
+\setcounter{secnumdepth}{5}
+\usepackage{iftex}
+\ifPDFTeX
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+  \usepackage{textcomp} % provide euro and other symbols
+\else % if luatex or xetex
+  \usepackage{unicode-math} % this also loads fontspec
+  \defaultfontfeatures{Scale=MatchLowercase}
+  \defaultfontfeatures[\rmfamily]{Ligatures=TeX,Scale=1}
+\fi
+\usepackage{lmodern}
+\ifPDFTeX\else
+  % xetex/luatex font selection
+\fi
+% Use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+\IfFileExists{microtype.sty}{% use microtype if available
+  \usepackage[]{microtype}
+  \UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\makeatletter
+\@ifundefined{KOMAClassName}{% if non-KOMA class
+  \IfFileExists{parskip.sty}{%
+    \usepackage{parskip}
+  }{% else
+    \setlength{\parindent}{0pt}
+    \setlength{\parskip}{6pt plus 2pt minus 1pt}}
+}{% if KOMA class
+  \KOMAoptions{parskip=half}}
+\makeatother
+\usepackage{longtable,booktabs,array}
+\newcounter{none} % for unnumbered tables
+\usepackage{calc} % for calculating minipage widths
+% Correct order of tables after \paragraph or \subparagraph
+\usepackage{etoolbox}
+\makeatletter
+\patchcmd\longtable{\par}{\if@noskipsec\mbox{}\fi\par}{}{}
+\makeatother
+% Allow footnotes in longtable head/foot
+\IfFileExists{footnotehyper.sty}{\usepackage{footnotehyper}}{\usepackage{footnote}}
+\makesavenoteenv{longtable}
+\usepackage{graphicx}
+\makeatletter
+\newsavebox\pandoc@box
+\newcommand*\pandocbounded[1]{% scales image to fit in text height/width
+  \sbox\pandoc@box{#1}%
+  \Gscale@div\@tempa{\textheight}{\dimexpr\ht\pandoc@box+\dp\pandoc@box\relax}%
+  \Gscale@div\@tempb{\linewidth}{\wd\pandoc@box}%
+  \ifdim\@tempb\p@<\@tempa\p@\let\@tempa\@tempb\fi% select the smaller of both
+  \ifdim\@tempa\p@<\p@\scalebox{\@tempa}{\usebox\pandoc@box}%
+  \else\usebox{\pandoc@box}%
+  \fi%
+}
+% Set default figure placement to htbp
+\def\fps@figure{htbp}
+\makeatother
+\setlength{\emergencystretch}{3em} % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\usepackage{amsmath}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{bookmark}
+\IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
+\urlstyle{same}
+\hypersetup{
+  pdftitle={ECON 3003 -- Homework \#1 Solutions},
+  pdfauthor={Sarah},
+  hidelinks,
+  pdfcreator={LaTeX via pandoc}}
+
+\title{ECON 3003 -- Homework \#1 Solutions}
+\author{Sarah}
+\date{February 27, 2026}
+
+\begin{document}
+\maketitle
+
+\newpage
+
+\section{Question 1 {[}7 pts{]} -- Extensive Form
+Game}\label{question-1-7-pts-extensive-form-game}
+
+\textbf{Strategic situation:} Javonie guesses which door Lycenia is
+behind; Malik (host) chooses a color; Javonie picks a door.
+
+\textbf{Players:} Lycenia (L), Malik (M), Javonie (J)
+
+\textbf{Order of play:}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  Lycenia chooses A or B (Javonie not present)
+\item
+  Malik observes Lycenia's choice and chooses Red or Green
+\item
+  Javonie observes Malik's color (but not Lycenia's choice) and chooses
+  A or B
+\end{enumerate}
+
+\textbf{Payoffs:} (Javonie, Lycenia, Malik)
+
+\begin{itemize}
+\tightlist
+\item
+  Javonie: \$100 if correct door, \$0 if wrong
+\item
+  Lycenia: \$100 if Javonie wrong, \$0 if correct
+\item
+  Malik: 10 if Javonie picks A, 0 if Javonie picks B
+\end{itemize}
+
+\textbf{Extensive form (decision tree):}
+
+\begin{verbatim}
+                    Lycenia
+                   /      \
+                 A          B
+                /            \
+              Malik          Malik
+             /    \          /    \
+          Red    Green    Red   Green
+           |       |       |      |
+        [cloud] [cloud] [cloud][cloud]  <- Javonie's information sets
+           |       |       |      |
+          Jav     Jav     Jav    Jav
+         /  \    /  \    /  \   /  \
+        A   B   A   B   A   B  A   B
+\end{verbatim}
+
+~~~~~~\textbar{} \textbar{} Jav Jav Jav Jav / ~ / ~ / ~ / ~ A B A B A B
+A B
+
+\textbackslash end\{verbatim\}
+
+\textbf{Terminal payoffs (J, L, M):}
+
+\begin{itemize}
+\tightlist
+\item
+  Lycenia A, Malik Red: J picks A \(\rightarrow\) (100, 0, 10); J picks
+  B \(\rightarrow\) (0, 100, 0)
+\item
+  Lycenia A, Malik Green: J picks A \(\rightarrow\) (100, 0, 10); J
+  picks B \(\rightarrow\) (0, 100, 0)
+\item
+  Lycenia B, Malik Red: J picks A \(\rightarrow\) (0, 100, 10); J picks
+  B \(\rightarrow\) (100, 0, 0)
+\item
+  Lycenia B, Malik Green: J picks A \(\rightarrow\) (0, 100, 10); J
+  picks B \(\rightarrow\) (100, 0, 0)
+\end{itemize}
+
+\textbf{Information sets:}
+
+\begin{itemize}
+\tightlist
+\item
+  Lycenia: one decision node (no information set)
+\item
+  Malik: two nodes (knows Lycenia's choice)
+\item
+  Javonie: two information sets --- one when Malik chose Red, one when
+  Malik chose Green (she does not know Lycenia's choice)
+\end{itemize}
+
+\newpage
+
+\section{Question 2 {[}8 pts{]} -- Normal Form from Extensive
+Form}\label{question-2-8-pts-normal-form-from-extensive-form}
+
+\emph{Note: The extensive-form diagram is in the PDF. The method is:}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  Identify each player's strategies (complete plans of action for every
+  node/information set)
+\item
+  Build the normal-form matrix with strategies as rows/columns
+\item
+  Enter payoffs for each strategy profile
+\end{enumerate}
+
+\textbf{General procedure:}
+
+\begin{itemize}
+\tightlist
+\item
+  For each information set, list the actions
+\item
+  A strategy for a player is a function from each of their information
+  sets to an action
+\item
+  Enumerate all such strategies and fill the payoff matrix
+\end{itemize}
+
+\emph{(Apply this to the specific tree in the assignment.)}
+
+\newpage
+
+\section{Question 3 {[}6 pts total{]}}\label{question-3-6-pts-total}
+
+\textbf{Game:}
+
+{\def\LTcaptype{none} % do not increment counter
+\begin{longtable}[]{@{}lcc@{}}
+\toprule\noalign{}
+& L & R \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+U & 3, 3 & 2, 0 \\
+D & 4, 1 & 8, -1 \\
+Payoff & (P1, P2) & \\
+\end{longtable}
+}
+
+\subsection{(i) Strictly and weakly dominated strategies
+{[}2{]}}\label{i-strictly-and-weakly-dominated-strategies-2}
+
+\textbf{Player 2:} - If P1 plays U: L gives 3, R gives 0 \(\rightarrow\)
+L \(>\) R - If P1 plays D: L gives 1, R gives \(-1\) \(\rightarrow\) L
+\(>\) R
+
+So \textbf{R is strictly dominated by L} for Player 2.
+
+\textbf{Player 1:} - If P2 plays L: U gives 3, D gives 4 \(\rightarrow\)
+D \(>\) U - If P2 plays R: U gives 2, D gives 8 \(\rightarrow\) D \(>\)
+U
+
+So \textbf{U is strictly dominated by D} for Player 1.
+
+\textbf{Weakly dominated:} None.
+
+\subsection{(ii) Pure strategy Nash equilibrium
+{[}2{]}}\label{ii-pure-strategy-nash-equilibrium-2}
+
+After removing dominated strategies, only \textbf{(D, L)} remains.
+
+\textbf{Check:} - Given P2 plays L, P1's best reply is D (4 \(>\) 3) -
+Given P1 plays D, P2's best reply is L (1 \(>\) \(-1\))
+
+\textbf{Nash equilibrium: (D, L) with payoff (4, 1).}
+
+\subsection{(iii) Dominant strategy equilibrium?
+{[}2{]}}\label{iii-dominant-strategy-equilibrium-2}
+
+Yes. \textbf{D} is a dominant strategy for Player 1, and \textbf{L} is a
+dominant strategy for Player 2. So \textbf{(D, L)} is a \textbf{dominant
+strategy equilibrium} as well as Nash.
+
+\newpage
+
+\section{Question 4 {[}8 pts total{]}}\label{question-4-8-pts-total}
+
+\textbf{Game:}
+
+{\def\LTcaptype{none} % do not increment counter
+\begin{longtable}[]{@{}lccc@{}}
+\toprule\noalign{}
+& L & C & R \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+U & 5, 9 & 0, 1 & 4, 3 \\
+M & 3, 2 & 0, 9 & 1, 1 \\
+D & 2, 8 & 0, 1 & 8, 4 \\
+Payoff & (P1, P2) & & \\
+\end{longtable}
+}
+
+\subsection{(i) Weakly and strictly dominated strategies
+{[}2{]}}\label{i-weakly-and-strictly-dominated-strategies-2}
+
+\textbf{Player 2:} R is strictly dominated by L (L \(\geq\) R in every
+row, strict when P1 plays U or D).
+
+\textbf{Player 1:} No strategy strictly dominated in the full game.
+After removing R, M and D are strictly dominated by U when P2 plays L.
+
+\subsection{(ii) Pure strategy Nash equilibria
+{[}4{]}}\label{ii-pure-strategy-nash-equilibria-4}
+
+\textbf{Best responses:} - BR\(_1\)(L) = U; BR\(_1\)(C) = U, M, D;
+BR\(_1\)(R) = D - BR\(_2\)(U) = L; BR\(_2\)(M) = C; BR\(_2\)(D) = L
+
+\textbf{Mutual best replies:} - (U, L): BR\(_1\)(L) = U, BR\(_2\)(U) = L
+\(\checkmark\) - (M, C): BR\(_1\)(C) includes M, BR\(_2\)(M) = C
+\(\checkmark\)
+
+\textbf{Nash equilibria: (U, L) with payoff (5, 9) and (M, C) with
+payoff (0, 9).}
+
+\subsection{(iii) Iterated dominance
+{[}2{]}}\label{iii-iterated-dominance-2}
+
+\textbf{Iterated elimination:} 1. R strictly dominated by L for P2
+\(\rightarrow\) remove R 2. M and D strictly dominated by U for P1
+\(\rightarrow\) remove M and D 3. P2 prefers L (9 \(>\) 1)
+
+\textbf{Iterated dominance equilibrium: (U, L) with payoff (5, 9).}
+
+So \textbf{(U, L)} can be reached by iterated dominance; \textbf{(M, C)}
+cannot.
+
+\newpage
+
+\section{Question 5 {[}16 pts total{]}}\label{question-5-16-pts-total}
+
+\textbf{Game:}
+
+{\def\LTcaptype{none} % do not increment counter
+\begin{longtable}[]{@{}lcc@{}}
+\toprule\noalign{}
+& L & R \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+U & 3, 2 & 2, 1 \\
+D & 4, 3 & 1, 4 \\
+Payoff & (P1, P2) & \\
+\end{longtable}
+}
+
+\subsection{(i) Pure strategy Nash equilibrium?
+{[}4{]}}\label{i-pure-strategy-nash-equilibrium-4}
+
+\textbf{Best responses:} - BR\(_1\)(L) = D; BR\(_1\)(R) = U -
+BR\(_2\)(U) = L; BR\(_2\)(D) = R
+
+No profile is a mutual best reply. \textbf{No Nash equilibrium in pure
+strategies.}
+
+\subsection{(ii) Mixed strategy Nash equilibrium
+{[}10{]}}\label{ii-mixed-strategy-nash-equilibrium-10}
+
+Let P1 play U with probability \(p\), D with \(1-p\). Let P2 play L with
+probability \(q\), R with \(1-q\).
+
+\textbf{P2 indifference:} \[
+2p + 3(1-p) = 1p + 4(1-p) \Rightarrow -p + 3 = -3p + 4 \Rightarrow 2p = 1 \Rightarrow p^* = \frac{1}{2}
+\]
+
+\textbf{P1 indifference:} \[
+3q + 2(1-q) = 4q + 1(1-q) \Rightarrow q + 2 = 3q + 1 \Rightarrow 2q = 1 \Rightarrow q^* = \frac{1}{2}
+\]
+
+\textbf{Mixed strategy Nash equilibrium:} - P1:
+\((\tfrac{1}{2} U, \tfrac{1}{2} D)\) - P2:
+\((\tfrac{1}{2} L, \tfrac{1}{2} R)\)
+
+\textbf{Expected payoffs:} (2.5, 2.5)
+
+\subsection{(iii) Pareto optimality
+{[}2{]}}\label{iii-pareto-optimality-2}
+
+Pure outcomes: (3,2), (2,1), (4,3), (1,4). The profile (4,3) Pareto
+dominates (2.5, 2.5). So the mixed strategy Nash equilibrium is
+\textbf{not Pareto optimal}.
+
+\end{document}
