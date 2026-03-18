@@ -439,27 +439,19 @@ const App = () => {
             <div className="bg-white dark:bg-stone-800 rounded-2xl p-6 max-w-md w-full shadow-xl border border-rose-100 dark:border-stone-700 my-8" onClick={e => e.stopPropagation()}>
               <h3 className="text-lg font-bold text-stone-800 dark:text-stone-100 mb-4">App Settings</h3>
 
-              <div className="space-y-6">
+              <div className="space-y-5">
                 <section>
                   <h4 className="text-xs font-bold text-stone-400 uppercase mb-2">AI — ChatGPT (recommended)</h4>
-                  <label className="block text-xs text-stone-500 dark:text-stone-400 mb-1">OpenAI API Key — for engagement & tips</label>
                   <input type="password" value={openaiKey} onChange={(e) => { setOpenaiKey(e.target.value); try { localStorage.setItem('faith-studio-openai-api-key', e.target.value); } catch (_) {} }} placeholder="sk-..." className="w-full bg-rose-50 dark:bg-stone-700 border border-rose-100 dark:border-stone-600 rounded-xl px-4 py-3 text-sm font-mono" />
-                  <p className="text-[11px] text-stone-500 dark:text-stone-400 mt-1"><a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer" className="text-rose-500 hover:underline">Get key</a> — GPT-4o Mini, ~$0.15/1M tokens</p>
+                  <p className="text-[11px] text-stone-500 dark:text-stone-400 mt-1"><a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer" className="text-rose-500 hover:underline">Get key &rarr;</a></p>
                 </section>
                 <section>
-                  <h4 className="text-xs font-bold text-stone-400 uppercase mb-2">AI — Gemini (alternative)</h4>
-                  <label className="block text-xs text-stone-500 dark:text-stone-400 mb-1">Gemini API Key</label>
+                  <h4 className="text-xs font-bold text-stone-400 uppercase mb-2">AI — Gemini (free)</h4>
                   <input type="password" value={geminiKey} onChange={(e) => { setGeminiKey(e.target.value); try { localStorage.setItem('faith-studio-gemini-api-key', e.target.value); } catch (_) {} }} placeholder="AIza..." className="w-full bg-rose-50 dark:bg-stone-700 border border-rose-100 dark:border-stone-600 rounded-xl px-4 py-3 text-sm font-mono" />
-                  <p className="text-[11px] text-stone-500 dark:text-stone-400 mt-1"><a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer" className="text-rose-500 hover:underline">Get key</a> — free tier available</p>
+                  <p className="text-[11px] text-stone-500 dark:text-stone-400 mt-1"><a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer" className="text-rose-500 hover:underline">Get key &rarr;</a></p>
                 </section>
-
                 <section>
-                  <h4 className="text-xs font-bold text-stone-400 uppercase mb-2">Data & backup</h4>
-                  <div className="text-xs text-stone-500 dark:text-stone-400 mb-3 space-y-2">
-                    <p><strong className="text-stone-700 dark:text-stone-300">How it works:</strong> Posts, businesses, markers, and settings are saved in your browser (localStorage). They stay until you clear site data or use another device.</p>
-                    <p><strong className="text-stone-700 dark:text-stone-300">When you log a post:</strong> It’s stored under your selected business. Each business has its own progress and AI analysis.</p>
-                    <p><strong className="text-stone-700 dark:text-stone-300">Backup:</strong> Export downloads everything. Import restores from a backup file.</p>
-                  </div>
+                  <h4 className="text-xs font-bold text-stone-400 uppercase mb-2">Backup</h4>
                   <div className="flex flex-wrap gap-2">
                     <button onClick={() => {
                       const data = {};
@@ -477,24 +469,8 @@ const App = () => {
                         r.readAsText(f);
                       }} />
                     </label>
-                    <button onClick={clearAllData} className="px-4 py-2 rounded-xl border border-red-200 dark:border-red-900/50 text-red-600 dark:text-red-400 text-sm hover:bg-red-50 dark:hover:bg-red-900/20">Clear data</button>
+                    <button onClick={clearAllData} className="px-4 py-2 rounded-xl border border-red-200 dark:border-red-900/50 text-red-600 dark:text-red-400 text-sm hover:bg-red-50 dark:hover:bg-red-900/20">Clear all data</button>
                   </div>
-                </section>
-
-                <section>
-                  <h4 className="text-xs font-bold text-stone-400 uppercase mb-2">Progress tracking</h4>
-                  <p className="text-xs text-stone-500 dark:text-stone-400 mb-2">Log posts in <strong>Post Analytics</strong> to see your progress. You’ll get this week vs last week, monthly totals, and week-over-week trends.</p>
-                  <button onClick={() => { setShowSettings(false); setActiveTab('analytics'); }} className="px-4 py-2 rounded-xl bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 text-sm font-medium hover:bg-rose-200 dark:hover:bg-rose-900/50">Open Post Analytics</button>
-                </section>
-
-                <section>
-                  <h4 className="text-xs font-bold text-stone-400 uppercase mb-2">Launch & track</h4>
-                  <p className="text-xs text-stone-500 dark:text-stone-400">Use <strong>Get AI insights</strong> in Post Analytics for next moves. Connect accounts (Instagram, YouTube) coming soon.</p>
-                </section>
-
-                <section>
-                  <h4 className="text-xs font-bold text-stone-400 uppercase mb-2">About</h4>
-                  <p className="text-xs text-stone-500 dark:text-stone-400">Sarah Speaks Faith Studio — faith-based content creation. All data stays in your browser.</p>
                 </section>
               </div>
 
@@ -1294,6 +1270,14 @@ const SocialPublisher = () => {
     } catch {
       setPublishStatus({ ok: false, msg: 'Could not copy. Paste caption manually.' });
     }
+    // Auto-log to analytics
+    try {
+      const firstPlatform = enabled[0] || 'instagram';
+      const title = caption?.split('\n')[0]?.slice(0, 60) || (selectedVideo?.name?.replace(/\.[^.]+$/, '')) || 'Post';
+      const existing = JSON.parse(localStorage.getItem('faith-studio-post-analytics') || '[]');
+      existing.push({ id: 'p' + Date.now(), businessId: activeBusinessId, title, platform: firstPlatform, postedAt: new Date().toISOString().slice(0, 10), views: 0, likes: 0, comments: 0, shares: 0, saves: 0, notes: '', autoLogged: true });
+      localStorage.setItem('faith-studio-post-analytics', JSON.stringify(existing));
+    } catch (_) {}
     setTimeout(() => setPublishStatus(null), 3000);
   };
 
@@ -3019,6 +3003,12 @@ const ClassicEditor = () => {
         setExportProgress(1);
         await saveToDevice(mp4Blob, baseName + fmtSuffix + '-sarah-speaks-faith.mp4');
       }
+      // Auto-log this post to analytics
+      try {
+        const existing = JSON.parse(localStorage.getItem('faith-studio-post-analytics') || '[]');
+        existing.push({ id: 'p' + Date.now(), businessId: activeBusinessId, title: baseName, platform: exportFormat.startsWith('9') ? 'instagram' : exportFormat.startsWith('16') ? 'youtube' : 'instagram', postedAt: new Date().toISOString().slice(0, 10), views: 0, likes: 0, comments: 0, shares: 0, saves: 0, notes: '', autoLogged: true });
+        localStorage.setItem('faith-studio-post-analytics', JSON.stringify(existing));
+      } catch (_) {}
     } catch (err) {
       console.error(err);
     } finally {
@@ -4704,12 +4694,11 @@ const TrafficHub = () => {
 const PostAnalytics = ({ onOpenSettings }) => {
   const { activeBusinessId, setActiveBusinessId, businesses } = useStudio();
   const [posts, setPosts] = useState(() => { try { return JSON.parse(localStorage.getItem('faith-studio-post-analytics') || '[]'); } catch { return []; } });
-  const [showForm, setShowForm] = useState(true);
-  const [form, setForm] = useState({ title: '', platform: 'instagram', postedAt: new Date().toISOString().slice(0, 10), views: '', likes: '', comments: '', shares: '', saves: '', notes: '' });
+  const [editingId, setEditingId] = useState(null);
+  const [editBuf, setEditBuf] = useState({});
   const [aiInsights, setAiInsights] = useState(null);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState(null);
-  const [editingPostId, setEditingPostId] = useState(null);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -4722,27 +4711,10 @@ const PostAnalytics = ({ onOpenSettings }) => {
 
   useEffect(() => { localStorage.setItem('faith-studio-post-analytics', JSON.stringify(posts)); }, [posts]);
 
-  const addPost = () => {
-    if (!form.title.trim()) return;
-    setPosts(prev => [...prev, {
-      id: 'p' + Date.now(),
-      businessId: activeBusinessId,
-      title: form.title.trim(),
-      platform: form.platform,
-      postedAt: form.postedAt,
-      views: Number(form.views) || 0,
-      likes: Number(form.likes) || 0,
-      comments: Number(form.comments) || 0,
-      shares: Number(form.shares) || 0,
-      saves: Number(form.saves) || 0,
-      notes: form.notes.trim()
-    }]);
-    setForm({ title: '', platform: 'instagram', postedAt: new Date().toISOString().slice(0, 10), views: '', likes: '', comments: '', shares: '', saves: '', notes: '' });
-    setShowForm(false);
-  };
-
   const removePost = (id) => setPosts(prev => prev.filter(p => p.id !== id));
   const updatePost = (id, updates) => setPosts(prev => prev.map(p => p.id === id ? { ...p, ...updates } : p));
+  const startEdit = (p) => { setEditingId(p.id); setEditBuf({ views: p.views || '', likes: p.likes || '', comments: p.comments || '', saves: p.saves || '' }); };
+  const saveEdit = (id) => { updatePost(id, { views: Number(editBuf.views) || 0, likes: Number(editBuf.likes) || 0, comments: Number(editBuf.comments) || 0, saves: Number(editBuf.saves) || 0 }); setEditingId(null); };
 
   const bizPosts = posts.filter(p => p.businessId === activeBusinessId);
   const totalViews = bizPosts.reduce((s, p) => s + p.views, 0);
@@ -4767,77 +4739,13 @@ const PostAnalytics = ({ onOpenSettings }) => {
 
   return (
     <div className="max-w-6xl mx-auto space-y-8">
-      {/* Log your post — screenshot, add metrics, track weekly */}
-      <div className="bg-gradient-to-br from-rose-50 to-amber-50 dark:from-stone-800 dark:to-stone-800 border-2 border-rose-200 dark:border-rose-800 rounded-3xl p-8 shadow-lg">
-        <h2 className="text-2xl font-bold text-stone-800 dark:text-stone-100 mb-2">Log your post</h2>
-        <p className="text-stone-600 dark:text-stone-300 mb-4">Screenshot your post, add the metrics below, and update the numbers each week. Track what works — style, thumbnail, caption, hashtags. Use Get AI insights to improve and drive traffic.</p>
-        <div className="bg-white dark:bg-stone-800 border border-rose-100 dark:border-stone-700 rounded-2xl p-4">
-        <button onClick={() => setShowForm(!showForm)} className="flex items-center justify-between w-full text-left text-sm font-medium text-stone-700 dark:text-stone-200 hover:text-rose-600 dark:hover:text-rose-400">
-          <span>{showForm ? 'Close form' : 'Add a post'}</span>
-          <span>{showForm ? '−' : '+'}</span>
-        </button>
-        {showForm && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-4 border-t border-rose-100 dark:border-stone-700">
-            <div>
-              <label className="block text-xs font-bold text-stone-400 uppercase mb-1">Post title *</label>
-              <input value={form.title} onChange={(e) => setForm(f => ({ ...f, title: e.target.value }))} placeholder="e.g. What is Love Reel" className="w-full bg-rose-50 dark:bg-stone-700 border border-rose-100 dark:border-stone-600 rounded-xl px-4 py-2 text-sm" />
-            </div>
-            <div>
-              <label className="block text-xs font-bold text-stone-400 uppercase mb-1">Platform</label>
-              <select value={form.platform} onChange={(e) => setForm(f => ({ ...f, platform: e.target.value }))} className="w-full bg-rose-50 dark:bg-stone-700 border border-rose-100 dark:border-stone-600 rounded-xl px-4 py-2 text-sm">
-                {Object.entries(platformLabels).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs font-bold text-stone-400 uppercase mb-1">Date posted</label>
-              <input type="date" value={form.postedAt} onChange={(e) => setForm(f => ({ ...f, postedAt: e.target.value }))} className="w-full bg-rose-50 dark:bg-stone-700 border border-rose-100 dark:border-stone-600 rounded-xl px-4 py-2 text-sm" />
-            </div>
-            <div>
-              <label className="block text-xs font-bold text-stone-400 uppercase mb-1">Views</label>
-              <input type="number" value={form.views} onChange={(e) => setForm(f => ({ ...f, views: e.target.value }))} placeholder="0" className="w-full bg-rose-50 dark:bg-stone-700 border border-rose-100 dark:border-stone-600 rounded-xl px-4 py-2 text-sm" />
-            </div>
-            <div>
-              <label className="block text-xs font-bold text-stone-400 uppercase mb-1">Likes</label>
-              <input type="number" value={form.likes} onChange={(e) => setForm(f => ({ ...f, likes: e.target.value }))} placeholder="0" className="w-full bg-rose-50 dark:bg-stone-700 border border-rose-100 dark:border-stone-600 rounded-xl px-4 py-2 text-sm" />
-            </div>
-            <div>
-              <label className="block text-xs font-bold text-stone-400 uppercase mb-1">Comments</label>
-              <input type="number" value={form.comments} onChange={(e) => setForm(f => ({ ...f, comments: e.target.value }))} placeholder="0" className="w-full bg-rose-50 dark:bg-stone-700 border border-rose-100 dark:border-stone-600 rounded-xl px-4 py-2 text-sm" />
-            </div>
-            <div>
-              <label className="block text-xs font-bold text-stone-400 uppercase mb-1">Shares</label>
-              <input type="number" value={form.shares} onChange={(e) => setForm(f => ({ ...f, shares: e.target.value }))} placeholder="0" className="w-full bg-rose-50 dark:bg-stone-700 border border-rose-100 dark:border-stone-600 rounded-xl px-4 py-2 text-sm" />
-            </div>
-            <div>
-              <label className="block text-xs font-bold text-stone-400 uppercase mb-1">Saves</label>
-              <input type="number" value={form.saves} onChange={(e) => setForm(f => ({ ...f, saves: e.target.value }))} placeholder="0" className="w-full bg-rose-50 dark:bg-stone-700 border border-rose-100 dark:border-stone-600 rounded-xl px-4 py-2 text-sm" />
-            </div>
-            <div className="md:col-span-2 lg:col-span-3">
-              <label className="block text-xs font-bold text-stone-400 uppercase mb-1">Notes (optional)</label>
-              <input value={form.notes} onChange={(e) => setForm(f => ({ ...f, notes: e.target.value }))} placeholder="e.g. Caption, hashtags, hook, posted 9am" className="w-full bg-rose-50 dark:bg-stone-700 border border-rose-100 dark:border-stone-600 rounded-xl px-4 py-2 text-sm" />
-            </div>
-            <div className="flex gap-2">
-              <button onClick={() => {
-                if (!form.title.trim()) { alert('Enter a post title'); return; }
-                if (editingPostId) {
-                  updatePost(editingPostId, { title: form.title.trim(), platform: form.platform, postedAt: form.postedAt, views: Number(form.views) || 0, likes: Number(form.likes) || 0, comments: Number(form.comments) || 0, shares: Number(form.shares) || 0, saves: Number(form.saves) || 0, notes: form.notes.trim() });
-                  setEditingPostId(null);
-                } else {
-                  addPost();
-                }
-                setShowForm(false);
-              }} className="px-5 py-2 rounded-xl bg-rose-500 text-white font-bold">{editingPostId ? 'Update' : 'Save'}</button>
-              <button onClick={() => { setShowForm(false); setEditingPostId(null); }} className="px-5 py-2 rounded-xl border border-stone-200 dark:border-stone-600 text-stone-600 dark:text-stone-400">Cancel</button>
-            </div>
-          </div>
+      {/* Auto-log notice */}
+      <div className="bg-gradient-to-br from-rose-50 to-amber-50 dark:from-stone-800 dark:to-stone-800 border-2 border-rose-200 dark:border-rose-800 rounded-3xl p-6 shadow-lg">
+        <h2 className="text-2xl font-bold text-stone-800 dark:text-stone-100 mb-1">Post Analytics</h2>
+        <p className="text-stone-500 dark:text-stone-400 text-sm">Posts are logged automatically every time you export a video or click Publish. After your post goes live, tap it below to add the numbers.</p>
+        {bizPosts.length === 0 && (
+          <p className="mt-4 text-sm text-rose-500 font-medium">No posts yet — export or publish a video to get started.</p>
         )}
-
-        {!showForm && bizPosts.length === 0 && (
-          <button onClick={() => setShowForm(true)} className="w-full py-4 rounded-xl border-2 border-dashed border-rose-300 dark:border-rose-700 text-rose-600 dark:text-rose-400 font-bold hover:bg-rose-50 dark:hover:bg-rose-900/20 mt-4">
-            Click here to log your first post
-          </button>
-        )}
-        </div>
       </div>
 
       {/* All accounts overview */}
@@ -4943,48 +4851,43 @@ const PostAnalytics = ({ onOpenSettings }) => {
         </div>
       )}
 
-      <div className="bg-white dark:bg-stone-800 border border-rose-100 dark:border-stone-700 rounded-3xl overflow-hidden shadow-sm">
-        <h3 className="text-lg font-bold text-stone-800 dark:text-stone-100 p-6 pb-0">Your posts</h3>
-        {bizPosts.length === 0 ? (
-          <p className="p-6 text-stone-500 dark:text-stone-400">Log your first post above to track performance and get insights.</p>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-rose-100 dark:border-stone-700">
-                  <th className="text-left p-4 font-bold text-stone-500 dark:text-stone-400">Title</th>
-                  <th className="text-left p-4 font-bold text-stone-500 dark:text-stone-400">Platform</th>
-                  <th className="text-left p-4 font-bold text-stone-500 dark:text-stone-400">Date</th>
-                  <th className="text-right p-4 font-bold text-stone-500 dark:text-stone-400">Views</th>
-                  <th className="text-right p-4 font-bold text-stone-500 dark:text-stone-400">Likes</th>
-                  <th className="text-right p-4 font-bold text-stone-500 dark:text-stone-400">Comments</th>
-                  <th className="text-right p-4 font-bold text-stone-500 dark:text-stone-400">Saves</th>
-                  <th className="text-left p-4 font-bold text-stone-500 dark:text-stone-400">Notes</th>
-                  <th className="w-10" />
-                </tr>
-              </thead>
-              <tbody>
-                {[...bizPosts].reverse().map(p => (
-                  <tr key={p.id} className="border-b border-rose-50 dark:border-stone-700/50 hover:bg-rose-50/30 dark:hover:bg-stone-700/30">
-                    <td className="p-4 font-medium">{p.title}</td>
-                    <td className="p-4">{platformLabels[p.platform] || p.platform}</td>
-                    <td className="p-4">{p.postedAt}</td>
-                    <td className="p-4 text-right font-mono">{p.views.toLocaleString()}</td>
-                    <td className="p-4 text-right">{p.likes.toLocaleString()}</td>
-                    <td className="p-4 text-right">{p.comments.toLocaleString()}</td>
-                    <td className="p-4 text-right">{p.saves.toLocaleString()}</td>
-                    <td className="p-4 text-stone-500 dark:text-stone-400 max-w-[200px] truncate">{p.notes || '—'}</td>
-                    <td className="p-2 flex gap-1">
-                      <button onClick={() => { setForm({ title: p.title, platform: p.platform, postedAt: p.postedAt, views: String(p.views || ''), likes: String(p.likes || ''), comments: String(p.comments || ''), shares: String(p.shares || ''), saves: String(p.saves || ''), notes: p.notes || '' }); setEditingPostId(p.id); setShowForm(true); }} className="p-1.5 rounded text-stone-400 hover:bg-rose-50 dark:hover:bg-rose-900/20 hover:text-rose-500" title="Update weekly metrics"><Pencil size={14} /></button>
-                      <button onClick={() => removePost(p.id)} className="p-1.5 rounded text-stone-400 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-500"><Trash2 size={14} /></button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+      {/* Post cards */}
+      {bizPosts.length > 0 && (
+        <div className="space-y-3">
+          <h3 className="text-sm font-bold text-stone-500 dark:text-stone-400 uppercase">Your posts — tap to update numbers</h3>
+          {[...bizPosts].reverse().map(p => (
+            <div key={p.id} className="bg-white dark:bg-stone-800 border border-rose-100 dark:border-stone-700 rounded-2xl p-4 shadow-sm">
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="font-bold text-stone-800 dark:text-stone-100 truncate">{p.title}</p>
+                  <p className="text-xs text-stone-400 mt-0.5">{platformLabels[p.platform] || p.platform} · {p.postedAt}</p>
+                </div>
+                <div className="flex gap-1 shrink-0">
+                  <button onClick={() => editingId === p.id ? saveEdit(p.id) : startEdit(p)} className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${editingId === p.id ? 'bg-rose-500 text-white' : 'bg-stone-100 dark:bg-stone-700 text-stone-600 dark:text-stone-300 hover:bg-rose-50 dark:hover:bg-rose-900/30 hover:text-rose-600'}`}>{editingId === p.id ? 'Save' : 'Update'}</button>
+                  <button onClick={() => removePost(p.id)} className="p-1.5 rounded-lg text-stone-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20"><Trash2 size={14} /></button>
+                </div>
+              </div>
+              {editingId === p.id ? (
+                <div className="grid grid-cols-4 gap-2 mt-3">
+                  {['views', 'likes', 'comments', 'saves'].map(f => (
+                    <div key={f}>
+                      <label className="block text-[10px] text-stone-500 uppercase font-bold mb-1">{f}</label>
+                      <input type="number" value={editBuf[f]} onChange={e => setEditBuf(b => ({ ...b, [f]: e.target.value }))} placeholder="0" className="w-full bg-stone-100 dark:bg-stone-700 border border-stone-200 dark:border-stone-600 rounded-lg px-2 py-1.5 text-sm font-mono" />
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="flex gap-4 mt-2 text-xs text-stone-500 dark:text-stone-400">
+                  <span><strong className="text-stone-700 dark:text-stone-200 font-mono">{p.views.toLocaleString()}</strong> views</span>
+                  <span><strong className="text-stone-700 dark:text-stone-200 font-mono">{p.likes.toLocaleString()}</strong> likes</span>
+                  <span><strong className="text-stone-700 dark:text-stone-200 font-mono">{p.comments.toLocaleString()}</strong> comments</span>
+                  <span><strong className="text-stone-700 dark:text-stone-200 font-mono">{p.saves.toLocaleString()}</strong> saves</span>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 };
