@@ -61,7 +61,10 @@ import {
   Menu,
   X,
   ChevronDown,
-  ChevronRight
+  ChevronRight,
+  Pencil,
+  RotateCcw,
+  ArrowLeft
 } from 'lucide-react';
 
 // --- App Context ---
@@ -209,11 +212,11 @@ const App = () => {
   const [newBusinessName, setNewBusinessName] = useState('');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
-  const [productionToolsExpanded, setProductionToolsExpanded] = useState(false);
+  const [productionToolsExpanded, setProductionToolsExpanded] = useState(true);
   const [geminiKey, setGeminiKey] = useState(() => { try { return localStorage.getItem('faith-studio-gemini-api-key') || ''; } catch { return ''; } });
   const [openaiKey, setOpenaiKey] = useState(() => { try { return localStorage.getItem('faith-studio-openai-api-key') || ''; } catch { return ''; } });
 
-  const primaryNav = [['start', Target, 'Start Here'], ['pro', Zap, 'Pro Content Toolkit'], ['social', Share2, 'Social & Podcast'], ['analytics', BarChart2, 'Post Analytics'], ['photos', ImageIcon, 'Photo & Pin Planner']];
+  const primaryNav = [['start', Target, 'Start Here'], ['pro', Zap, 'Pro Content Toolkit'], ['social', Share2, 'Social & Podcast'], ['traffic', Link2, 'Traffic Links'], ['analytics', BarChart2, 'Post Analytics'], ['photos', ImageIcon, 'Photo & Pin Planner']];
   const productionNav = [['library', Film, 'Media Library'], ['editor', Scissors, 'No-Mouse Editor'], ['classic', Sliders, 'Classic Timeline'], ['camera', Camera, 'Camera Guide'], ['video-ai', Sparkles, 'Pro Enhancements'], ['audio', AudioLines, 'Smart Audio AI'], ['code', Code, 'Swift Engine']];
 
   const addBusiness = () => {
@@ -407,9 +410,10 @@ const App = () => {
               {activeTab === 'audio' && 'Studio Audio AI'}
               {activeTab === 'pro' && 'Pro Content Toolkit'}
               {activeTab === 'social' && 'Omnichannel Distribution'}
+              {activeTab === 'traffic' && 'Traffic Links'}
               {activeTab === 'analytics' && 'Post Analytics'}
               {activeTab === 'code' && 'System Logic'}</span>
-              {(businesses || []).find(b => b && b.id === activeBusinessId) && ['photos','pro','social','analytics'].includes(activeTab) && (
+              {(businesses || []).find(b => b && b.id === activeBusinessId) && ['photos','pro','social','traffic','analytics'].includes(activeTab) && (
                 <span className="text-sm font-normal text-rose-600 dark:text-rose-400 normal-case bg-rose-50 dark:bg-rose-900/20 px-3 py-1 rounded-full">Creating for: {(businesses || []).find(b => b && b.id === activeBusinessId)?.name || 'Unknown'}</span>
               )}
             </h2>
@@ -516,6 +520,7 @@ const App = () => {
             {activeTab === 'photos' && <PhotoPlanner />}
             {activeTab === 'pro' && <ProContentToolkit />}
             {activeTab === 'social' && <SocialPublisher />}
+            {activeTab === 'traffic' && <TrafficHub />}
             {activeTab === 'analytics' && <PostAnalytics onOpenSettings={() => setShowSettings(true)} />}
             {activeTab === 'camera' && <CameraSettings />}
             {activeTab === 'audio' && <AIAudioStudio />}
@@ -527,7 +532,7 @@ const App = () => {
             )}
             {activeTab === 'video-ai' && <ProEnhancements />}
             {activeTab === 'code' && <SwiftCodeView />}
-            {!['start','library','photos','pro','social','analytics','camera','audio','editor','classic','video-ai','code'].includes(activeTab) && <StartHere setActiveTab={setActiveTab} />}
+            {!['start','library','photos','pro','social','traffic','analytics','camera','audio','editor','classic','video-ai','code'].includes(activeTab) && <StartHere setActiveTab={setActiveTab} />}
           </div>
         </main>
       </div>
@@ -1606,14 +1611,17 @@ const AudioWaveformSegment = ({ audioUrl, segStart, segEnd, totalDuration, class
 
 // --- Classic Editor ---
 const TIMELINE_TRANSITIONS = [
-  { id: 'cut', label: 'Cut', icon: '✂️' },
-  { id: 'fade', label: 'Fade', icon: '🌅' },
-  { id: 'dip-black', label: 'Dip Black', icon: '⬛' },
-  { id: 'zoom-in', label: 'Zoom In', icon: '🔍' },
-  { id: 'slide-l', label: 'Slide L', icon: '⬅️' },
-  { id: 'slide-r', label: 'Slide R', icon: '➡️' },
-  { id: 'wipe', label: 'Wipe', icon: '🔲' },
-  { id: 'cross', label: 'Crossfade', icon: '✨' },
+  { id: 'cut', label: 'Hard Cut', icon: '✂️', cat: 'energy', seamless: false, when: 'Fast dialog, action, energy. Invisible when motion continues.' },
+  { id: 'cross', label: 'Crossfade', icon: '✨', cat: 'seamless', seamless: true, when: '★ Most seamless. Blends clips together — viewers won\'t notice the cut.' },
+  { id: 'fade', label: 'Fade', icon: '🌅', cat: 'seamless', seamless: true, when: 'Gentle mood shift, time passing. Great for emotional or spiritual moments.' },
+  { id: 'blur', label: 'Blur', icon: '🌀', cat: 'seamless', seamless: true, when: 'Dreamy / cinematic transition. Memory, flashback, or opening sequence.' },
+  { id: 'dip-black', label: 'Dip Black', icon: '⬛', cat: 'chapter', seamless: false, when: 'Strong chapter break or dramatic pause. Gospel sermons, topic resets.' },
+  { id: 'dip-white', label: 'Dip White', icon: '⬜', cat: 'chapter', seamless: false, when: 'Heavenly or joyful transition. Light-filled spiritual moments.' },
+  { id: 'zoom-in', label: 'Zoom In', icon: '🔍', cat: 'motion', seamless: false, when: 'Emphasize: product reveal, key scripture, important face.' },
+  { id: 'zoom-out', label: 'Zoom Out', icon: '🔭', cat: 'motion', seamless: false, when: 'Pull back to reveal. After tight close-up, open to environment.' },
+  { id: 'slide-l', label: 'Slide →', icon: '⬅️', cat: 'motion', seamless: false, when: 'Story moving forward. Natural reading direction, good for lists.' },
+  { id: 'slide-r', label: 'Slide ←', icon: '➡️', cat: 'motion', seamless: false, when: 'Flashback or contrast. Reverses visual flow for effect.' },
+  { id: 'wipe', label: 'Wipe', icon: '🔲', cat: 'motion', seamless: false, when: 'Same subject, different angle. Modern and purposeful feel.' },
 ];
 
 /** Sarah Speaks Faith brand kit — Ministry Brand Identity
@@ -2513,7 +2521,7 @@ const ClassicEditor = () => {
     const start = textClips.length === 0 ? playhead : Math.min(lastEnd, maxDur - 0.5);
     const end = Math.min(start + 10, maxDur);
     const brand = BRAND_PRESETS[activeBusinessId] || BRAND_PRESETS.sarah;
-    setTextClips(prev => [...prev, { id: `t-${Date.now()}`, label, start, end, text: '', x: 50, y: 15, size: 'md', font: brand.font, color: brand.colors[0], bold: false }]);
+    setTextClips(prev => [...prev, { id: `t-${Date.now()}`, label, start, end, text: '', x: 50, y: 15, size: 'md', font: brand.font, color: brand.colors[0], bold: false, animStyle: 'faith' }]);
   };
 
   const addTrafficOverlay = () => {
@@ -3061,6 +3069,7 @@ const ClassicEditor = () => {
                   videoRef={videoRef}
                   selectedVideo={selectedVideo}
                   qrCodeDataUrl={qrCodeDataUrl}
+                  transitionSegments={getMainTimelineRanges(mainSegments)}
                   onPlayheadUpdate={() => {
                     const mainRanges = getMainTimelineRanges(mainSegments);
                     const eps = 0.001;
@@ -3088,15 +3097,20 @@ const ClassicEditor = () => {
                 const x = c.x ?? 50;
                 const y = c.y ?? 50;
                 const isSelected = editingClipId === c.id;
+                // Animated caption style — overrides base styling when set
+                const animStyle = c.animStyle; // 'tiktok-bold' | 'faith' | 'minimal' | 'highlight' | 'neon' | 'typewriter' | null
+                const animClass = animStyle ? `caption-${animStyle}` : '';
+                // When an animStyle is active, let the CSS preset drive colors/fonts
+                const noAnimBase = !animStyle;
                 return (
                   <div
-                    key={c.id}
-                    className={`absolute transform -translate-x-1/2 -translate-y-1/2 select-none ${fontMap[c.font] || fontMap.sans} ${colorClass} ${c.bold ? 'font-bold' : 'font-normal'} ${isSelected || draggingTextId === c.id ? 'ring-2 ring-rose-400 ring-offset-2 cursor-move' : 'cursor-move'} ${c.lowerThird ? 'bg-black/55 px-6 py-2 rounded' : ''}`}
-                    style={{ left: `${x}%`, top: `${y}%`, zIndex: 20, ...colorStyle, fontFamily: c.font === 'serif' ? '"Playfair Display", Georgia, serif' : undefined }}
+                    key={`${c.id}-${animStyle}`}
+                    className={`absolute transform -translate-x-1/2 -translate-y-1/2 select-none ${animClass} ${noAnimBase ? `${fontMap[c.font] || fontMap.sans} ${colorClass} ${c.bold ? 'font-bold' : 'font-normal'}` : ''} ${isSelected || draggingTextId === c.id ? 'ring-2 ring-rose-400 ring-offset-2 cursor-move' : 'cursor-move'} ${c.lowerThird && !animStyle ? 'bg-black/55 px-6 py-2 rounded' : ''}`}
+                    style={{ left: `${x}%`, top: `${y}%`, zIndex: 20, ...(noAnimBase ? colorStyle : {}), ...(noAnimBase && c.font === 'serif' ? { fontFamily: '"Playfair Display", Georgia, serif' } : {}) }}
                     onMouseDown={(e) => handleTextDragStart(e, c)}
                     onClick={(e) => { e.stopPropagation(); setEditingClipId(c.id); }}
                   >
-                    <span className={`drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)] ${sizeMap[c.size] || sizeMap.md}`}>{c.text}</span>
+                    <span className={noAnimBase ? `drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)] ${sizeMap[c.size] || sizeMap.md}` : ''}>{c.text}</span>
                   </div>
                 );
               })}
@@ -3117,145 +3131,305 @@ const ClassicEditor = () => {
           )}
         </div>
       </div>
-      {/* Controls — Scrollable so all buttons/inspector visible. No main header in editor. */}
-      <div className="relative flex flex-col min-h-0 overflow-y-auto overflow-x-hidden py-2 px-3 bg-stone-800/95 border-b border-stone-700" style={{ gridArea: 'controls' }}>
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-2">
-          <button onClick={() => setSidebarOpen?.(true)} className="md:hidden min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg text-stone-300 hover:bg-stone-700 hover:text-white shrink-0" title="Menu"><Menu size={20} /></button>
-          <button onClick={() => setActiveTab('library')} className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg text-stone-300 hover:bg-stone-700 hover:text-white shrink-0" title="Back to Media Library">←</button>
-          <button onClick={() => setActiveTab('library')} className="text-xs font-medium text-rose-400 hover:text-rose-300 hover:underline shrink-0 py-2" title="Add video">+ Add video</button>
-          {videos.length > 0 && (
-            <select value={selectedVideo?.id || ''} onChange={(e) => setSelectedVideoId(Number(e.target.value) || null)} className="bg-stone-700 border border-stone-600 rounded-lg px-3 py-2 text-xs text-stone-100 max-w-[160px] truncate shrink-0 min-h-[44px]">
-              <option value="">Select video...</option>
-              {videos.map(v => <option key={v.id} value={v.id}>{v.name}</option>)}
-            </select>
-          )}
-          <span className="text-stone-600 shrink-0">|</span>
-          <span className="text-[10px] font-bold text-amber-400/90 uppercase shrink-0">Resolution</span>
-          <div className="flex rounded-lg overflow-hidden border border-stone-600 shrink-0">
-            <button onClick={() => setExportFormat('9:16')} className={`min-h-[44px] min-w-[44px] px-3 text-xs font-bold ${exportFormat === '9:16' ? 'bg-rose-500 text-white' : 'bg-stone-700 text-stone-400 hover:bg-stone-600'}`} title="TikTok / Reels">9:16</button>
-            <button onClick={() => setExportFormat('16:9')} className={`min-h-[44px] min-w-[44px] px-3 text-xs font-bold ${exportFormat === '16:9' ? 'bg-rose-500 text-white' : 'bg-stone-700 text-stone-400 hover:bg-stone-600'}`} title="YouTube / Podcast">16:9</button>
+      {/* Controls — CapCut-style inspector panel */}
+      <div className="relative flex flex-col min-h-0 bg-stone-900 border-l border-stone-700/60" style={{ gridArea: 'controls' }}>
+        {/* Panel header */}
+        <div className="flex items-center gap-1.5 px-3 py-2.5 border-b border-stone-700/60 shrink-0">
+          <button onClick={() => setSidebarOpen?.(true)} className="md:hidden p-2 rounded-lg text-stone-500 hover:bg-stone-700 hover:text-white" title="Menu"><Menu size={15} /></button>
+          <button onClick={() => setActiveTab('library')} className="p-2 rounded-lg text-stone-500 hover:bg-stone-700 hover:text-white" title="Back to library"><ArrowLeft size={15} /></button>
+          <span className="text-xs font-bold text-stone-300 flex-1 truncate">Inspector</span>
+          <button onClick={() => setShowShortcuts(s => !s)} className={`p-1.5 rounded-lg ${showShortcuts ? 'bg-stone-600 text-white' : 'text-stone-500 hover:bg-stone-700 hover:text-white'}`} title="Shortcuts"><Keyboard size={13} /></button>
+          <button onClick={() => setShowAIHelper(s => !s)} className={`p-1.5 rounded-lg ${showAIHelper ? 'bg-rose-900/50 text-rose-400' : 'text-stone-500 hover:bg-stone-700 hover:text-white'}`} title="AI Helper"><Sparkles size={13} /></button>
+          <button onClick={() => setShowCreatorInsights(s => !s)} className={`p-1.5 rounded-lg ${showCreatorInsights ? 'bg-rose-900/50 text-rose-400' : 'text-stone-500 hover:bg-stone-700 hover:text-white'}`} title="Creator Insights"><Target size={13} /></button>
+        </div>
+        {/* Scrollable sections */}
+        <div className="flex-1 overflow-y-auto overflow-x-hidden px-3 py-3 space-y-4 text-stone-100">
+
+          {/* SOURCE */}
+          <div>
+            <p className="text-[10px] font-bold text-stone-500 uppercase tracking-wider mb-1.5">Source</p>
+            <div className="flex gap-1.5">
+              <select value={selectedVideo?.id || ''} onChange={(e) => setSelectedVideoId(Number(e.target.value) || null)} className="flex-1 bg-stone-800 border border-stone-700 rounded-lg px-2 py-2 text-xs text-stone-100 truncate min-w-0">
+                <option value="">{videos.length > 0 ? 'Select video…' : 'No videos'}</option>
+                {videos.map(v => <option key={v.id} value={v.id}>{v.name}</option>)}
+              </select>
+              <button onClick={() => setActiveTab('library')} className="px-2.5 py-2 bg-stone-800 border border-stone-700 rounded-lg text-xs text-rose-400 hover:bg-stone-700 font-bold shrink-0">+ Add</button>
+            </div>
           </div>
-          <span className="text-stone-600 shrink-0">|</span>
-          <span className="text-[10px] font-bold text-amber-400/90 uppercase shrink-0">Edit</span>
-          <button onClick={togglePlayPause} disabled={!videoForPreview} className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg bg-rose-900/40 hover:bg-rose-800/50 text-rose-300 disabled:opacity-50 shrink-0" title="Play / Pause">
-            {!playing ? <Play size={20} fill="currentColor" /> : <Pause size={20} />}
-          </button>
-          <span className="font-mono text-sm font-bold text-rose-300 shrink-0">{secToTimecode(playhead)}</span>
-          <span className="text-xs text-stone-400 shrink-0">Vol</span>
-          <input type="range" min="0" max="1" step="0.1" defaultValue="1" onChange={(e) => { const v = videoRef.current; if (v) v.volume = Number(e.target.value); }} className="w-14 shrink-0" />
-          <button type="button" onClick={() => setUserMuted(m => !m)} className={`text-xs font-bold shrink-0 ${userMuted ? 'text-rose-400' : 'text-stone-400 hover:text-rose-400'}`}>Mute</button>
-          <span className="text-stone-600 shrink-0">|</span>
-          <button onClick={undoAll} disabled={history.length === 0} className="text-xs font-semibold text-stone-300 disabled:opacity-50 hover:text-white shrink-0" title="Undo (Ctrl+Z)">Undo</button>
-          <button onClick={splitAtPlayhead} disabled={!videoForPreview} className="min-h-[44px] min-w-[44px] flex items-center justify-center text-xs font-bold text-rose-400 hover:text-rose-300 disabled:opacity-50 shrink-0 px-3 rounded bg-rose-900/30" title="Split at playhead (S)">Split</button>
-          {splitFeedback && <span className="text-xs text-amber-400 italic shrink-0">{splitFeedback}</span>}
-          <input value={splitTimeInput} onChange={(e) => setSplitTimeInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && splitAtTimeInput()} placeholder="0:30" className="w-14 font-mono text-xs px-2 py-1 rounded border bg-stone-700 border-stone-600 text-stone-100 shrink-0" disabled={!videoForPreview} />
-          <button onClick={splitAtTimeInput} disabled={!videoForPreview} className="text-xs font-bold text-rose-400 hover:text-rose-300 disabled:opacity-50 shrink-0" title="Split at typed time">Split at time</button>
-              <button onClick={deleteSelectedSegment} disabled={!selectedSegmentId && !selectedClipId} className="text-xs font-semibold text-stone-300 disabled:opacity-50 hover:text-white shrink-0" title={hasLayeredClips ? 'Delete selected clip' : 'Del Main'}>Del</button>
-              <button onClick={deleteSelectedAudioSegment} disabled={!selectedAudioSegmentId && !(hasLayeredClips && selectedClipId && timelineTracks?.find(t => t.label === 'Audio')?.clips?.some(c => c.id === selectedClipId))} className="text-xs font-semibold text-stone-300 disabled:opacity-50 hover:text-white shrink-0" title="Del Audio">Del Audio</button>
-              {selectedAudio && (
-                <button onClick={addAudioFromLibrary} disabled={!selectedAudio?.url || !videoForPreview} className="text-xs font-semibold text-emerald-500 hover:text-emerald-400 disabled:opacity-50 shrink-0" title="Add music/voiceover at playhead">+ Add audio</button>
-              )}
+
+          {/* FORMAT */}
+          <div>
+            <p className="text-[10px] font-bold text-stone-500 uppercase tracking-wider mb-1.5">Format</p>
+            <div className="grid grid-cols-2 gap-1.5">
+              <button onClick={() => setExportFormat('9:16')} className={`py-2 rounded-lg text-xs font-bold border transition-colors ${exportFormat === '9:16' ? 'bg-rose-500 border-rose-500 text-white' : 'bg-stone-800 border-stone-700 text-stone-400 hover:border-stone-500'}`}>9:16 Reels</button>
+              <button onClick={() => setExportFormat('16:9')} className={`py-2 rounded-lg text-xs font-bold border transition-colors ${exportFormat === '16:9' ? 'bg-rose-500 border-rose-500 text-white' : 'bg-stone-800 border-stone-700 text-stone-400 hover:border-stone-500'}`}>16:9 YouTube</button>
+            </div>
+          </div>
+
+          {/* PLAYBACK */}
+          <div>
+            <p className="text-[10px] font-bold text-stone-500 uppercase tracking-wider mb-1.5">Playback</p>
+            <div className="flex items-center gap-2 mb-2">
+              <button onClick={togglePlayPause} disabled={!videoForPreview} className="w-10 h-10 rounded-full flex items-center justify-center bg-rose-500 hover:bg-rose-400 disabled:opacity-40 text-white shrink-0 shadow-lg shadow-rose-900/40" title="Play / Pause (Space)">
+                {!playing ? <Play size={16} fill="currentColor" /> : <Pause size={16} />}
+              </button>
+              <span className="font-mono text-sm font-bold text-rose-300 tabular-nums">{secToTimecode(playhead)}</span>
+              <button onClick={undoAll} disabled={history.length === 0} className="ml-auto p-2 rounded-lg text-stone-500 hover:bg-stone-700 hover:text-white disabled:opacity-30" title="Undo (Ctrl+Z)"><RotateCcw size={13} /></button>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] text-stone-500 shrink-0">Vol</span>
+              <input type="range" min="0" max="1" step="0.1" defaultValue="1" onChange={(e) => { const v = videoRef.current; if (v) v.volume = Number(e.target.value); }} className="flex-1 accent-rose-500" />
+              <button type="button" onClick={() => setUserMuted(m => !m)} className={`text-[10px] font-bold px-2 py-1 rounded-lg ${userMuted ? 'text-rose-400 bg-rose-900/40' : 'text-stone-500 hover:text-rose-400 hover:bg-stone-800'}`}>Mute</button>
+            </div>
+          </div>
+
+          {/* EDIT */}
+          <div>
+            <p className="text-[10px] font-bold text-stone-500 uppercase tracking-wider mb-1.5">Edit</p>
+            <div className="grid grid-cols-2 gap-1.5 mb-1.5">
+              <button onClick={splitAtPlayhead} disabled={!videoForPreview} className="flex items-center justify-center gap-1 py-2.5 rounded-lg text-xs font-bold bg-rose-900/40 border border-rose-800/50 text-rose-300 hover:bg-rose-800/50 disabled:opacity-40" title="Split at playhead (S)"><Scissors size={11} />Split</button>
+              <button onClick={deleteSelectedSegment} disabled={!selectedSegmentId && !selectedClipId} className="py-2.5 rounded-lg text-xs font-bold bg-stone-800 border border-stone-700 text-stone-300 hover:bg-stone-700 disabled:opacity-40" title={hasLayeredClips ? 'Delete selected clip' : 'Del Main'}>Del Clip</button>
+            </div>
+            <div className="flex gap-1.5 mb-1.5">
+              <input value={splitTimeInput} onChange={(e) => setSplitTimeInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && splitAtTimeInput()} placeholder="0:30" className="w-16 font-mono text-xs px-2 py-2 rounded-lg border bg-stone-800 border-stone-700 text-stone-100" disabled={!videoForPreview} />
+              <button onClick={splitAtTimeInput} disabled={!videoForPreview} className="flex-1 py-2 rounded-lg text-xs font-bold bg-stone-800 border border-stone-700 text-stone-300 hover:bg-stone-700 disabled:opacity-40">Split at time</button>
+            </div>
+            {splitFeedback && <p className="text-[10px] text-amber-400 italic mb-1">{splitFeedback}</p>}
+            <div className="grid grid-cols-2 gap-1.5">
+              <button onClick={deleteSelectedAudioSegment} disabled={!selectedAudioSegmentId && !(hasLayeredClips && selectedClipId)} className="py-2 rounded-lg text-xs font-bold bg-stone-800 border border-stone-700 text-stone-300 hover:bg-stone-700 disabled:opacity-40">Del Audio</button>
+              <button onClick={duplicateSelectedSegment} disabled={!selectedSegmentId || !selectedVideo} className="flex items-center justify-center gap-1 py-2 rounded-lg text-xs font-bold bg-stone-800 border border-stone-700 text-stone-300 hover:bg-stone-700 disabled:opacity-40"><Copy size={11} />Dup</button>
+            </div>
+          </div>
+
+          {/* ADD TO TIMELINE */}
+          <div>
+            <p className="text-[10px] font-bold text-stone-500 uppercase tracking-wider mb-1.5">Add to Timeline</p>
+            <div className="grid grid-cols-2 gap-1.5 mb-1.5">
+              <button onClick={() => addTextClip('Title')} disabled={!videoForPreview} className="py-2 rounded-lg text-xs font-bold bg-stone-800 border border-stone-700 text-blue-400 hover:bg-stone-700 disabled:opacity-40">+ Title</button>
+              <button onClick={() => addTextClip('Captions')} disabled={!videoForPreview} className="py-2 rounded-lg text-xs font-bold bg-stone-800 border border-stone-700 text-blue-400 hover:bg-stone-700 disabled:opacity-40">+ Caption</button>
+            </div>
+            <button onClick={addTrafficOverlay} disabled={!videoForPreview} className="w-full py-2 rounded-lg text-xs font-bold bg-stone-800 border border-stone-700 text-amber-400 hover:bg-stone-700 disabled:opacity-40 mb-1.5">+ Traffic Overlay</button>
+            {selectedAudio && (
+              <button onClick={addAudioFromLibrary} disabled={!selectedAudio?.url || !videoForPreview} className="w-full py-2 rounded-lg text-xs font-bold bg-stone-800 border border-stone-700 text-emerald-400 hover:bg-stone-700 disabled:opacity-40">+ Add Audio</button>
+            )}
+          </div>
+
+          {/* AUDIO TRACK */}
+          <div>
+            <p className="text-[10px] font-bold text-stone-500 uppercase tracking-wider mb-1.5">Audio Track</p>
+            <div className="flex gap-1.5">
               {audioExtraTracks.length === 1 ? (
-                <button onClick={() => moveSelectedAudioToTrack(0)} disabled={!selectedAudioSegmentId || !selectedVideo} className="text-xs font-semibold text-emerald-400 hover:text-emerald-300 disabled:opacity-50 shrink-0" title="Or drag segment down">Move to track 2</button>
+                <button onClick={() => moveSelectedAudioToTrack(0)} disabled={!selectedAudioSegmentId || !selectedVideo} className="flex-1 py-2 rounded-lg text-xs font-bold bg-stone-800 border border-stone-700 text-emerald-400 hover:bg-stone-700 disabled:opacity-40">Move to Track 2</button>
               ) : (
-                <select disabled={!selectedAudioSegmentId || !selectedVideo} value="" onChange={(e) => { const i = Number(e.target.value); if (!isNaN(i) && i >= 0) moveSelectedAudioToTrack(i); e.target.value = ''; }} className="text-xs font-semibold text-emerald-400 bg-stone-800 border border-stone-600 rounded px-2 py-0.5 disabled:opacity-50 shrink-0" title="Or drag segment down">
+                <select disabled={!selectedAudioSegmentId || !selectedVideo} value="" onChange={(e) => { const i = Number(e.target.value); if (!isNaN(i) && i >= 0) moveSelectedAudioToTrack(i); e.target.value = ''; }} className="flex-1 text-xs text-emerald-400 bg-stone-800 border border-stone-700 rounded-lg px-2 py-2 disabled:opacity-40">
                   <option value="">Move to track…</option>
                   {audioExtraTracks.map((_, i) => <option key={i} value={i}>Track {i + 2}</option>)}
                 </select>
               )}
-              <button onClick={duplicateSelectedSegment} disabled={!selectedSegmentId || !selectedVideo} className="text-xs font-semibold text-stone-400 hover:text-rose-400 disabled:opacity-50 flex items-center gap-1 shrink-0" title="Dup"><Copy size={12} /> Dup</button>
-              <button onClick={duplicateSelectedAudioSegment} disabled={!selectedAudioSegmentId || !selectedVideo} className="text-xs font-semibold text-stone-400 hover:text-rose-400 disabled:opacity-50 flex items-center gap-1 shrink-0" title="Dup Audio"><Copy size={12} /> Dup Audio</button>
-              <span className="text-stone-500 shrink-0">|</span>
-              <button onClick={() => addTextClip('Title')} disabled={!videoForPreview} className="text-xs font-semibold text-blue-400 hover:text-blue-300 disabled:opacity-50 shrink-0" title="+ Title">+ Title</button>
-              <button onClick={() => addTextClip('Captions')} disabled={!videoForPreview} className="text-xs font-semibold text-blue-400 hover:text-blue-300 disabled:opacity-50 shrink-0" title="+ Captions">+ Captions</button>
-              <button onClick={addTrafficOverlay} disabled={!videoForPreview} className="text-xs font-semibold text-amber-400 hover:text-amber-300 disabled:opacity-50 shrink-0" title="Add Traffic Overlay (lower third CTA)">+ Traffic Overlay</button>
+              <button onClick={duplicateSelectedAudioSegment} disabled={!selectedAudioSegmentId || !selectedVideo} className="flex items-center justify-center gap-1 px-3 py-2 rounded-lg text-xs bg-stone-800 border border-stone-700 text-stone-400 hover:bg-stone-700 disabled:opacity-40" title="Dup audio"><Copy size={11} /></button>
+            </div>
+          </div>
+
+          {/* RECORD */}
+          <div>
+            <p className="text-[10px] font-bold text-stone-500 uppercase tracking-wider mb-1.5">Record</p>
+            <div className="flex gap-1.5">
               {speechSupported && (
-                <button onClick={isListening ? stopSpeech : startSpeech} className={`min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg shrink-0 ${isListening ? 'bg-rose-500 text-white' : 'bg-stone-700 text-rose-400 hover:bg-stone-600'}`} title="One-Tap Caption (speech to text)">
-                  <Mic size={18} className={isListening ? 'animate-pulse' : ''} />
+                <button onClick={isListening ? stopSpeech : startSpeech} className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-xs font-bold transition-colors ${isListening ? 'bg-rose-500 text-white' : 'bg-stone-800 border border-stone-700 text-rose-400 hover:bg-stone-700'}`} title="Auto-caption with voice">
+                  <Mic size={13} className={isListening ? 'animate-pulse' : ''} />{isListening ? 'Stop' : 'Caption'}
                 </button>
               )}
-              <button onClick={isRecording ? stopRecord : () => startRecord(true, true)} disabled={!!recordError} className={`min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg shrink-0 ${isRecording ? 'bg-red-500 text-white' : 'bg-stone-700 text-rose-400 hover:bg-stone-600'} disabled:opacity-50`} title="Record video/audio to timeline">
-                <Camera size={18} className={isRecording ? 'animate-pulse' : ''} />
+              <button onClick={isRecording ? stopRecord : () => startRecord(true, true)} disabled={!!recordError} className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-xs font-bold transition-colors ${isRecording ? 'bg-red-500 text-white' : 'bg-stone-800 border border-stone-700 text-rose-400 hover:bg-stone-700'} disabled:opacity-40`} title="Record to timeline">
+                <Camera size={13} className={isRecording ? 'animate-pulse' : ''} />{isRecording ? 'Stop' : 'Record'}
               </button>
-              {selectedSegmentId && (() => {
-                const seg = mainSegments.find(s => s.id === selectedSegmentId);
-                if (!seg) return null;
-                return (
-                  <span className="flex items-center gap-1.5 text-xs flex-wrap">
-                    <input key={`main-${seg.id}-start-${seg.start}`} defaultValue={secToTimecode(seg.start)} onBlur={(e) => { const t = parseTimecode(e.target.value); if (t != null && t >= 0 && t < seg.end - 0.5) { pushHistory(); setMainSegments(prev => prev.map(x => x.id === selectedSegmentId ? { ...x, start: t } : x)); } }} className="w-14 font-mono px-1 py-0.5 rounded border bg-stone-700 border-stone-600 text-stone-100 text-[10px]" placeholder="0:00.00" title="Set start" />
-                    <span className="text-stone-400">–</span>
-                    <input key={`main-${seg.id}-end-${seg.end}`} defaultValue={secToTimecode(seg.end)} onBlur={(e) => { const t = parseTimecode(e.target.value); if (t != null && t <= duration && t > seg.start + 0.5) { pushHistory(); setMainSegments(prev => prev.map(x => x.id === selectedSegmentId ? { ...x, end: t } : x)); } }} className="w-14 font-mono px-1 py-0.5 rounded border bg-stone-700 border-stone-600 text-stone-100 text-[10px]" placeholder="1:30.00" title="Set end" />
-                    <select value={seg.transition || 'cut'} onChange={(e) => { pushHistory(); setMainSegments(prev => prev.map(x => x.id === selectedSegmentId ? { ...x, transition: e.target.value } : x)); }} className="text-[10px] px-1.5 py-0.5 rounded border bg-stone-700 border-stone-600 text-stone-100" title="Transition">
-                      {TIMELINE_TRANSITIONS.map(t => <option key={t.id} value={t.id}>{t.icon} {t.label}</option>)}
-                    </select>
-                  </span>
-                );
-              })()}
-              {selectedAudioSegmentId && !selectedSegmentId && (() => {
-                const seg = audioSegments.find(s => s.id === selectedAudioSegmentId);
-                if (!seg) return null;
-                const aIdx = audioSegments.findIndex(s => s.id === selectedAudioSegmentId);
-                const updateMainOrAudio = (field, val) => {
-                  pushHistory();
-                  if (tracksLinked && aIdx >= 0) setMainSegments(prev => prev.map((x, i) => (i === aIdx ? { ...x, [field]: val } : x)));
-                  else setAudioSegments(prev => prev.map(x => x.id === selectedAudioSegmentId ? { ...x, [field]: val } : x));
-                };
-                return (
-                  <span className="flex items-center gap-1 text-xs" title={tracksLinked ? 'Linked to Main — edits affect both' : 'Type start/end then Tab or click away'}>
-                    <input key={`audio-${seg.id}-start-${seg.start}`} defaultValue={secToTimecode(seg.start)} onBlur={(e) => { const t = parseTimecode(e.target.value); if (t != null && t >= 0 && t < seg.end - 0.5) updateMainOrAudio('start', t); }} className="w-14 font-mono px-1 py-0.5 rounded border bg-stone-700 border-stone-600 text-stone-100 text-[10px]" placeholder="0:00.00" title="Set start" />
-                    <span className="text-stone-400">–</span>
-                    <input key={`audio-${seg.id}-end-${seg.end}`} defaultValue={secToTimecode(seg.end)} onBlur={(e) => { const t = parseTimecode(e.target.value); if (t != null && t <= duration && t > seg.start + 0.5) updateMainOrAudio('end', t); }} className="w-14 font-mono px-1 py-0.5 rounded border bg-stone-700 border-stone-600 text-stone-100 text-[10px]" placeholder="1:30.00" title="Set end" />
-                  </span>
-                );
-              })()}
-              {selectedClipId && (() => {
-                let clip, trackId, track;
-                for (const t of timelineTracks || []) {
-                  clip = (t.clips || []).find(c => c.id === selectedClipId);
-                  if (clip) { trackId = t.id; track = t; break; }
-                }
-                if (!clip || !track) return null;
-                const asset = assets?.find(a => a.id === clip.assetId);
-                const pip = clip.pip ?? { position: 'bottomRight', size: 0.3 };
-                return (
-                  <span className="flex items-center gap-2 text-xs flex-wrap border-l border-stone-600 pl-2">
-                    <span className="text-rose-400 font-bold">Clip: {asset?.name?.slice(0, 12) || '…'}</span>
-                    <label className="flex items-center gap-1 shrink-0"><span className="text-stone-400">Opacity</span><input type="range" min="0" max="1" step="0.05" value={clip.opacity ?? 1} onChange={(e) => updateClip(trackId, clip.id, { opacity: Number(e.target.value) })} className="w-16" /></label>
-                    <label className="flex items-center gap-1 shrink-0"><span className="text-stone-400">Vol</span><input type="range" min="0" max="1" step="0.1" value={clip.volume ?? 1} onChange={(e) => updateClip(trackId, clip.id, { volume: Number(e.target.value) })} className="w-16" /></label>
-                    {(track.label === 'Overlay' || pip) && (
-                      <>
-                        <select value={pip.position || 'bottomRight'} onChange={(e) => updateClip(trackId, clip.id, { pip: { ...pip, position: e.target.value } })} className="text-[10px] px-1.5 py-0.5 rounded border bg-stone-700 border-stone-600 text-stone-100" title="PiP position">
+            </div>
+          </div>
+
+          {/* TOOLS */}
+          <div>
+            <p className="text-[10px] font-bold text-stone-500 uppercase tracking-wider mb-1.5">Tools</p>
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <button onClick={addMarker} disabled={!videoForPreview} className="p-2 rounded-lg bg-stone-800 border border-stone-700 text-amber-400 hover:bg-stone-700 disabled:opacity-40" title="Add marker (M)"><MapPin size={13} /></button>
+              <button onClick={goToPrevMarker} disabled={!markers.filter(m => m.time < playhead - 0.01).length || !selectedVideo} className="p-2 rounded-lg bg-stone-800 border border-stone-700 text-stone-400 hover:bg-stone-700 disabled:opacity-40" title="Prev marker">⟨</button>
+              <button onClick={goToNextMarker} disabled={!markers.filter(m => m.time > playhead + 0.01).length || !selectedVideo} className="p-2 rounded-lg bg-stone-800 border border-stone-700 text-stone-400 hover:bg-stone-700 disabled:opacity-40" title="Next marker">⟩</button>
+              <button onClick={() => setTracksLinked(l => !l)} disabled={!videoForPreview} className={`p-2 rounded-lg border transition-colors ${tracksLinked ? 'bg-rose-900/40 border-rose-800/50 text-rose-400' : 'bg-stone-800 border-stone-700 text-stone-400 hover:bg-stone-700'} disabled:opacity-40`} title={`Link Main+Audio (${tracksLinked ? 'on' : 'off'})`}><Link2 size={13} /></button>
+              <button onClick={() => setSnapEnabled(s => !s)} disabled={!videoForPreview} className={`p-2 rounded-lg border transition-colors ${snapEnabled ? 'bg-rose-900/40 border-rose-800/50 text-rose-400' : 'bg-stone-800 border-stone-700 text-stone-400 hover:bg-stone-700'} disabled:opacity-40`} title={`Snap (${snapEnabled ? 'on' : 'off'})`}><Magnet size={13} /></button>
+            </div>
+          </div>
+
+          {/* HOOK STRENGTH SCORE */}
+          {videoForPreview && (() => {
+            // Compute hook score: 0–100
+            let score = 0;
+            const tips = [];
+            // Caption in first 3 seconds
+            const hasFastCaption = textClips.some(c => (c.start ?? 0) < 3 && c.text);
+            if (hasFastCaption) score += 28;
+            else tips.push('Add a caption in the first 3s');
+            // Caption count (encourages captioning)
+            const captionCount = textClips.filter(c => c.text).length;
+            score += Math.min(captionCount * 6, 18);
+            if (captionCount === 0) tips.push('Add captions to boost watch time');
+            // Traffic overlay / CTA
+            const hasCTA = textClips.some(c => c.lowerThird || (c.text && (c.text.toLowerCase().includes('link') || c.text.toLowerCase().includes('bio') || c.text.toLowerCase().includes('click'))));
+            if (hasCTA) score += 18;
+            else tips.push('Add a CTA overlay (+ Traffic Overlay)');
+            // Video length optimal 15–90s
+            const dur = timelineDuration || 0;
+            if (dur >= 15 && dur <= 90) score += 12;
+            else if (dur > 0 && dur < 15) tips.push('Keep videos 15–90s for best reach');
+            else if (dur > 90) tips.push('Trim under 90s — shorter = more replays');
+            // Has audio/background music
+            const hasAudio = audioSegments.length > 0;
+            if (hasAudio) score += 10;
+            else tips.push('Add background music for retention');
+            // Has seamless transition
+            const hasSeamless = mainSegments.some(s => s.transition && s.transition !== 'cut');
+            if (hasSeamless) score += 14;
+            else if (mainSegments.length > 1) tips.push('Use Crossfade to make cuts invisible');
+            score = Math.min(100, score);
+            const barColor = score >= 80 ? 'bg-emerald-500' : score >= 55 ? 'bg-amber-400' : 'bg-rose-500';
+            const label = score >= 80 ? '🔥 Strong hook' : score >= 55 ? '✨ Getting there' : '💡 Needs work';
+            return (
+              <div className="bg-stone-800/70 border border-stone-700 rounded-xl p-3">
+                <div className="flex items-center justify-between mb-1.5">
+                  <p className="text-[10px] font-bold text-stone-400 uppercase tracking-wider">Hook Strength</p>
+                  <span className="text-xs font-black tabular-nums" style={{ color: score >= 80 ? '#10b981' : score >= 55 ? '#fbbf24' : '#f43f5e' }}>{score}</span>
+                </div>
+                <div className="h-2 bg-stone-700 rounded-full overflow-hidden mb-2">
+                  <div className={`h-full rounded-full transition-all ${barColor}`} style={{ width: `${score}%` }} />
+                </div>
+                <p className="text-[11px] font-semibold text-stone-300 mb-1.5">{label}</p>
+                {tips.length > 0 && (
+                  <ul className="space-y-0.5">
+                    {tips.slice(0, 2).map((tip, i) => (
+                      <li key={i} className="text-[10px] text-stone-500 flex gap-1"><span className="text-rose-500 shrink-0">›</span>{tip}</li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            );
+          })()}
+
+          {/* SELECTED CLIP INSPECTOR — main segment */}
+          {selectedSegmentId && (() => {
+            const seg = mainSegments.find(s => s.id === selectedSegmentId);
+            if (!seg) return null;
+            const currTx = TIMELINE_TRANSITIONS.find(t => t.id === (seg.transition || 'cut'));
+            return (
+              <div>
+                <p className="text-[10px] font-bold text-stone-500 uppercase tracking-wider mb-1.5">Selected Clip</p>
+                <div className="bg-stone-800 border border-stone-700 rounded-lg p-2.5 space-y-2">
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <p className="text-[10px] text-stone-500 mb-1">In</p>
+                      <input key={`main-${seg.id}-start-${seg.start}`} defaultValue={secToTimecode(seg.start)} onBlur={(e) => { const t = parseTimecode(e.target.value); if (t != null && t >= 0 && t < seg.end - 0.5) { pushHistory(); setMainSegments(prev => prev.map(x => x.id === selectedSegmentId ? { ...x, start: t } : x)); } }} className="w-full font-mono px-2 py-1.5 rounded-lg border bg-stone-700 border-stone-600 text-stone-100 text-xs" placeholder="0:00.00" />
+                    </div>
+                    <div>
+                      <p className="text-[10px] text-stone-500 mb-1">Out</p>
+                      <input key={`main-${seg.id}-end-${seg.end}`} defaultValue={secToTimecode(seg.end)} onBlur={(e) => { const t = parseTimecode(e.target.value); if (t != null && t <= duration && t > seg.start + 0.5) { pushHistory(); setMainSegments(prev => prev.map(x => x.id === selectedSegmentId ? { ...x, end: t } : x)); } }} className="w-full font-mono px-2 py-1.5 rounded-lg border bg-stone-700 border-stone-600 text-stone-100 text-xs" placeholder="1:30.00" />
+                    </div>
+                  </div>
+                  <div className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg border text-xs font-bold ${currTx?.seamless ? 'border-emerald-700 text-emerald-400 bg-emerald-900/20' : 'border-stone-600 text-stone-400 bg-stone-700'}`}>{currTx?.icon} {currTx?.label}</div>
+                  {(seg.speed && seg.speed !== 1) && <span className="ml-2 text-amber-400 text-xs font-bold">{seg.speed}×</span>}
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* SELECTED CLIP INSPECTOR — audio segment */}
+          {selectedAudioSegmentId && !selectedSegmentId && (() => {
+            const seg = audioSegments.find(s => s.id === selectedAudioSegmentId);
+            if (!seg) return null;
+            const aIdx = audioSegments.findIndex(s => s.id === selectedAudioSegmentId);
+            const updateMainOrAudio = (field, val) => {
+              pushHistory();
+              if (tracksLinked && aIdx >= 0) setMainSegments(prev => prev.map((x, i) => (i === aIdx ? { ...x, [field]: val } : x)));
+              else setAudioSegments(prev => prev.map(x => x.id === selectedAudioSegmentId ? { ...x, [field]: val } : x));
+            };
+            return (
+              <div>
+                <p className="text-[10px] font-bold text-stone-500 uppercase tracking-wider mb-1.5">Audio Clip</p>
+                <div className="bg-stone-800 border border-stone-700 rounded-lg p-2.5">
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <p className="text-[10px] text-stone-500 mb-1">In</p>
+                      <input key={`audio-${seg.id}-start-${seg.start}`} defaultValue={secToTimecode(seg.start)} onBlur={(e) => { const t = parseTimecode(e.target.value); if (t != null && t >= 0 && t < seg.end - 0.5) updateMainOrAudio('start', t); }} className="w-full font-mono px-2 py-1.5 rounded-lg border bg-stone-700 border-stone-600 text-stone-100 text-xs" placeholder="0:00.00" />
+                    </div>
+                    <div>
+                      <p className="text-[10px] text-stone-500 mb-1">Out</p>
+                      <input key={`audio-${seg.id}-end-${seg.end}`} defaultValue={secToTimecode(seg.end)} onBlur={(e) => { const t = parseTimecode(e.target.value); if (t != null && t <= duration && t > seg.start + 0.5) updateMainOrAudio('end', t); }} className="w-full font-mono px-2 py-1.5 rounded-lg border bg-stone-700 border-stone-600 text-stone-100 text-xs" placeholder="1:30.00" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* SELECTED CLIP INSPECTOR — layered clip */}
+          {selectedClipId && (() => {
+            let clip, trackId, track;
+            for (const t of timelineTracks || []) {
+              clip = (t.clips || []).find(c => c.id === selectedClipId);
+              if (clip) { trackId = t.id; track = t; break; }
+            }
+            if (!clip || !track) return null;
+            const asset = assets?.find(a => a.id === clip.assetId);
+            const pip = clip.pip ?? { position: 'bottomRight', size: 0.3 };
+            return (
+              <div>
+                <p className="text-[10px] font-bold text-stone-500 uppercase tracking-wider mb-1.5">Clip: {asset?.name?.slice(0, 14) || '…'}</p>
+                <div className="bg-stone-800 border border-stone-700 rounded-lg p-2.5 space-y-3">
+                  <div>
+                    <p className="text-[10px] text-stone-500 mb-1">Opacity</p>
+                    <input type="range" min="0" max="1" step="0.05" value={clip.opacity ?? 1} onChange={(e) => updateClip(trackId, clip.id, { opacity: Number(e.target.value) })} className="w-full accent-rose-500" />
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-stone-500 mb-1">Volume</p>
+                    <input type="range" min="0" max="1" step="0.1" value={clip.volume ?? 1} onChange={(e) => updateClip(trackId, clip.id, { volume: Number(e.target.value) })} className="w-full accent-rose-500" />
+                  </div>
+                  {(track.label === 'Overlay' || pip) && (
+                    <>
+                      <div>
+                        <p className="text-[10px] text-stone-500 mb-1">PiP Position</p>
+                        <select value={pip.position || 'bottomRight'} onChange={(e) => updateClip(trackId, clip.id, { pip: { ...pip, position: e.target.value } })} className="w-full text-xs px-2 py-1.5 rounded-lg border bg-stone-700 border-stone-600 text-stone-100">
                           <option value="topLeft">Top Left</option><option value="topRight">Top Right</option><option value="bottomLeft">Bottom Left</option><option value="bottomRight">Bottom Right</option>
                         </select>
-                        <label className="flex items-center gap-1 shrink-0"><span className="text-stone-400">Size</span><input type="range" min="0.15" max="0.6" step="0.05" value={pip.size ?? 0.3} onChange={(e) => updateClip(trackId, clip.id, { pip: { ...pip, size: Number(e.target.value) } })} className="w-14" /></label>
-                      </>
-                    )}
-                    <select value="" onChange={(e) => { const i = Number(e.target.value); if (!isNaN(i) && i >= 0 && moveClipToTrack) moveClipToTrack(trackId, clip.id, i); e.target.value = ''; }} className="text-[10px] px-1.5 py-0.5 rounded border bg-stone-700 border-stone-600 text-stone-100" title="Move to track">
-                      <option value="">Move to track…</option>
+                      </div>
+                      <div>
+                        <p className="text-[10px] text-stone-500 mb-1">PiP Size</p>
+                        <input type="range" min="0.15" max="0.6" step="0.05" value={pip.size ?? 0.3} onChange={(e) => updateClip(trackId, clip.id, { pip: { ...pip, size: Number(e.target.value) } })} className="w-full accent-rose-500" />
+                      </div>
+                    </>
+                  )}
+                  <div>
+                    <p className="text-[10px] text-stone-500 mb-1">Move to Track</p>
+                    <select value="" onChange={(e) => { const i = Number(e.target.value); if (!isNaN(i) && i >= 0 && moveClipToTrack) moveClipToTrack(trackId, clip.id, i); e.target.value = ''; }} className="w-full text-xs px-2 py-1.5 rounded-lg border bg-stone-700 border-stone-600 text-stone-100">
+                      <option value="">Move to…</option>
                       <option value="0">Main</option><option value="1">Overlay</option><option value="2">Logos</option><option value="3">Audio</option>
                     </select>
-                  </span>
-                );
-              })()}
-              <span className="text-[10px] font-bold text-stone-300 shrink-0">Export format</span>
-              <select value={exportFormat} onChange={(e) => setExportFormat(e.target.value)} className="text-[10px] font-mono px-2 py-1 rounded-lg border border-stone-600 bg-stone-700 text-stone-100 max-w-[150px]" title="Format used when you Export">
-                {EXPORT_FORMATS.map(f => <option key={f.id} value={f.id}>{f.w ? `${f.label} ${f.w}×${f.h}` : `${f.label} (original)`}</option>)}
-              </select>
-              <label className="flex items-center gap-1.5 shrink-0 text-[10px] text-stone-400 cursor-pointer">
-                <input type="checkbox" checked={appendContactUrlToMetadata} onChange={(e) => setAppendContactUrlToMetadata(e.target.checked)} className="rounded" />
-                <span>Append Contact URL to metadata</span>
-              </label>
-              <button onClick={exportVideo} disabled={exporting || !selectedVideo} className="text-xs font-bold bg-rose-500 text-white px-3 py-1.5 rounded-lg disabled:opacity-50 shrink-0 min-h-[44px]" title={`Export ${EXPORT_FORMATS.find(x => x.id === exportFormat)?.label || ''} as high-res MP4`}>{exporting ? (exportProgress > 0 ? `Exporting ${Math.round(exportProgress * 100)}%…` : 'Rendering…') : 'Export'}</button>
-              <span className="text-stone-500 shrink-0">|</span>
-              <button onClick={addMarker} disabled={!videoForPreview} className="p-1.5 rounded-lg hover:bg-stone-700 text-amber-400 disabled:opacity-50 shrink-0" title="Add marker (M)"><MapPin size={14} /></button>
-              <button onClick={goToPrevMarker} disabled={!markers.filter(m => m.time < playhead - 0.01).length || !selectedVideo} className="p-1.5 rounded-lg hover:bg-stone-700 text-stone-400 disabled:opacity-40 shrink-0" title="Previous marker">⟨</button>
-              <button onClick={goToNextMarker} disabled={!markers.filter(m => m.time > playhead + 0.01).length || !selectedVideo} className="p-1.5 rounded-lg hover:bg-stone-700 text-stone-400 disabled:opacity-40 shrink-0" title="Next marker">⟩</button>
-              <button onClick={() => setTracksLinked(l => !l)} disabled={!videoForPreview} className={`p-1.5 rounded-lg shrink-0 ${tracksLinked ? 'bg-rose-900/40 text-rose-400' : 'hover:bg-stone-700 text-stone-400'} disabled:opacity-50`} title={`Link Main + Audio (${tracksLinked ? 'on' : 'off'})`}><Link2 size={14} /></button>
-              <button onClick={() => setSnapEnabled(s => !s)} disabled={!videoForPreview} className={`p-1.5 rounded-lg shrink-0 ${snapEnabled ? 'bg-rose-900/40 text-rose-400' : 'hover:bg-stone-700 text-stone-400'} disabled:opacity-50`} title={`Snap (${snapEnabled ? 'on' : 'off'})`}><Magnet size={14} /></button>
-              <button onClick={() => setShowShortcuts(s => !s)} className={`p-1.5 rounded-lg shrink-0 ${showShortcuts ? 'bg-stone-600 text-white' : 'hover:bg-stone-700 text-stone-400'}`} title="Shortcuts (?)"><Keyboard size={14} /></button>
-              <button onClick={() => setShowAIHelper(s => !s)} className={`p-1.5 rounded-lg shrink-0 ${showAIHelper ? 'bg-rose-900/40 text-rose-400' : 'hover:bg-stone-700 text-stone-400'}`} title="AI Helper"><Sparkles size={14} /></button>
-              <button onClick={() => setShowCreatorInsights(s => !s)} className={`p-1.5 rounded-lg shrink-0 ${showCreatorInsights ? 'bg-rose-900/40 text-rose-400' : 'hover:bg-stone-700 text-stone-400'}`} title="Creator Insights"><Target size={14} /></button>
-      </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* EXPORT */}
+          <div className="pb-3">
+            <p className="text-[10px] font-bold text-stone-500 uppercase tracking-wider mb-1.5">Export</p>
+            <select value={exportFormat} onChange={(e) => setExportFormat(e.target.value)} className="w-full text-xs font-mono px-2 py-2 rounded-lg border border-stone-700 bg-stone-800 text-stone-100 mb-2">
+              {EXPORT_FORMATS.map(f => <option key={f.id} value={f.id}>{f.w ? `${f.label} ${f.w}×${f.h}` : `${f.label} (original)`}</option>)}
+            </select>
+            <label className="flex items-center gap-1.5 text-[10px] text-stone-400 cursor-pointer mb-2.5">
+              <input type="checkbox" checked={appendContactUrlToMetadata} onChange={(e) => setAppendContactUrlToMetadata(e.target.checked)} className="rounded" />
+              Append contact URL to metadata
+            </label>
+            <button onClick={exportVideo} disabled={exporting || !selectedVideo} className="w-full py-2.5 rounded-lg text-sm font-bold bg-rose-500 hover:bg-rose-400 text-white disabled:opacity-40 shadow-lg shadow-rose-900/30 transition-colors">
+              {exporting ? (exportProgress > 0 ? `Exporting ${Math.round(exportProgress * 100)}%…` : 'Rendering…') : 'Export'}
+            </button>
+          </div>
+
+        </div>
         {showCreatorInsights && (
           <div className="absolute left-4 top-14 z-50 w-72 max-h-[70vh] overflow-y-auto">
             <CreatorInsights caption={caption} businessName={businesses.find(b => b.id === activeBusinessId)?.name} businessId={activeBusinessId} contactPageUrl={contactPageUrl} setContactPageUrl={setContactPageUrl} marketingGoal={marketingGoal} setMarketingGoal={setMarketingGoal} />
@@ -3376,6 +3550,32 @@ const ClassicEditor = () => {
               <input type="checkbox" checked={!!editingClip.bold} onChange={(e) => updateTextClip(editingClip.id, { bold: e.target.checked })} className="rounded" />
               <span className="text-sm font-bold">Bold</span>
             </label>
+          </div>
+          {/* Caption Style Presets */}
+          <div className="mb-3">
+            <label className="block text-xs font-bold text-stone-500 mb-2 uppercase tracking-wider">Caption Style</label>
+            <div className="grid grid-cols-3 gap-1.5">
+              {[
+                { id: null, label: 'Custom', preview: 'Aa', cls: 'bg-stone-700 text-white' },
+                { id: 'tiktok-bold', label: 'TikTok', preview: 'BOLD', cls: 'bg-black text-yellow-400 font-black' },
+                { id: 'faith', label: 'Faith', preview: 'Aa', cls: 'bg-stone-800 text-amber-300 italic font-serif' },
+                { id: 'minimal', label: 'Minimal', preview: 'Aa', cls: 'bg-transparent border border-stone-500 text-white' },
+                { id: 'highlight', label: 'Highlight', preview: 'Aa', cls: 'bg-rose-500 text-white font-extrabold' },
+                { id: 'neon', label: 'Neon', preview: 'NEO', cls: 'bg-stone-900 text-cyan-300 font-bold uppercase' },
+                { id: 'typewriter', label: 'Type', preview: 'Aa_', cls: 'bg-stone-800 text-white font-mono' },
+              ].map(({ id, label, preview, cls }) => (
+                <button
+                  key={String(id)}
+                  type="button"
+                  onClick={() => updateTextClip(editingClip.id, { animStyle: id })}
+                  className={`relative px-2 py-2 rounded-lg text-xs font-semibold transition-all border-2 ${editingClip.animStyle === id ? 'border-rose-400 scale-105 shadow-lg' : 'border-transparent'} ${cls}`}
+                  title={label}
+                >
+                  <span className="block text-[11px] opacity-70 mb-0.5">{preview}</span>
+                  <span className="block text-[10px] leading-none">{label}</span>
+                </button>
+              ))}
+            </div>
           </div>
           <button onClick={() => setEditingClipId(null)} className="w-full py-2 rounded-xl bg-rose-500 text-white font-bold text-sm">Done</button>
         </div>
@@ -4199,6 +4399,357 @@ const CameraSettings = () => {
   );
 };
 
+// --- Traffic Hub: UTM Link Generator & Click Tracker ---
+const TrafficHub = () => {
+  const { businesses, activeBusinessId } = useStudio();
+  const biz = (businesses || []).find(b => b.id === activeBusinessId);
+
+  const [form, setForm] = useState({
+    name: '',
+    url: '',
+    content: '',
+    platforms: { instagram: true, youtube: true, tiktok: true, facebook: false }
+  });
+  const [campaigns, setCampaigns] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('faith-studio-campaigns') || '[]'); } catch { return []; }
+  });
+  const [copied, setCopied] = useState(null);
+  const [expandedId, setExpandedId] = useState(null);
+
+  useEffect(() => {
+    localStorage.setItem('faith-studio-campaigns', JSON.stringify(campaigns));
+  }, [campaigns]);
+
+  const UTM_CONFIGS = [
+    { key: 'instagram', Icon: Instagram, label: 'Instagram', color: '#db2777', bg: '#fce7f3', source: 'instagram', medium: 'social', tip: 'Put in your IG bio (link in bio). Say "link in bio" in every reel/caption.' },
+    { key: 'youtube', Icon: Youtube, label: 'YouTube', color: '#dc2626', bg: '#fee2e2', source: 'youtube', medium: 'video', tip: 'First 2 lines of description + pinned comment.' },
+    { key: 'tiktok', Icon: Smartphone, label: 'TikTok', color: '#374151', bg: '#e5e7eb', source: 'tiktok', medium: 'social', tip: 'TikTok bio link. Say "link in bio" in your video.' },
+    { key: 'facebook', Icon: Facebook, label: 'Facebook', color: '#2563eb', bg: '#dbeafe', source: 'facebook', medium: 'social', tip: 'Paste directly in post text or first comment.' },
+  ];
+
+  const buildUtmLink = (baseUrl, source, medium, campaignName, content) => {
+    if (!baseUrl || !campaignName) return '';
+    try {
+      const url = new URL(baseUrl.startsWith('http') ? baseUrl : 'https://' + baseUrl);
+      url.searchParams.set('utm_source', source);
+      url.searchParams.set('utm_medium', medium);
+      url.searchParams.set('utm_campaign', campaignName.toLowerCase().replace(/\s+/g, '-'));
+      if (content) url.searchParams.set('utm_content', content.toLowerCase().replace(/\s+/g, '-'));
+      return url.toString();
+    } catch { return ''; }
+  };
+
+  const copyLink = async (text, id) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(id);
+      setTimeout(() => setCopied(null), 2000);
+    } catch {}
+  };
+
+  const copyAll = async (campaign) => {
+    const lines = UTM_CONFIGS
+      .filter(cfg => campaign.links?.[cfg.key])
+      .map(cfg => `${cfg.label}: ${campaign.links[cfg.key]}`);
+    const text = `Campaign: ${campaign.name}\n\n` + lines.join('\n\n');
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied('all-' + campaign.id);
+      setTimeout(() => setCopied(null), 2000);
+    } catch {}
+  };
+
+  const saveCampaign = () => {
+    if (!form.name.trim() || !form.url.trim()) return;
+    const id = 'c' + Date.now();
+    const links = {};
+    UTM_CONFIGS.forEach(cfg => {
+      if (form.platforms[cfg.key]) {
+        links[cfg.key] = buildUtmLink(form.url, cfg.source, cfg.medium, form.name, form.content);
+      }
+    });
+    setCampaigns(prev => [{
+      id,
+      businessId: activeBusinessId,
+      name: form.name.trim(),
+      url: form.url.trim(),
+      content: form.content.trim(),
+      platforms: { ...form.platforms },
+      links,
+      createdAt: new Date().toISOString().slice(0, 10),
+      clicks: {}
+    }, ...prev]);
+    setForm({ name: '', url: '', content: '', platforms: { instagram: true, youtube: true, tiktok: true, facebook: false } });
+    setExpandedId(id);
+  };
+
+  const updateClicks = (campaignId, platform, val) => {
+    setCampaigns(prev => prev.map(c =>
+      c.id === campaignId ? { ...c, clicks: { ...c.clicks, [platform]: Number(val) || 0 } } : c
+    ));
+  };
+
+  const removeCampaign = (id) => setCampaigns(prev => prev.filter(c => c.id !== id));
+
+  const bizCampaigns = campaigns.filter(c => c.businessId === activeBusinessId);
+  const enabledPlatforms = UTM_CONFIGS.filter(cfg => form.platforms[cfg.key]);
+  const canGenerate = form.name.trim() && form.url.trim() && enabledPlatforms.length > 0;
+
+  const PLATFORM_ICONS = { instagram: Instagram, youtube: Youtube, tiktok: Smartphone, facebook: Facebook };
+
+  return (
+    <div className="max-w-6xl mx-auto space-y-8">
+      <BrandKitReminder compact />
+
+      {/* Campaign Builder */}
+      <div className="bg-gradient-to-br from-amber-50 to-rose-50 dark:from-stone-800 dark:to-stone-800 border-2 border-amber-200 dark:border-amber-800 rounded-3xl p-8 shadow-lg">
+        <h2 className="text-2xl font-bold text-stone-800 dark:text-stone-100 flex items-center gap-3 mb-1">
+          <Link2 className="text-amber-500" size={26} />
+          Traffic Links
+        </h2>
+        <p className="text-stone-600 dark:text-stone-300 text-sm mb-6">
+          Generate a trackable UTM link per platform. Paste each link in your bio/description so you can see exactly which platform drives the most clicks.
+        </p>
+
+        <div className="bg-white dark:bg-stone-900 rounded-2xl border border-amber-100 dark:border-stone-700 p-6 space-y-4">
+          <h3 className="text-xs font-bold text-stone-400 uppercase tracking-wider">New Campaign</h3>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-bold text-stone-400 uppercase mb-1">Campaign Name *</label>
+              <input
+                value={form.name}
+                onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+                onKeyDown={e => e.key === 'Enter' && canGenerate && saveCampaign()}
+                placeholder="e.g. March Faith Series"
+                className="w-full bg-amber-50 dark:bg-stone-800 border border-amber-100 dark:border-stone-600 rounded-xl px-4 py-2.5 text-sm text-stone-800 dark:text-stone-100 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-amber-300"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-stone-400 uppercase mb-1">Destination URL *</label>
+              <input
+                value={form.url}
+                onChange={e => setForm(f => ({ ...f, url: e.target.value }))}
+                onKeyDown={e => e.key === 'Enter' && canGenerate && saveCampaign()}
+                placeholder="https://linktr.ee/sarahspeaksfaith"
+                className="w-full bg-amber-50 dark:bg-stone-800 border border-amber-100 dark:border-stone-600 rounded-xl px-4 py-2.5 text-sm text-stone-800 dark:text-stone-100 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-amber-300"
+              />
+            </div>
+            <div className="md:col-span-2">
+              <label className="block text-xs font-bold text-stone-400 uppercase mb-1">Content Label <span className="font-normal normal-case text-stone-400">(optional — helps identify which specific post drove traffic)</span></label>
+              <input
+                value={form.content}
+                onChange={e => setForm(f => ({ ...f, content: e.target.value }))}
+                placeholder="e.g. what-is-love-reel, product-demo-video"
+                className="w-full bg-amber-50 dark:bg-stone-800 border border-amber-100 dark:border-stone-600 rounded-xl px-4 py-2.5 text-sm text-stone-800 dark:text-stone-100 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-amber-300"
+              />
+            </div>
+          </div>
+
+          {/* Platform toggles */}
+          <div>
+            <label className="block text-xs font-bold text-stone-400 uppercase mb-2">Generate links for</label>
+            <div className="flex flex-wrap gap-2">
+              {UTM_CONFIGS.map(cfg => (
+                <button
+                  key={cfg.key}
+                  onClick={() => setForm(f => ({ ...f, platforms: { ...f.platforms, [cfg.key]: !f.platforms[cfg.key] } }))}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold border-2 transition-all ${
+                    form.platforms[cfg.key]
+                      ? 'border-amber-400 bg-amber-50 dark:bg-amber-900/20 text-stone-800 dark:text-stone-100'
+                      : 'border-stone-200 dark:border-stone-600 text-stone-400 bg-white dark:bg-stone-800'
+                  }`}
+                >
+                  <cfg.Icon size={15} style={{ color: form.platforms[cfg.key] ? cfg.color : undefined }} />
+                  {cfg.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Live preview */}
+          {canGenerate && (
+            <div className="space-y-2 pt-2 border-t border-amber-100 dark:border-stone-700">
+              <p className="text-xs font-bold text-stone-400 uppercase">Preview Links</p>
+              {enabledPlatforms.map(cfg => {
+                const link = buildUtmLink(form.url, cfg.source, cfg.medium, form.name, form.content);
+                const pid = `prev-${cfg.key}`;
+                return (
+                  <div key={cfg.key} className="flex items-center gap-3 p-3 rounded-xl bg-stone-50 dark:bg-stone-800 border border-stone-100 dark:border-stone-700">
+                    <cfg.Icon size={14} style={{ color: cfg.color }} className="shrink-0" />
+                    <span className="text-xs text-stone-500 dark:text-stone-400 font-mono flex-1 truncate">{link}</span>
+                    <button
+                      onClick={() => copyLink(link, pid)}
+                      className={`shrink-0 px-3 py-1 rounded-lg text-xs font-bold transition-all ${copied === pid ? 'bg-emerald-500 text-white' : 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 hover:bg-amber-200 dark:hover:bg-amber-900/50'}`}
+                    >
+                      {copied === pid ? '✓ Copied' : 'Copy'}
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          <button
+            onClick={saveCampaign}
+            disabled={!canGenerate}
+            className="w-full py-3 rounded-2xl bg-amber-500 hover:bg-amber-600 active:scale-[0.98] disabled:opacity-40 text-white font-bold text-sm transition-all shadow-md"
+          >
+            Save Campaign &amp; Generate Links →
+          </button>
+        </div>
+      </div>
+
+      {/* Saved Campaigns */}
+      {bizCampaigns.length > 0 && (
+        <div className="space-y-4">
+          <h3 className="text-lg font-bold text-stone-800 dark:text-stone-100 flex items-center gap-2">
+            <BarChart2 size={20} className="text-amber-500" />
+            Your Campaigns ({bizCampaigns.length})
+          </h3>
+          {bizCampaigns.map(campaign => {
+            const isOpen = expandedId === campaign.id;
+            const totalClicks = Object.values(campaign.clicks || {}).reduce((s, v) => s + v, 0);
+            const activePlatforms = UTM_CONFIGS.filter(cfg => campaign.links?.[cfg.key]);
+            return (
+              <div key={campaign.id} className="bg-white dark:bg-stone-800 border border-stone-100 dark:border-stone-700 rounded-2xl shadow-sm overflow-hidden">
+                <button
+                  onClick={() => setExpandedId(isOpen ? null : campaign.id)}
+                  className="w-full flex items-center justify-between p-5 text-left hover:bg-stone-50 dark:hover:bg-stone-700/50 transition-colors"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center shrink-0">
+                      <TrendingUp size={18} className="text-amber-600 dark:text-amber-400" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-bold text-stone-800 dark:text-stone-100 truncate">{campaign.name}</p>
+                      <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                        <span className="text-xs text-stone-500 dark:text-stone-400">{campaign.createdAt}</span>
+                        <span className="text-stone-300 dark:text-stone-600">·</span>
+                        <div className="flex gap-1">
+                          {activePlatforms.map(cfg => (
+                            <cfg.Icon key={cfg.key} size={12} style={{ color: cfg.color }} />
+                          ))}
+                        </div>
+                        {totalClicks > 0 && (
+                          <>
+                            <span className="text-stone-300 dark:text-stone-600">·</span>
+                            <span className="text-xs text-emerald-600 dark:text-emerald-400 font-bold">{totalClicks} clicks tracked</span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      onClick={e => { e.stopPropagation(); copyAll(campaign); }}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${copied === 'all-' + campaign.id ? 'bg-emerald-500 text-white' : 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 hover:bg-amber-200'}`}
+                    >
+                      {copied === 'all-' + campaign.id ? '✓ All Copied' : 'Copy All'}
+                    </button>
+                    <ChevronDown size={18} className={`text-stone-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+                  </div>
+                </button>
+
+                {isOpen && (
+                  <div className="px-5 pb-5 border-t border-stone-100 dark:border-stone-700 pt-4 space-y-3">
+                    {activePlatforms.map(cfg => {
+                      const link = campaign.links[cfg.key];
+                      const cid = `saved-${campaign.id}-${cfg.key}`;
+                      const clicks = campaign.clicks?.[cfg.key] || 0;
+                      return (
+                        <div key={cfg.key} className="p-4 rounded-xl border border-stone-100 dark:border-stone-700 bg-stone-50 dark:bg-stone-900 space-y-2">
+                          <div className="flex items-center gap-2">
+                            <cfg.Icon size={15} style={{ color: cfg.color }} />
+                            <span className="text-sm font-bold text-stone-700 dark:text-stone-200">{cfg.label}</span>
+                            <span className="ml-auto text-xs text-stone-400 italic hidden sm:block">{cfg.tip}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <p className="text-xs font-mono text-stone-500 dark:text-stone-400 truncate flex-1 bg-white dark:bg-stone-800 px-3 py-1.5 rounded-lg border border-stone-100 dark:border-stone-700">{link}</p>
+                            <button
+                              onClick={() => copyLink(link, cid)}
+                              className={`shrink-0 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${copied === cid ? 'bg-emerald-500 text-white' : 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 hover:bg-amber-200'}`}
+                            >
+                              {copied === cid ? '✓ Copied' : 'Copy'}
+                            </button>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <label className="text-xs text-stone-400 shrink-0">Clicks from Google Analytics / Platform Insights:</label>
+                            <input
+                              type="number" min="0"
+                              value={clicks}
+                              onChange={e => updateClicks(campaign.id, cfg.key, e.target.value)}
+                              className="w-20 bg-white dark:bg-stone-700 border border-stone-200 dark:border-stone-600 rounded-lg px-3 py-1 text-sm text-stone-800 dark:text-stone-100 text-center"
+                            />
+                          </div>
+                        </div>
+                      );
+                    })}
+                    <div className="flex justify-end pt-1">
+                      <button onClick={() => removeCampaign(campaign.id)} className="text-xs text-stone-400 hover:text-red-500 flex items-center gap-1 transition-colors">
+                        <Trash2 size={12} /> Delete campaign
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Tips grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="bg-white dark:bg-stone-800 border border-stone-100 dark:border-stone-700 rounded-2xl p-6 shadow-sm">
+          <h4 className="font-bold text-stone-800 dark:text-stone-100 flex items-center gap-2 mb-4">
+            <MapPin size={18} className="text-rose-400" />
+            Where to Put Each Link
+          </h4>
+          <div className="space-y-4">
+            {[
+              { Icon: Instagram, label: 'Instagram', color: '#db2777', tip: 'Bio only — IG does not allow links in posts. Say "link in bio" in every reel caption and spoken CTA.' },
+              { Icon: Youtube, label: 'YouTube', color: '#dc2626', tip: 'First 2 lines of video description (visible before "more"). Add to pinned comment too.' },
+              { Icon: Smartphone, label: 'TikTok', color: '#374151', tip: 'TikTok bio link. Say "link in bio" verbally in the video — TikTok removes links from captions.' },
+              { Icon: Facebook, label: 'Facebook', color: '#2563eb', tip: 'Put directly in post text. Facebook pages: use the first comment trick to avoid reach drop.' },
+            ].map(({ Icon, label, color, tip }) => (
+              <div key={label} className="flex items-start gap-3">
+                <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 mt-0.5" style={{ backgroundColor: color + '20' }}>
+                  <Icon size={14} style={{ color }} />
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-stone-700 dark:text-stone-200">{label}</p>
+                  <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5">{tip}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="bg-white dark:bg-stone-800 border border-stone-100 dark:border-stone-700 rounded-2xl p-6 shadow-sm">
+          <h4 className="font-bold text-stone-800 dark:text-stone-100 flex items-center gap-2 mb-4">
+            <TrendingUp size={18} className="text-amber-500" />
+            How to Read Your Data
+          </h4>
+          <div className="space-y-3 text-xs text-stone-600 dark:text-stone-300 leading-relaxed">
+            <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-800">
+              <p className="font-bold text-amber-700 dark:text-amber-400 mb-1">Google Analytics 4 (free)</p>
+              <p>Reports → Acquisition → Traffic Acquisition. Filter by Source/Medium. Your UTM data shows up here within 24–48 hrs.</p>
+            </div>
+            <div className="p-3 rounded-xl bg-stone-50 dark:bg-stone-700/30 border border-stone-100 dark:border-stone-600">
+              <p className="font-bold text-stone-700 dark:text-stone-200 mb-1">No Google Analytics?</p>
+              <p>Use Linktree Analytics, Bitly, or Short.io — they track clicks automatically without any setup.</p>
+            </div>
+            <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-900/20 border border-rose-100 dark:border-rose-800">
+              <p className="font-bold text-rose-700 dark:text-rose-400 mb-1">What to look for</p>
+              <p>Which platform sends the most clicks? Which content label gets more? Make more of what works.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // --- Post Analytics ---
 const PostAnalytics = ({ onOpenSettings }) => {
   const { activeBusinessId, setActiveBusinessId, businesses } = useStudio();
@@ -4208,25 +4759,11 @@ const PostAnalytics = ({ onOpenSettings }) => {
   const [aiInsights, setAiInsights] = useState(null);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState(null);
-  const [youtubeSyncLoading, setYoutubeSyncLoading] = useState(false);
-  const [youtubeSyncError, setYoutubeSyncError] = useState(null);
-  const [instagramSyncLoading, setInstagramSyncLoading] = useState(false);
-  const [instagramSyncError, setInstagramSyncError] = useState(null);
-  const [postLinkInput, setPostLinkInput] = useState('');
-  const [linkFetchStatus, setLinkFetchStatus] = useState('idle'); // idle | syncing | found | not_found | need_connect | error
-  const [matchedPostForLink, setMatchedPostForLink] = useState(null);
-  const [userKey] = useState(() => {
-    try {
-      let k = localStorage.getItem('faith-studio-user-key');
-      if (!k) { k = `local-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`; localStorage.setItem('faith-studio-user-key', k); }
-      return k;
-    } catch { return `local-${Date.now()}`; }
-  });
-  const apiBase = typeof window !== 'undefined' ? (import.meta.env.VITE_API_URL || window.location.origin) : '';
+  const [editingPostId, setEditingPostId] = useState(null);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    if (params.get('youtube_connected') === '1' || params.get('instagram_connected') === '1') {
+    if (params.get('instagram_connected') === '1' || params.get('youtube_connected') === '1') {
       const state = params.get('state');
       if (state) try { localStorage.setItem('faith-studio-user-key', state); } catch (_) {}
       window.history.replaceState({}, '', window.location.pathname);
@@ -4255,128 +4792,7 @@ const PostAnalytics = ({ onOpenSettings }) => {
   };
 
   const removePost = (id) => setPosts(prev => prev.filter(p => p.id !== id));
-
-  const parsePostUrl = (url) => {
-    const u = (url || '').trim();
-    const igReel = u.match(/instagram\.com\/reel\/([^/?]+)/);
-    const igP = u.match(/instagram\.com\/p\/([^/?]+)/);
-    const ytV = u.match(/[?&]v=([^&]+)/);
-    const ytShort = u.match(/youtu\.be\/([^/?]+)/);
-    if (igReel || igP) return { platform: 'instagram', code: (igReel || igP)[1] };
-    if (ytV || ytShort) return { platform: 'youtube', videoId: (ytV || ytShort)[1] };
-    return null;
-  };
-
-  const findPostByUrl = (postsList, url) => {
-    const parsed = parsePostUrl(url);
-    if (!parsed) return null;
-    if (parsed.platform === 'youtube') return postsList.find(p => p.id === `yt-${parsed.videoId}`);
-    if (parsed.platform === 'instagram') return postsList.find(p => (p.notes || '').includes(parsed.code) || (p.notes || '').includes(url.trim()));
-    return null;
-  };
-
-  const syncYouTube = async () => {
-    setYoutubeSyncLoading(true); setYoutubeSyncError(null);
-    try {
-      const res = await fetch(`${apiBase}/api/sync/youtube`, { headers: { 'X-User-Key': userKey } });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Sync failed');
-      const existingIds = new Set(posts.map(p => p.id));
-      const newPosts = (data.posts || []).map(p => ({ ...p, businessId: activeBusinessId })).filter(p => !existingIds.has(p.id));
-      setPosts(prev => [...prev, ...newPosts]);
-      return newPosts;
-    } catch (e) {
-      setYoutubeSyncError(e?.message || 'Could not sync YouTube');
-      throw e;
-    } finally {
-      setYoutubeSyncLoading(false);
-    }
-  };
-
-  const connectYouTube = () => {
-    window.location.href = `${apiBase}/api/auth/youtube?state=${encodeURIComponent(userKey)}`;
-  };
-
-  const syncInstagram = async () => {
-    setInstagramSyncLoading(true); setInstagramSyncError(null);
-    try {
-      const res = await fetch(`${apiBase}/api/sync/instagram`, { headers: { 'X-User-Key': userKey } });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Sync failed');
-      const existingIds = new Set(posts.map(p => p.id));
-      const newPosts = (data.posts || []).map(p => ({ ...p, businessId: activeBusinessId })).filter(p => !existingIds.has(p.id));
-      setPosts(prev => [...prev, ...newPosts]);
-      return newPosts;
-    } catch (e) {
-      setInstagramSyncError(e?.message || 'Could not sync Instagram');
-      throw e;
-    } finally {
-      setInstagramSyncLoading(false);
-    }
-  };
-
-  const connectInstagram = () => {
-    window.location.href = `${apiBase}/api/auth/instagram?state=${encodeURIComponent(userKey)}`;
-  };
-
-  const syncAndGetAnalyticsForLink = async () => {
-    const url = postLinkInput.trim();
-    if (!url) {
-      setLinkFetchStatus('error');
-      setInstagramSyncError('Paste a post link first.');
-      return;
-    }
-    const parsed = parsePostUrl(url);
-    if (!parsed) {
-      setLinkFetchStatus('error');
-      setInstagramSyncError('Enter a valid Instagram or YouTube post URL (e.g. instagram.com/reel/... or youtube.com/watch?v=...).');
-      return;
-    }
-    setLinkFetchStatus('syncing');
-    setMatchedPostForLink(null);
-    setInstagramSyncError(null);
-    setYoutubeSyncError(null);
-    try {
-      let newPosts = [];
-      if (parsed.platform === 'instagram') newPosts = await syncInstagram();
-      else newPosts = await syncYouTube();
-      const allPostsNow = [...posts, ...newPosts];
-      const match = findPostByUrl(allPostsNow, url);
-      if (match) {
-        setMatchedPostForLink(match);
-        setLinkFetchStatus('found');
-        setPostLinkInput('');
-        setAiInsights(null); setAiError(null);
-        const useOpenAI = hasOpenAIKey();
-        const useGemini = hasGeminiKey();
-        if (useOpenAI || useGemini) {
-          setAiLoading(true);
-          try {
-            const businessName = businesses?.find(b => b.id === activeBusinessId)?.name || 'Your brand';
-            const analyzePosts = useOpenAI ? analyzePostsOpenAI : analyzePostsGemini;
-            const result = await analyzePosts([match], businessName);
-            setAiInsights(result);
-          } catch (e) {
-            setAiError(e?.message || 'AI analysis failed');
-          } finally {
-            setAiLoading(false);
-          }
-        }
-      } else {
-        setLinkFetchStatus('not_found');
-      }
-    } catch (e) {
-      const msg = e?.message || 'Sync failed';
-      setLinkFetchStatus('error');
-      if (msg.toLowerCase().includes('not connected') || msg.toLowerCase().includes('connect')) {
-        if (parsed.platform === 'instagram') connectInstagram();
-        else connectYouTube();
-        return;
-      }
-      setInstagramSyncError(parsed.platform === 'instagram' ? msg : null);
-      setYoutubeSyncError(parsed.platform === 'youtube' ? msg : null);
-    }
-  };
+  const updatePost = (id, updates) => setPosts(prev => prev.map(p => p.id === id ? { ...p, ...updates } : p));
 
   const bizPosts = posts.filter(p => p.businessId === activeBusinessId);
   const totalViews = bizPosts.reduce((s, p) => s + p.views, 0);
@@ -4401,76 +4817,13 @@ const PostAnalytics = ({ onOpenSettings }) => {
 
   return (
     <div className="max-w-6xl mx-auto space-y-8">
-      {/* Paste link — primary workflow. Sync → Find → AI analysis */}
+      {/* Log your post — screenshot, add metrics, track weekly */}
       <div className="bg-gradient-to-br from-rose-50 to-amber-50 dark:from-stone-800 dark:to-stone-800 border-2 border-rose-200 dark:border-rose-800 rounded-3xl p-8 shadow-lg">
-        <h2 className="text-2xl font-bold text-stone-800 dark:text-stone-100 mb-2">Paste your post link</h2>
-        <p className="text-stone-600 dark:text-stone-300 mb-4">Paste an Instagram or YouTube URL → we sync, pull the data, and run AI analysis. What worked, what to improve, how to drive traffic.</p>
-        <div className="flex gap-3 flex-wrap">
-          <input
-            type="url"
-            value={postLinkInput}
-            onChange={(e) => setPostLinkInput(e.target.value)}
-            placeholder="https://www.instagram.com/reel/... or youtube.com/watch?v=..."
-            className="flex-1 min-w-[280px] px-5 py-4 rounded-2xl bg-white dark:bg-stone-700 border-2 border-rose-200 dark:border-stone-600 text-stone-800 dark:text-stone-100 text-base"
-          />
-          <button
-            onClick={syncAndGetAnalyticsForLink}
-            disabled={linkFetchStatus === 'syncing' || instagramSyncLoading || youtubeSyncLoading}
-            className="px-8 py-4 rounded-2xl bg-rose-500 hover:bg-rose-600 text-white font-bold text-base disabled:opacity-50"
-          >
-            {linkFetchStatus === 'syncing' || instagramSyncLoading || youtubeSyncLoading ? 'Syncing & analyzing…' : 'Get analytics'}
-          </button>
-        </div>
-        {linkFetchStatus === 'not_found' && <p className="text-sm text-amber-600 dark:text-amber-400 mt-3">Post wasn&apos;t in your last 25. Connect the account that owns this post and sync first.</p>}
-        {linkFetchStatus === 'error' && (instagramSyncError || youtubeSyncError) && <p className="text-sm text-red-600 dark:text-red-400 mt-3">{instagramSyncError || youtubeSyncError}</p>}
-        <p className="text-xs text-stone-500 dark:text-stone-400 mt-3">Requires: Connect account below, then deploy to Vercel + Supabase + Meta/Google (LAUNCH-BACKEND.md).</p>
-      </div>
-
-      {/* Connect — required for link workflow */}
-      <div className="bg-white dark:bg-stone-800 border border-rose-100 dark:border-stone-700 rounded-3xl p-6 shadow-sm">
-        <h3 className="text-lg font-bold text-stone-800 dark:text-stone-100 mb-2">Connect your accounts (required for link workflow)</h3>
-        <div className="flex flex-wrap gap-4">
-          <button onClick={connectInstagram} className="px-6 py-4 rounded-2xl bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold flex items-center gap-3 shadow-lg">
-            <Instagram size={24} /> Connect Instagram
-          </button>
-          <button onClick={syncInstagram} disabled={instagramSyncLoading} className="px-6 py-4 rounded-2xl border-2 border-purple-300 dark:border-purple-700 text-purple-700 dark:text-purple-300 font-bold hover:bg-purple-50 dark:hover:bg-purple-900/30 disabled:opacity-50">
-            {instagramSyncLoading ? 'Syncing…' : 'Sync Instagram'}
-          </button>
-          <button onClick={connectYouTube} className="px-6 py-4 rounded-2xl bg-red-600 hover:bg-red-700 text-white font-bold flex items-center gap-3 shadow-lg">
-            <Youtube size={24} /> Connect YouTube
-          </button>
-          <button onClick={syncYouTube} disabled={youtubeSyncLoading} className="px-6 py-4 rounded-2xl border-2 border-rose-300 dark:border-rose-700 text-rose-700 dark:text-rose-300 font-bold hover:bg-rose-50 dark:hover:bg-rose-900/30 disabled:opacity-50">
-            {youtubeSyncLoading ? 'Syncing…' : 'Sync YouTube'}
-          </button>
-        </div>
-        {(youtubeSyncError || instagramSyncError) && <p className="text-sm text-red-600 dark:text-red-400 mt-4">{instagramSyncError || youtubeSyncError}</p>}
-        <p className="text-xs text-stone-500 dark:text-stone-400 mt-4">Deploy to Vercel + add Supabase & Meta/Google credentials (see LAUNCH-BACKEND.md). Once connected, Sync pulls your posts automatically.</p>
-      </div>
-
-      {/* Matched post + AI insights when found from link */}
-      {matchedPostForLink && (
-        <div className="bg-gradient-to-br from-rose-50 to-amber-50 dark:from-stone-800 dark:to-stone-800 border-2 border-rose-200 dark:border-rose-800 rounded-3xl p-6 shadow-lg">
-          <h3 className="text-lg font-bold text-stone-800 dark:text-stone-100 mb-4 flex items-center gap-2"><TrendingUp size={20} className="text-rose-500" /> Analytics for this post</h3>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-4">
-            <div><span className="text-[10px] font-bold text-stone-400 uppercase">Views</span><p className="text-xl font-bold text-rose-600">{matchedPostForLink.views?.toLocaleString() ?? 0}</p></div>
-            <div><span className="text-[10px] font-bold text-stone-400 uppercase">Likes</span><p className="text-xl font-bold">{matchedPostForLink.likes?.toLocaleString() ?? 0}</p></div>
-            <div><span className="text-[10px] font-bold text-stone-400 uppercase">Comments</span><p className="text-xl font-bold">{matchedPostForLink.comments?.toLocaleString() ?? 0}</p></div>
-            <div><span className="text-[10px] font-bold text-stone-400 uppercase">Saves</span><p className="text-xl font-bold">{matchedPostForLink.saves?.toLocaleString() ?? 0}</p></div>
-            <div><span className="text-[10px] font-bold text-stone-400 uppercase">Platform</span><p className="text-lg font-bold">{platformLabels[matchedPostForLink.platform] || matchedPostForLink.platform}</p></div>
-          </div>
-          <p className="text-sm text-stone-600 dark:text-stone-300 mb-4 font-medium">&quot;{matchedPostForLink.title}&quot;</p>
-          {aiLoading && <p className="text-sm text-stone-500">Running AI analysis…</p>}
-          {aiError && <p className="text-sm text-red-600 dark:text-red-400">{aiError}</p>}
-          {aiInsights && <div className="p-4 rounded-xl bg-white/80 dark:bg-stone-700/50 text-sm whitespace-pre-wrap">{aiInsights}</div>}
-          {!hasOpenAIKey() && !hasGeminiKey() && <p className="text-xs text-stone-500 mt-2">Add OpenAI or Gemini API key in Settings for AI insights.</p>}
-          <button onClick={() => { setMatchedPostForLink(null); setLinkFetchStatus('idle'); setAiInsights(null); setAiError(null); }} className="mt-4 text-sm text-stone-500 hover:text-stone-700">Clear</button>
-        </div>
-      )}
-
-      {/* Manual log — collapsed, secondary */}
-      <div className="bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-2xl p-4">
-        <button onClick={() => setShowForm(!showForm)} className="flex items-center justify-between w-full text-left text-sm text-stone-500 dark:text-stone-400 hover:text-stone-700 dark:hover:text-stone-200">
-          <span>Or add one post manually</span>
+        <h2 className="text-2xl font-bold text-stone-800 dark:text-stone-100 mb-2">Log your post</h2>
+        <p className="text-stone-600 dark:text-stone-300 mb-4">Screenshot your post, add the metrics below, and update the numbers each week. Track what works — style, thumbnail, caption, hashtags. Use Get AI insights to improve and drive traffic.</p>
+        <div className="bg-white dark:bg-stone-800 border border-rose-100 dark:border-stone-700 rounded-2xl p-4">
+        <button onClick={() => setShowForm(!showForm)} className="flex items-center justify-between w-full text-left text-sm font-medium text-stone-700 dark:text-stone-200 hover:text-rose-600 dark:hover:text-rose-400">
+          <span>{showForm ? 'Close form' : 'Add a post'}</span>
           <span>{showForm ? '−' : '+'}</span>
         </button>
         {showForm && (
@@ -4511,20 +4864,30 @@ const PostAnalytics = ({ onOpenSettings }) => {
             </div>
             <div className="md:col-span-2 lg:col-span-3">
               <label className="block text-xs font-bold text-stone-400 uppercase mb-1">Notes (optional)</label>
-              <input value={form.notes} onChange={(e) => setForm(f => ({ ...f, notes: e.target.value }))} placeholder="e.g. Curiosity hook, posted 9am" className="w-full bg-rose-50 dark:bg-stone-700 border border-rose-100 dark:border-stone-600 rounded-xl px-4 py-2 text-sm" />
+              <input value={form.notes} onChange={(e) => setForm(f => ({ ...f, notes: e.target.value }))} placeholder="e.g. Caption, hashtags, hook, posted 9am" className="w-full bg-rose-50 dark:bg-stone-700 border border-rose-100 dark:border-stone-600 rounded-xl px-4 py-2 text-sm" />
             </div>
             <div className="flex gap-2">
-              <button onClick={() => { if (!form.title.trim()) { alert('Enter a post title'); return; } addPost(); }} className="px-5 py-2 rounded-xl bg-rose-500 text-white font-bold">Save</button>
-              <button onClick={() => setShowForm(false)} className="px-5 py-2 rounded-xl border border-stone-200 dark:border-stone-600 text-stone-600 dark:text-stone-400">Cancel</button>
+              <button onClick={() => {
+                if (!form.title.trim()) { alert('Enter a post title'); return; }
+                if (editingPostId) {
+                  updatePost(editingPostId, { title: form.title.trim(), platform: form.platform, postedAt: form.postedAt, views: Number(form.views) || 0, likes: Number(form.likes) || 0, comments: Number(form.comments) || 0, shares: Number(form.shares) || 0, saves: Number(form.saves) || 0, notes: form.notes.trim() });
+                  setEditingPostId(null);
+                } else {
+                  addPost();
+                }
+                setShowForm(false);
+              }} className="px-5 py-2 rounded-xl bg-rose-500 text-white font-bold">{editingPostId ? 'Update' : 'Save'}</button>
+              <button onClick={() => { setShowForm(false); setEditingPostId(null); }} className="px-5 py-2 rounded-xl border border-stone-200 dark:border-stone-600 text-stone-600 dark:text-stone-400">Cancel</button>
             </div>
           </div>
         )}
 
         {!showForm && bizPosts.length === 0 && (
-          <button onClick={() => setShowForm(true)} className="w-full py-4 rounded-xl border-2 border-dashed border-rose-300 dark:border-rose-700 text-rose-600 dark:text-rose-400 font-bold hover:bg-rose-50 dark:hover:bg-rose-900/20">
+          <button onClick={() => setShowForm(true)} className="w-full py-4 rounded-xl border-2 border-dashed border-rose-300 dark:border-rose-700 text-rose-600 dark:text-rose-400 font-bold hover:bg-rose-50 dark:hover:bg-rose-900/20 mt-4">
             Click here to log your first post
           </button>
         )}
+        </div>
       </div>
 
       {/* All accounts overview */}
@@ -4571,7 +4934,7 @@ const PostAnalytics = ({ onOpenSettings }) => {
             </p>
           </div>
         </div>
-        <p className="text-xs text-stone-500 dark:text-stone-400 mt-3">Keep logging posts to see trends. Data is stored in your browser.</p>
+        <p className="text-xs text-stone-500 dark:text-stone-400 mt-3">Log posts when you publish, then update views/likes each week to track growth. If numbers stop growing, try a new style, thumbnail, or intro.</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -4630,28 +4993,6 @@ const PostAnalytics = ({ onOpenSettings }) => {
         </div>
       )}
 
-      {/* Connect Social — Live data */}
-      <div className="bg-white dark:bg-stone-800 border border-rose-100 dark:border-stone-700 rounded-3xl p-8 shadow-sm">
-        <h3 className="text-lg font-bold text-stone-800 dark:text-stone-100 mb-2">Live data from your accounts</h3>
-        <p className="text-sm text-stone-500 dark:text-stone-400 mb-4">Connect YouTube to auto-pull your videos and metrics. Deploy to Vercel and add env vars (see <code className="px-1.5 py-0.5 rounded bg-stone-100 dark:bg-stone-700 text-xs">LAUNCH-BACKEND.md</code>).</p>
-        <div className="flex flex-wrap justify-center gap-3">
-          <button onClick={connectInstagram} className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold text-sm flex items-center gap-2">
-            <Instagram size={18} /> Connect Instagram
-          </button>
-          <button onClick={syncInstagram} disabled={instagramSyncLoading} className="px-5 py-2.5 rounded-xl border border-purple-200 dark:border-purple-800 text-purple-600 dark:text-purple-400 font-bold text-sm hover:bg-purple-50 dark:hover:bg-purple-900/20 disabled:opacity-50">
-            {instagramSyncLoading ? 'Syncing…' : 'Sync Instagram'}
-          </button>
-          <button onClick={connectYouTube} className="px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-sm flex items-center gap-2">
-            <Youtube size={18} /> Connect YouTube
-          </button>
-          <button onClick={syncYouTube} disabled={youtubeSyncLoading} className="px-5 py-2.5 rounded-xl border border-rose-200 dark:border-rose-800 text-rose-600 dark:text-rose-400 font-bold text-sm hover:bg-rose-50 dark:hover:bg-rose-900/20 disabled:opacity-50">
-            {youtubeSyncLoading ? 'Syncing…' : 'Sync YouTube'}
-          </button>
-        </div>
-        {(youtubeSyncError || instagramSyncError) && <p className="text-sm text-red-600 dark:text-red-400 mt-3">{instagramSyncError || youtubeSyncError}</p>}
-        <p className="text-xs text-stone-500 dark:text-stone-400 mt-4">Connect Instagram or YouTube → sign in → Sync to auto-pull posts and metrics. Requires backend (Vercel + Supabase + Meta/Google). Or use <strong>Log a post</strong> above for manual entry.</p>
-      </div>
-
       <div className="bg-white dark:bg-stone-800 border border-rose-100 dark:border-stone-700 rounded-3xl overflow-hidden shadow-sm">
         <h3 className="text-lg font-bold text-stone-800 dark:text-stone-100 p-6 pb-0">Your posts</h3>
         {bizPosts.length === 0 ? (
@@ -4683,7 +5024,10 @@ const PostAnalytics = ({ onOpenSettings }) => {
                     <td className="p-4 text-right">{p.comments.toLocaleString()}</td>
                     <td className="p-4 text-right">{p.saves.toLocaleString()}</td>
                     <td className="p-4 text-stone-500 dark:text-stone-400 max-w-[200px] truncate">{p.notes || '—'}</td>
-                    <td className="p-2"><button onClick={() => removePost(p.id)} className="p-1.5 rounded text-stone-400 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-500"><Trash2 size={14} /></button></td>
+                    <td className="p-2 flex gap-1">
+                      <button onClick={() => { setForm({ title: p.title, platform: p.platform, postedAt: p.postedAt, views: String(p.views || ''), likes: String(p.likes || ''), comments: String(p.comments || ''), shares: String(p.shares || ''), saves: String(p.saves || ''), notes: p.notes || '' }); setEditingPostId(p.id); setShowForm(true); }} className="p-1.5 rounded text-stone-400 hover:bg-rose-50 dark:hover:bg-rose-900/20 hover:text-rose-500" title="Update weekly metrics"><Pencil size={14} /></button>
+                      <button onClick={() => removePost(p.id)} className="p-1.5 rounded text-stone-400 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-500"><Trash2 size={14} /></button>
+                    </td>
                   </tr>
                 ))}
               </tbody>

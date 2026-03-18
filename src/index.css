@@ -34,3 +34,114 @@
   touch-action: pan-x;
   user-select: none;
 }
+
+/* ── Caption Animation Presets ───────────────────────────────────────────── */
+
+@keyframes caption-pop {
+  0%   { transform: translate(-50%, -50%) scale(0.55); opacity: 0; }
+  60%  { transform: translate(-50%, -50%) scale(1.08); opacity: 1; }
+  80%  { transform: translate(-50%, -50%) scale(0.97); }
+  100% { transform: translate(-50%, -50%) scale(1);    opacity: 1; }
+}
+@keyframes caption-fade-up {
+  0%   { transform: translate(-50%, calc(-50% + 12px)); opacity: 0; }
+  100% { transform: translate(-50%, -50%); opacity: 1; }
+}
+@keyframes caption-slide-up {
+  0%   { transform: translate(-50%, calc(-50% + 22px)); opacity: 0; }
+  60%  { opacity: 1; }
+  100% { transform: translate(-50%, -50%); opacity: 1; }
+}
+@keyframes caption-glow-pulse {
+  0%, 100% { text-shadow: 0 0 6px currentColor, 0 0 18px currentColor; }
+  50%       { text-shadow: 0 0 14px currentColor, 0 0 40px currentColor, 0 0 60px currentColor; }
+}
+@keyframes caption-type {
+  from { clip-path: inset(0 100% 0 0); }
+  to   { clip-path: inset(0 0% 0 0); }
+}
+
+/* TikTok Bold – punchy pop-in */
+.caption-tiktok-bold {
+  animation: caption-pop 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+.caption-tiktok-bold span {
+  font-size: clamp(1.1rem, 4vw, 2.2rem) !important;
+  font-weight: 900 !important;
+  font-family: 'Arial Black', Arial, sans-serif !important;
+  color: #FFE600 !important;
+  -webkit-text-stroke: 2px #000;
+  text-stroke: 2px #000;
+  text-shadow: 3px 3px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000 !important;
+  background: transparent !important;
+  letter-spacing: -0.01em;
+}
+
+/* Faith Elegant – graceful fade-up */
+.caption-faith {
+  animation: caption-fade-up 0.45s ease-out both;
+}
+.caption-faith span {
+  font-family: 'Playfair Display', Georgia, serif !important;
+  font-size: clamp(0.95rem, 3vw, 1.75rem) !important;
+  font-style: italic;
+  color: #fde68a !important;
+  text-shadow: 0 2px 12px rgba(0,0,0,0.95), 0 0 30px rgba(251,191,36,0.3) !important;
+  letter-spacing: 0.04em;
+}
+
+/* Minimal – clean slide-up fade */
+.caption-minimal {
+  animation: caption-slide-up 0.35s ease-out both;
+}
+.caption-minimal span {
+  font-size: clamp(0.85rem, 2.5vw, 1.4rem) !important;
+  font-weight: 500 !important;
+  color: #fff !important;
+  text-shadow: 0 1px 6px rgba(0,0,0,0.85) !important;
+  letter-spacing: 0.02em;
+}
+
+/* Highlight – box-highlighted word style */
+.caption-highlight {
+  animation: caption-slide-up 0.3s ease-out both;
+}
+.caption-highlight span {
+  font-size: clamp(1rem, 3.5vw, 1.9rem) !important;
+  font-weight: 800 !important;
+  background: #f43f5e !important;
+  color: #fff !important;
+  padding: 0.1em 0.45em !important;
+  border-radius: 0.2em !important;
+  box-shadow: 0 3px 14px rgba(244,63,94,0.55) !important;
+  text-shadow: none !important;
+}
+
+/* Neon – glowing text */
+.caption-neon {
+  animation: caption-fade-up 0.4s ease-out both;
+}
+.caption-neon span {
+  font-size: clamp(0.95rem, 3vw, 1.8rem) !important;
+  font-weight: 700 !important;
+  color: #67e8f9 !important;
+  text-shadow: none !important;
+  animation: caption-glow-pulse 1.8s ease-in-out infinite !important;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* Typewriter */
+.caption-typewriter {
+  overflow: hidden;
+}
+.caption-typewriter span {
+  font-size: clamp(0.9rem, 2.5vw, 1.5rem) !important;
+  font-weight: 600 !important;
+  font-family: 'Courier New', monospace !important;
+  color: #fff !important;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.9) !important;
+  display: inline-block;
+  animation: caption-type 1.2s steps(30, end) both !important;
+  white-space: nowrap;
+}
