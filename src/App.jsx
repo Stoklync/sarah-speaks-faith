@@ -215,6 +215,7 @@ const App = () => {
   const [pinterestPins, setPinterestPins] = useState([]);
   const [newBusinessName, setNewBusinessName] = useState('');
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [geminiKey, setGeminiKey] = useState(() => { try { return localStorage.getItem('faith-studio-gemini-api-key') || ''; } catch { return ''; } });
   const [openaiKey, setOpenaiKey] = useState(() => { try { return localStorage.getItem('faith-studio-openai-api-key') || ''; } catch { return ''; } });
@@ -349,48 +350,80 @@ const App = () => {
   return (
     <StudioContext.Provider value={value}>
       <div className="flex h-screen max-h-[100dvh] bg-white dark:bg-stone-900 text-stone-800 dark:text-stone-100 font-sans selection:bg-rose-200 dark:selection:bg-rose-900/50 transition-colors overflow-hidden">
-        <aside className={`fixed md:relative inset-y-0 left-0 w-64 h-full md:h-auto md:min-h-0 bg-white dark:bg-stone-800 border-r border-rose-100 dark:border-stone-700 flex flex-col justify-between overflow-y-auto shadow-[4px_0_24px_rgba(225,29,72,0.02)] dark:shadow-none z-30 transition-transform duration-200 ease-out ${sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}>
+        {/* ── Sidebar ── collapsible on desktop, drawer on mobile */}
+        <aside className={`fixed md:relative inset-y-0 left-0 h-full md:h-auto md:min-h-0 bg-white dark:bg-stone-900 border-r border-rose-100 dark:border-stone-800 flex flex-col justify-between overflow-y-auto overflow-x-hidden shadow-[2px_0_16px_rgba(225,29,72,0.04)] dark:shadow-none z-30 transition-all duration-200 ease-out
+          ${sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+          ${sidebarCollapsed ? 'md:w-[60px]' : 'md:w-[220px]'}
+          w-[220px]`}>
+          {/* Logo / collapse toggle */}
           <div>
-            <div className="p-6 md:p-8 pb-4 flex items-center justify-between md:justify-center">
-              <button onClick={() => setSidebarOpen(false)} className="md:hidden p-2 -ml-2 rounded-xl text-stone-500 hover:bg-stone-100 dark:hover:bg-stone-700" aria-label="Close menu"><X size={22} /></button>
-              <h1 className="text-xl font-bold tracking-widest text-stone-800 dark:text-stone-100 uppercase text-center flex items-center justify-center gap-2 flex-1 md:flex-initial">
-                <Sparkles size={16} className="text-rose-400" />
-                Sarah Speaks
-              </h1>
-              <p className="text-[10px] text-stone-400 dark:text-stone-500 text-center tracking-[0.2em] mt-2 uppercase font-semibold">Faith Studio</p>
-              <div className="md:hidden w-10" />
+            <div className={`flex items-center border-b border-rose-50 dark:border-stone-800 ${sidebarCollapsed ? 'justify-center px-2 py-4' : 'justify-between px-4 py-4'}`}>
+              {!sidebarCollapsed && (
+                <div className="min-w-0">
+                  <h1 className="text-sm font-black tracking-widest text-stone-800 dark:text-stone-100 uppercase leading-tight">Sarah Speaks</h1>
+                  <p className="text-[9px] text-rose-400 tracking-[0.18em] uppercase font-bold">Faith Studio</p>
+                </div>
+              )}
+              <button onClick={() => { setSidebarCollapsed(c => !c); setSidebarOpen(false); }}
+                className="p-1.5 rounded-lg text-stone-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-stone-800 transition-colors shrink-0 hidden md:flex"
+                title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}>
+                {sidebarCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
+              </button>
+              <button onClick={() => setSidebarOpen(false)} className="md:hidden p-1.5 rounded-lg text-stone-400 hover:bg-stone-100"><X size={18} /></button>
             </div>
-            <nav className="mt-6 px-4 space-y-1.5">
+            <nav className={`mt-3 space-y-0.5 ${sidebarCollapsed ? 'px-1.5' : 'px-2'}`}>
               {primaryNav.map(([id, Icon, label]) => (
-                <SidebarItem key={id} icon={<Icon size={18} />} label={label} active={activeTab === id} onClick={() => { setActiveTab(id); setSidebarOpen(false); }} />
+                <button key={id} onClick={() => { setActiveTab(id); setSidebarOpen(false); }}
+                  title={sidebarCollapsed ? label : undefined}
+                  className={`w-full flex items-center rounded-xl transition-all text-sm font-medium
+                    ${sidebarCollapsed ? 'justify-center px-0 py-3' : 'gap-3 px-3 py-2.5'}
+                    ${activeTab === id
+                      ? 'bg-rose-500 text-white shadow-sm shadow-rose-200 dark:shadow-none'
+                      : 'text-stone-500 dark:text-stone-400 hover:bg-rose-50 dark:hover:bg-stone-800 hover:text-rose-600 dark:hover:text-rose-400'}`}>
+                  <Icon size={17} className="shrink-0" />
+                  {!sidebarCollapsed && <span className="truncate">{label}</span>}
+                </button>
               ))}
             </nav>
           </div>
-          <div className="p-4 border-t border-rose-50 dark:border-stone-700 m-4">
-            <div className="mb-3">
-              <span className="text-[10px] font-bold text-stone-400 uppercase tracking-wider block mb-2">My Businesses</span>
-              <div className="space-y-1 max-h-32 overflow-y-auto">
+
+          {/* Bottom — business switcher + settings */}
+          {!sidebarCollapsed && (
+            <div className="p-3 border-t border-rose-50 dark:border-stone-800 space-y-1">
+              <span className="text-[9px] font-black text-stone-400 uppercase tracking-wider block px-2 mb-1">My Brands</span>
+              <div className="space-y-0.5 max-h-24 overflow-y-auto">
                 {(businesses || []).filter(Boolean).map((b) => (
-                  <button key={b.id || b.name || 'b'} onClick={() => setActiveBusinessId(b.id)} className={`w-full text-left px-3 py-2 rounded-lg text-xs font-medium truncate block ${activeBusinessId === b.id ? 'bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-300' : 'text-stone-600 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-700'}`}>
+                  <button key={b.id || b.name} onClick={() => setActiveBusinessId(b.id)}
+                    className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-medium truncate block transition-colors ${activeBusinessId === b.id ? 'bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-300' : 'text-stone-500 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-800'}`}>
                     {b.name || 'Business'}
                   </button>
                 ))}
               </div>
-              <button onClick={() => setShowAddBusiness(true)} className="w-full mt-2 text-xs font-bold text-rose-600 dark:text-rose-400 hover:underline flex items-center gap-1">
-                <Plus size={14} /> Add business
+              <button onClick={() => setShowAddBusiness(true)} className="w-full text-left px-2.5 py-1.5 text-xs font-bold text-rose-500 hover:text-rose-600 flex items-center gap-1">
+                <Plus size={12} /> Add brand
+              </button>
+              <button onClick={cycleTheme} className="flex items-center gap-2 text-stone-400 hover:text-stone-700 dark:hover:text-stone-100 text-xs w-full px-2.5 py-1.5 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors">
+                {isDark ? <Sun size={14} /> : <Moon size={14} />}
+                <span>{theme === 'system' ? 'System' : theme === 'dark' ? 'Dark' : 'Light'}</span>
+              </button>
+              <button onClick={() => setShowSettings(true)} className="flex items-center gap-2 text-stone-400 hover:text-stone-700 dark:hover:text-stone-100 text-xs w-full px-2.5 py-1.5 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors">
+                <Settings size={14} />
+                <span>Settings</span>
               </button>
             </div>
-            <button onClick={cycleTheme} className="flex items-center space-x-2 text-stone-500 dark:text-stone-400 hover:text-stone-800 dark:hover:text-stone-100 transition-colors text-sm w-full p-3 rounded-xl hover:bg-rose-50 dark:hover:bg-stone-700">
-              {isDark ? <Sun size={18} /> : <Moon size={18} />}
-              <span className="font-medium">{theme === 'system' ? 'Theme: System' : theme === 'dark' ? 'Dark' : 'Light'}</span>
-            </button>
-            <button onClick={() => setShowSettings(true)} className="flex items-center space-x-2 text-stone-500 dark:text-stone-400 hover:text-stone-800 dark:hover:text-stone-100 transition-colors text-sm w-full p-3 rounded-xl hover:bg-rose-50 dark:hover:bg-stone-700 mt-1">
-              <Settings size={18} />
-              <span className="font-medium">App Settings</span>
-            </button>
-          </div>
+          )}
+          {sidebarCollapsed && (
+            <div className="p-2 border-t border-rose-50 dark:border-stone-800 flex flex-col items-center gap-1">
+              <button onClick={cycleTheme} title="Toggle theme" className="p-2 rounded-lg text-stone-400 hover:text-stone-700 dark:hover:text-stone-100 hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors">
+                {isDark ? <Sun size={15} /> : <Moon size={15} />}
+              </button>
+              <button onClick={() => setShowSettings(true)} title="Settings" className="p-2 rounded-lg text-stone-400 hover:text-stone-700 dark:hover:text-stone-100 hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors">
+                <Settings size={15} />
+              </button>
+            </div>
+          )}
         </aside>
-        {sidebarOpen && <div className="fixed inset-0 bg-black/40 z-20 md:hidden" onClick={() => setSidebarOpen(false)} aria-hidden />}
+        {sidebarOpen && <div className="fixed inset-0 bg-black/50 z-20 md:hidden" onClick={() => setSidebarOpen(false)} aria-hidden />}
 
         <main className="flex-1 min-w-0 min-h-0 relative bg-white dark:bg-stone-900 transition-colors flex flex-col overflow-y-auto overflow-x-hidden">
           {/* Hide main header in Video Editor — editor has its own controls, full screen for editing */}
@@ -2674,15 +2707,14 @@ const ClassicEditor = () => {
 
   const getEventX = (e) => e.clientX ?? e.touches?.[0]?.clientX ?? e.changedTouches?.[0]?.clientX ?? 0;
   const handleRulerClick = (e) => {
-    const el = timelineScrollRef.current;
-    if (!el) return;
-    const rect = el.getBoundingClientRect();
-    const scrollLeft = el.scrollLeft || 0;
-    const laneWidth = 500 * timelineZoom;
-    const labelW = 80;
-    const xInContent = scrollLeft + (getEventX(e) - rect.left) - labelW;
-    const pct = Math.max(0, Math.min(1, laneWidth > 0 ? xInContent / laneWidth : 0));
-    seekTo(snapToNearest(pct * effectiveDuration));
+    const ruler = timelineRulerRef.current;
+    if (!ruler || effectiveDuration <= 0) return;
+    const rect = ruler.getBoundingClientRect();
+    const x = getEventX(e) - rect.left;
+    const pct = Math.max(0, Math.min(1, rect.width > 0 ? x / rect.width : 0));
+    const t = snapToNearest(pct * effectiveDuration);
+    setPlayhead(t);
+    seekTo(t);
   };
 
   const setInPoint = () => { const t = videoRef.current?.currentTime ?? 0; setClipIn(t); if (clipOut != null && t >= clipOut) setClipOut(null); };
@@ -3188,15 +3220,12 @@ const ClassicEditor = () => {
   const [draggingPlayhead, setDraggingPlayhead] = useState(false);
   const rafRef = useRef(null);
   const handlePlayheadDrag = (e) => {
-    const el = timelineScrollRef.current;
-    if (!el) return;
-    const rect = el.getBoundingClientRect();
-    const scrollLeft = el.scrollLeft || 0;
-    const laneWidth = 500 * timelineZoom;
-    const labelW = 80;
-    const clientX = getEventX(e);
-    const xInContent = scrollLeft + (clientX - rect.left) - labelW;
-    const pct = Math.max(0, Math.min(1, laneWidth > 0 ? xInContent / laneWidth : 0));
+    // Use the ruler's own rect — accurate regardless of label width or scroll container structure
+    const ruler = timelineRulerRef.current;
+    if (!ruler || effectiveDuration <= 0) return;
+    const rect = ruler.getBoundingClientRect();
+    const x = getEventX(e) - rect.left;
+    const pct = Math.max(0, Math.min(1, rect.width > 0 ? x / rect.width : 0));
     const t = snapToNearest(pct * effectiveDuration);
     setPlayhead(t);
     if (rafRef.current) cancelAnimationFrame(rafRef.current);
@@ -3540,16 +3569,35 @@ const ClassicEditor = () => {
               })}
             </>
           ) : (
-            <div className="text-stone-500 text-center flex-1 flex flex-col items-center justify-center">
-              <Play className="w-16 h-16 mb-4 opacity-50" />
-              <p className="text-sm font-bold uppercase tracking-widest">Preview</p>
+            <div className="flex-1 flex flex-col items-center justify-center p-4 gap-4 overflow-y-auto">
               {videos.length > 0 ? (
-                <select onChange={(e) => setSelectedVideoId(Number(e.target.value))} className="mt-4 bg-white/10 border rounded-xl px-4 py-2 text-sm">
-                  <option value="">Select video...</option>
-                  {videos.map(v => <option key={v.id} value={v.id}>{v.name}</option>)}
-                </select>
+                <>
+                  <p className="text-xs font-bold text-stone-400 uppercase tracking-widest">Pick a clip to edit</p>
+                  <div className="grid grid-cols-2 gap-2 w-full max-w-xs">
+                    {videos.map(v => (
+                      <button key={v.id} onClick={() => setSelectedVideoId(v.id)}
+                        className="group relative rounded-xl overflow-hidden border-2 border-stone-700 hover:border-rose-500 transition-all aspect-video bg-stone-800 flex flex-col items-center justify-center gap-1">
+                        <video src={v.url} className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:opacity-80 transition-opacity" muted playsInline preload="metadata" />
+                        <div className="relative z-10 bg-black/60 rounded-lg px-2 py-0.5 max-w-[90%]">
+                          <span className="text-[10px] text-white font-bold truncate block">{v.name?.replace(/\.[^.]+$/, '') || 'Clip'}</span>
+                        </div>
+                        <Play size={20} className="relative z-10 text-white/80 group-hover:text-rose-400 transition-colors" />
+                      </button>
+                    ))}
+                  </div>
+                  <label className="cursor-pointer flex items-center gap-2 text-xs text-rose-400 font-bold hover:text-rose-300 transition-colors">
+                    <Plus size={14} /> Add more clips
+                    <input type="file" accept="video/*" multiple className="hidden" onChange={e => Array.from(e.target.files || []).forEach(f => addAsset(f, 'video'))} />
+                  </label>
+                </>
               ) : (
-                <p className="mt-4 text-sm">Upload a video in Media Library first.</p>
+                <label className="cursor-pointer flex flex-col items-center gap-3 text-center group">
+                  <div className="w-20 h-20 rounded-2xl bg-stone-800 border-2 border-dashed border-stone-600 group-hover:border-rose-500 flex items-center justify-center transition-colors">
+                    <Plus size={28} className="text-stone-500 group-hover:text-rose-400 transition-colors" />
+                  </div>
+                  <span className="text-sm font-bold text-stone-400 group-hover:text-stone-200 transition-colors">Drop video here or tap to upload</span>
+                  <input type="file" accept="video/*" multiple className="hidden" onChange={e => Array.from(e.target.files || []).forEach(f => { const id = addAsset(f, 'video'); if (id && !selectedVideo) setSelectedVideoId(id); })} />
+                </label>
               )}
             </div>
           )}
@@ -4290,7 +4338,21 @@ const ClassicEditor = () => {
             {[...Array(Math.ceil(effectiveDuration / 15) + 1)].map((_, i) => (
               <span key={i} className="shrink-0 pointer-events-none relative z-[1]" title={secToTimecode(i * 15)}>{secToTime(Math.min(i * 15, effectiveDuration))}</span>
             ))}
-            <div onMouseDown={(e) => { e.stopPropagation(); handleRulerClick(e); setDraggingPlayhead(true); }} onTouchStart={(e) => { e.stopPropagation(); handleRulerClick(e); setDraggingPlayhead(true); }} className="absolute top-0 bottom-0 w-1 -ml-0.5 bg-amber-400 z-30 cursor-grab active:cursor-grabbing hover:bg-amber-300 touch-none shadow-lg shadow-amber-400/50" style={{ left: `${playheadPct}%` }} title="Drag playhead — click ruler to jump" />
+            {/* Playhead — triangle handle + line */}
+            <div onMouseDown={(e) => { e.stopPropagation(); handleRulerClick(e); setDraggingPlayhead(true); }} onTouchStart={(e) => { e.stopPropagation(); handleRulerClick(e); setDraggingPlayhead(true); }}
+              className="absolute top-0 bottom-0 z-30 cursor-grab active:cursor-grabbing touch-none select-none"
+              style={{ left: `${playheadPct}%`, transform: 'translateX(-50%)' }}>
+              {/* Triangle head */}
+              <div className="absolute -top-0.5 left-1/2 -translate-x-1/2 w-0 h-0" style={{ borderLeft: '6px solid transparent', borderRight: '6px solid transparent', borderTop: '8px solid #f59e0b' }} />
+              {/* Vertical line */}
+              <div className="absolute top-1.5 left-1/2 -translate-x-1/2 w-0.5 bottom-0 bg-amber-400 shadow-[0_0_6px_rgba(251,191,36,0.8)]" />
+              {/* Time tooltip — only while dragging */}
+              {draggingPlayhead && (
+                <div className="absolute -top-7 left-1/2 -translate-x-1/2 bg-stone-900 border border-amber-500/60 text-amber-300 text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-lg whitespace-nowrap shadow-lg pointer-events-none">
+                  {secToTimecode(playhead)}
+                </div>
+              )}
+            </div>
             {markers.map(m => (
               <div key={m.id} className="absolute top-0 bottom-0 w-0.5 bg-amber-500 z-[5] pointer-events-none" style={{ left: `${(m.time / effectiveDuration) * 100}%` }} title={secToTimecode(m.time)} />
             ))}
@@ -4365,7 +4427,7 @@ const ClassicEditor = () => {
               <Video size={14} />
               <span>Video</span>
             </div>
-            <div ref={mainTrackRef} onMouseDown={(e) => { e.preventDefault(); handlePlayheadDrag(e); setDraggingPlayhead(true); }} className="flex-1 h-full relative overflow-hidden cursor-grab active:cursor-grabbing rounded bg-stone-700/80" style={{ userSelect: 'none', minWidth: `${500 * timelineZoom}px` }}>
+            <div ref={mainTrackRef} onMouseDown={(e) => { e.preventDefault(); handlePlayheadDrag(e); setDraggingPlayhead(true); }} className="flex-1 h-full relative overflow-hidden rounded bg-stone-700/80" style={{ userSelect: 'none', minWidth: `${500 * timelineZoom}px`, cursor: 'default' }}>
               {selectedVideo ? (
                 <>
                   {getMainTimelineRanges(mainSegments).map(({ seg, tlStart, tlEnd }) => {
@@ -4383,7 +4445,7 @@ const ClassicEditor = () => {
                       </div>
                     );
                   })}
-                  <div className="absolute top-0 bottom-0 w-0.5 bg-amber-400 pointer-events-none shadow-[0_0_4px_rgba(251,191,36,0.6)]" style={{ left: `${playheadPct}%` }} />
+                  <div className="absolute top-0 bottom-0 w-0.5 bg-amber-400 pointer-events-none shadow-[0_0_8px_rgba(251,191,36,0.7)]" style={{ left: `${playheadPct}%`, transform: 'translateX(-50%)' }} />
                 </>
               ) : (
                 <div className="absolute inset-0 flex flex-col items-center justify-center text-stone-500 text-xs gap-1">
@@ -4401,7 +4463,7 @@ const ClassicEditor = () => {
               <Mic size={14} />
               <span>Audio</span>
             </div>
-            <div ref={audioTrackRef} onMouseDown={(e) => { e.preventDefault(); handlePlayheadDrag(e); setDraggingPlayhead(true); }} className="flex-1 h-full relative overflow-hidden cursor-grab active:cursor-grabbing rounded bg-stone-900" style={{ userSelect: 'none', minWidth: `${500 * timelineZoom}px` }}>
+            <div ref={audioTrackRef} onMouseDown={(e) => { e.preventDefault(); handlePlayheadDrag(e); setDraggingPlayhead(true); }} className="flex-1 h-full relative overflow-hidden rounded bg-stone-900" style={{ userSelect: 'none', minWidth: `${500 * timelineZoom}px`, cursor: 'default' }}>
               {hasAudio ? (
                 <>
                   {getAudioTimelineRanges(audioSegments).map(({ seg, tlStart, tlEnd }) => {
@@ -4419,7 +4481,7 @@ const ClassicEditor = () => {
                       </div>
                     );
                   })}
-                  <div className="absolute top-0 bottom-0 w-0.5 bg-amber-400 pointer-events-none shadow-[0_0_4px_rgba(251,191,36,0.6)]" style={{ left: `${playheadPct}%` }} />
+                  <div className="absolute top-0 bottom-0 w-0.5 bg-amber-400 pointer-events-none shadow-[0_0_8px_rgba(251,191,36,0.7)]" style={{ left: `${playheadPct}%`, transform: 'translateX(-50%)' }} />
                 </>
               ) : (
                 <div className="absolute inset-0 flex items-center justify-center text-white/50 text-xs">Audio from video</div>
@@ -4457,7 +4519,7 @@ const ClassicEditor = () => {
                         </div>
                       );
                     })}
-                    <div className="absolute top-0 bottom-0 w-0.5 bg-amber-400 pointer-events-none shadow-[0_0_4px_rgba(251,191,36,0.6)]" style={{ left: `${playheadPct}%` }} />
+                    <div className="absolute top-0 bottom-0 w-0.5 bg-amber-400 pointer-events-none shadow-[0_0_8px_rgba(251,191,36,0.7)]" style={{ left: `${playheadPct}%`, transform: 'translateX(-50%)' }} />
                   </>
                 ) : (
                   <div className="absolute inset-0 flex items-center justify-center text-stone-500 text-[10px]">Drag audio from above, or Split → Move to track</div>
