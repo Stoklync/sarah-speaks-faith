@@ -61,6 +61,7 @@ import {
   Menu,
   X,
   ChevronDown,
+  ChevronLeft,
   ChevronRight,
   Pencil,
   RotateCcw,
@@ -3143,163 +3144,104 @@ const ClassicEditor = () => {
           <button onClick={() => setShowCreatorInsights(s => !s)} className={`p-1.5 rounded-lg ${showCreatorInsights ? 'bg-rose-900/50 text-rose-400' : 'text-stone-500 hover:bg-stone-700 hover:text-white'}`} title="Creator Insights"><Target size={13} /></button>
         </div>
         {/* Scrollable sections */}
-        <div className="flex-1 overflow-y-auto overflow-x-hidden px-3 py-3 space-y-4 text-stone-100">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden px-3 py-3 space-y-3 text-stone-100">
 
-          {/* SOURCE */}
-          <div>
-            <p className="text-[10px] font-bold text-stone-500 uppercase tracking-wider mb-1.5">Source</p>
-            <div className="flex gap-1.5">
-              <select value={selectedVideo?.id || ''} onChange={(e) => setSelectedVideoId(Number(e.target.value) || null)} className="flex-1 bg-stone-800 border border-stone-700 rounded-lg px-2 py-2 text-xs text-stone-100 truncate min-w-0">
-                <option value="">{videos.length > 0 ? 'Select video…' : 'No videos'}</option>
-                {videos.map(v => <option key={v.id} value={v.id}>{v.name}</option>)}
-              </select>
-              <button onClick={() => setActiveTab('library')} className="px-2.5 py-2 bg-stone-800 border border-stone-700 rounded-lg text-xs text-rose-400 hover:bg-stone-700 font-bold shrink-0">+ Add</button>
-            </div>
+          {/* VIDEO SOURCE */}
+          <div className="flex gap-1.5">
+            <select value={selectedVideo?.id || ''} onChange={(e) => setSelectedVideoId(Number(e.target.value) || null)} className="flex-1 bg-stone-800 border border-stone-700 rounded-lg px-2 py-2 text-xs text-stone-100 truncate min-w-0">
+              <option value="">{videos.length > 0 ? 'Select video…' : 'No videos — upload first'}</option>
+              {videos.map(v => <option key={v.id} value={v.id}>{v.name}</option>)}
+            </select>
+            <button onClick={() => setActiveTab('library')} className="px-2.5 py-2 bg-stone-800 border border-stone-700 rounded-lg text-xs text-rose-400 hover:bg-stone-700 font-bold shrink-0" title="Go to library">+ Add</button>
           </div>
 
           {/* FORMAT */}
-          <div>
-            <p className="text-[10px] font-bold text-stone-500 uppercase tracking-wider mb-1.5">Format</p>
-            <div className="grid grid-cols-2 gap-1.5">
-              <button onClick={() => setExportFormat('9:16')} className={`py-2 rounded-lg text-xs font-bold border transition-colors ${exportFormat === '9:16' ? 'bg-rose-500 border-rose-500 text-white' : 'bg-stone-800 border-stone-700 text-stone-400 hover:border-stone-500'}`}>9:16 Reels</button>
-              <button onClick={() => setExportFormat('16:9')} className={`py-2 rounded-lg text-xs font-bold border transition-colors ${exportFormat === '16:9' ? 'bg-rose-500 border-rose-500 text-white' : 'bg-stone-800 border-stone-700 text-stone-400 hover:border-stone-500'}`}>16:9 YouTube</button>
-            </div>
+          <div className="grid grid-cols-3 gap-1">
+            {[{ id: '9:16', label: '9:16 Reels' }, { id: '16:9', label: '16:9 YouTube' }, { id: '1:1', label: '1:1 Feed' }].map(f => (
+              <button key={f.id} onClick={() => setExportFormat(f.id)} className={`py-1.5 rounded-lg text-[11px] font-bold border transition-colors ${exportFormat === f.id ? 'bg-rose-500 border-rose-500 text-white' : 'bg-stone-800 border-stone-700 text-stone-400 hover:border-stone-500'}`}>{f.label}</button>
+            ))}
           </div>
 
-          {/* PLAYBACK */}
-          <div>
-            <p className="text-[10px] font-bold text-stone-500 uppercase tracking-wider mb-1.5">Playback</p>
-            <div className="flex items-center gap-2 mb-2">
-              <button onClick={togglePlayPause} disabled={!videoForPreview} className="w-10 h-10 rounded-full flex items-center justify-center bg-rose-500 hover:bg-rose-400 disabled:opacity-40 text-white shrink-0 shadow-lg shadow-rose-900/40" title="Play / Pause (Space)">
-                {!playing ? <Play size={16} fill="currentColor" /> : <Pause size={16} />}
-              </button>
-              <span className="font-mono text-sm font-bold text-rose-300 tabular-nums">{secToTimecode(playhead)}</span>
-              <button onClick={undoAll} disabled={history.length === 0} className="ml-auto p-2 rounded-lg text-stone-500 hover:bg-stone-700 hover:text-white disabled:opacity-30" title="Undo (Ctrl+Z)"><RotateCcw size={13} /></button>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-[10px] text-stone-500 shrink-0">Vol</span>
-              <input type="range" min="0" max="1" step="0.1" defaultValue="1" onChange={(e) => { const v = videoRef.current; if (v) v.volume = Number(e.target.value); }} className="flex-1 accent-rose-500" />
-              <button type="button" onClick={() => setUserMuted(m => !m)} className={`text-[10px] font-bold px-2 py-1 rounded-lg ${userMuted ? 'text-rose-400 bg-rose-900/40' : 'text-stone-500 hover:text-rose-400 hover:bg-stone-800'}`}>Mute</button>
-            </div>
+          {/* PLAYBACK ROW */}
+          <div className="flex items-center gap-2">
+            <button onClick={togglePlayPause} disabled={!videoForPreview} className="w-9 h-9 rounded-full flex items-center justify-center bg-rose-500 hover:bg-rose-400 disabled:opacity-40 text-white shrink-0" title="Play / Pause (Space)">
+              {!playing ? <Play size={14} fill="currentColor" /> : <Pause size={14} />}
+            </button>
+            <span className="font-mono text-sm font-bold text-rose-300 tabular-nums flex-1">{secToTimecode(playhead)}</span>
+            <input type="range" min="0" max="1" step="0.1" defaultValue="1" onChange={(e) => { const v = videoRef.current; if (v) v.volume = Number(e.target.value); }} className="w-16 accent-rose-500" title="Volume" />
+            <button onClick={undoAll} disabled={history.length === 0} className="p-1.5 rounded-lg text-stone-500 hover:bg-stone-700 hover:text-white disabled:opacity-30" title="Undo"><RotateCcw size={12} /></button>
           </div>
 
-          {/* EDIT */}
+          {/* EDIT ACTIONS */}
           <div>
             <p className="text-[10px] font-bold text-stone-500 uppercase tracking-wider mb-1.5">Edit</p>
             <div className="grid grid-cols-2 gap-1.5 mb-1.5">
-              <button onClick={splitAtPlayhead} disabled={!videoForPreview} className="flex items-center justify-center gap-1 py-2.5 rounded-lg text-xs font-bold bg-rose-900/40 border border-rose-800/50 text-rose-300 hover:bg-rose-800/50 disabled:opacity-40" title="Split at playhead (S)"><Scissors size={11} />Split</button>
-              <button onClick={deleteSelectedSegment} disabled={!selectedSegmentId && !selectedClipId} className="py-2.5 rounded-lg text-xs font-bold bg-stone-800 border border-stone-700 text-stone-300 hover:bg-stone-700 disabled:opacity-40" title={hasLayeredClips ? 'Delete selected clip' : 'Del Main'}>Del Clip</button>
-            </div>
-            <div className="flex gap-1.5 mb-1.5">
-              <input value={splitTimeInput} onChange={(e) => setSplitTimeInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && splitAtTimeInput()} placeholder="0:30" className="w-16 font-mono text-xs px-2 py-2 rounded-lg border bg-stone-800 border-stone-700 text-stone-100" disabled={!videoForPreview} />
-              <button onClick={splitAtTimeInput} disabled={!videoForPreview} className="flex-1 py-2 rounded-lg text-xs font-bold bg-stone-800 border border-stone-700 text-stone-300 hover:bg-stone-700 disabled:opacity-40">Split at time</button>
+              <button onClick={splitAtPlayhead} disabled={!videoForPreview} className="flex items-center justify-center gap-1 py-2.5 rounded-lg text-xs font-bold bg-rose-900/40 border border-rose-800/50 text-rose-300 hover:bg-rose-800/50 disabled:opacity-40" title="Split here (S)"><Scissors size={11} />Split</button>
+              <button onClick={deleteSelectedSegment} disabled={!selectedSegmentId && !selectedClipId} className="py-2.5 rounded-lg text-xs font-bold bg-stone-800 border border-stone-700 text-stone-300 hover:bg-stone-700 disabled:opacity-40">Delete</button>
             </div>
             {splitFeedback && <p className="text-[10px] text-amber-400 italic mb-1">{splitFeedback}</p>}
-            <div className="grid grid-cols-2 gap-1.5">
-              <button onClick={deleteSelectedAudioSegment} disabled={!selectedAudioSegmentId && !(hasLayeredClips && selectedClipId)} className="py-2 rounded-lg text-xs font-bold bg-stone-800 border border-stone-700 text-stone-300 hover:bg-stone-700 disabled:opacity-40">Del Audio</button>
-              <button onClick={duplicateSelectedSegment} disabled={!selectedSegmentId || !selectedVideo} className="flex items-center justify-center gap-1 py-2 rounded-lg text-xs font-bold bg-stone-800 border border-stone-700 text-stone-300 hover:bg-stone-700 disabled:opacity-40"><Copy size={11} />Dup</button>
+            {/* Mini tools row */}
+            <div className="flex items-center gap-1">
+              <button onClick={addMarker} disabled={!videoForPreview} className="p-2 rounded-lg bg-stone-800 border border-stone-700 text-amber-400 hover:bg-stone-700 disabled:opacity-40" title="Add marker (M)"><MapPin size={12} /></button>
+              <button onClick={goToPrevMarker} disabled={!markers.filter(m => m.time < playhead - 0.01).length || !selectedVideo} className="p-2 rounded-lg bg-stone-800 border border-stone-700 text-stone-400 hover:bg-stone-700 disabled:opacity-40" title="Prev marker"><ChevronLeft size={12} /></button>
+              <button onClick={goToNextMarker} disabled={!markers.filter(m => m.time > playhead + 0.01).length || !selectedVideo} className="p-2 rounded-lg bg-stone-800 border border-stone-700 text-stone-400 hover:bg-stone-700 disabled:opacity-40" title="Next marker"><ChevronRight size={12} /></button>
+              <button onClick={() => setSnapEnabled(s => !s)} disabled={!videoForPreview} className={`p-2 rounded-lg border transition-colors ${snapEnabled ? 'bg-rose-900/40 border-rose-800/50 text-rose-400' : 'bg-stone-800 border-stone-700 text-stone-400 hover:bg-stone-700'} disabled:opacity-40`} title={`Snap ${snapEnabled ? 'on' : 'off'}`}><Magnet size={12} /></button>
+              <button onClick={duplicateSelectedSegment} disabled={!selectedSegmentId || !selectedVideo} className="flex items-center justify-center gap-1 px-2.5 py-2 rounded-lg text-xs bg-stone-800 border border-stone-700 text-stone-400 hover:bg-stone-700 disabled:opacity-40 ml-auto" title="Duplicate"><Copy size={12} /></button>
             </div>
           </div>
 
-          {/* ADD TO TIMELINE */}
+          {/* ADD */}
           <div>
-            <p className="text-[10px] font-bold text-stone-500 uppercase tracking-wider mb-1.5">Add to Timeline</p>
+            <p className="text-[10px] font-bold text-stone-500 uppercase tracking-wider mb-1.5">Add</p>
             <div className="grid grid-cols-2 gap-1.5 mb-1.5">
-              <button onClick={() => addTextClip('Title')} disabled={!videoForPreview} className="py-2 rounded-lg text-xs font-bold bg-stone-800 border border-stone-700 text-blue-400 hover:bg-stone-700 disabled:opacity-40">+ Title</button>
-              <button onClick={() => addTextClip('Captions')} disabled={!videoForPreview} className="py-2 rounded-lg text-xs font-bold bg-stone-800 border border-stone-700 text-blue-400 hover:bg-stone-700 disabled:opacity-40">+ Caption</button>
+              <button onClick={() => addTextClip('Caption')} disabled={!videoForPreview} className="py-2 rounded-lg text-xs font-bold bg-stone-800 border border-stone-700 text-blue-400 hover:bg-stone-700 disabled:opacity-40">+ Caption</button>
+              <button onClick={addTrafficOverlay} disabled={!videoForPreview} className="py-2 rounded-lg text-xs font-bold bg-stone-800 border border-stone-700 text-amber-400 hover:bg-stone-700 disabled:opacity-40">+ CTA</button>
             </div>
-            <button onClick={addTrafficOverlay} disabled={!videoForPreview} className="w-full py-2 rounded-lg text-xs font-bold bg-stone-800 border border-stone-700 text-amber-400 hover:bg-stone-700 disabled:opacity-40 mb-1.5">+ Traffic Overlay</button>
-            {selectedAudio && (
-              <button onClick={addAudioFromLibrary} disabled={!selectedAudio?.url || !videoForPreview} className="w-full py-2 rounded-lg text-xs font-bold bg-stone-800 border border-stone-700 text-emerald-400 hover:bg-stone-700 disabled:opacity-40">+ Add Audio</button>
-            )}
-          </div>
-
-          {/* AUDIO TRACK */}
-          <div>
-            <p className="text-[10px] font-bold text-stone-500 uppercase tracking-wider mb-1.5">Audio Track</p>
             <div className="flex gap-1.5">
-              {audioExtraTracks.length === 1 ? (
-                <button onClick={() => moveSelectedAudioToTrack(0)} disabled={!selectedAudioSegmentId || !selectedVideo} className="flex-1 py-2 rounded-lg text-xs font-bold bg-stone-800 border border-stone-700 text-emerald-400 hover:bg-stone-700 disabled:opacity-40">Move to Track 2</button>
-              ) : (
-                <select disabled={!selectedAudioSegmentId || !selectedVideo} value="" onChange={(e) => { const i = Number(e.target.value); if (!isNaN(i) && i >= 0) moveSelectedAudioToTrack(i); e.target.value = ''; }} className="flex-1 text-xs text-emerald-400 bg-stone-800 border border-stone-700 rounded-lg px-2 py-2 disabled:opacity-40">
-                  <option value="">Move to track…</option>
-                  {audioExtraTracks.map((_, i) => <option key={i} value={i}>Track {i + 2}</option>)}
-                </select>
+              {selectedAudio && (
+                <button onClick={addAudioFromLibrary} disabled={!selectedAudio?.url || !videoForPreview} className="flex-1 py-2 rounded-lg text-xs font-bold bg-stone-800 border border-stone-700 text-emerald-400 hover:bg-stone-700 disabled:opacity-40">+ Music</button>
               )}
-              <button onClick={duplicateSelectedAudioSegment} disabled={!selectedAudioSegmentId || !selectedVideo} className="flex items-center justify-center gap-1 px-3 py-2 rounded-lg text-xs bg-stone-800 border border-stone-700 text-stone-400 hover:bg-stone-700 disabled:opacity-40" title="Dup audio"><Copy size={11} /></button>
-            </div>
-          </div>
-
-          {/* RECORD */}
-          <div>
-            <p className="text-[10px] font-bold text-stone-500 uppercase tracking-wider mb-1.5">Record</p>
-            <div className="flex gap-1.5">
               {speechSupported && (
-                <button onClick={isListening ? stopSpeech : startSpeech} className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-xs font-bold transition-colors ${isListening ? 'bg-rose-500 text-white' : 'bg-stone-800 border border-stone-700 text-rose-400 hover:bg-stone-700'}`} title="Auto-caption with voice">
-                  <Mic size={13} className={isListening ? 'animate-pulse' : ''} />{isListening ? 'Stop' : 'Caption'}
+                <button onClick={isListening ? stopSpeech : startSpeech} className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-bold transition-colors ${isListening ? 'bg-rose-500 text-white' : 'bg-stone-800 border border-stone-700 text-rose-400 hover:bg-stone-700'}`} title="Auto-caption">
+                  <Mic size={12} className={isListening ? 'animate-pulse' : ''} />{isListening ? 'Stop' : 'Auto-Caption'}
                 </button>
               )}
-              <button onClick={isRecording ? stopRecord : () => startRecord(true, true)} disabled={!!recordError} className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-xs font-bold transition-colors ${isRecording ? 'bg-red-500 text-white' : 'bg-stone-800 border border-stone-700 text-rose-400 hover:bg-stone-700'} disabled:opacity-40`} title="Record to timeline">
-                <Camera size={13} className={isRecording ? 'animate-pulse' : ''} />{isRecording ? 'Stop' : 'Record'}
-              </button>
-            </div>
-          </div>
-
-          {/* TOOLS */}
-          <div>
-            <p className="text-[10px] font-bold text-stone-500 uppercase tracking-wider mb-1.5">Tools</p>
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <button onClick={addMarker} disabled={!videoForPreview} className="p-2 rounded-lg bg-stone-800 border border-stone-700 text-amber-400 hover:bg-stone-700 disabled:opacity-40" title="Add marker (M)"><MapPin size={13} /></button>
-              <button onClick={goToPrevMarker} disabled={!markers.filter(m => m.time < playhead - 0.01).length || !selectedVideo} className="p-2 rounded-lg bg-stone-800 border border-stone-700 text-stone-400 hover:bg-stone-700 disabled:opacity-40" title="Prev marker">⟨</button>
-              <button onClick={goToNextMarker} disabled={!markers.filter(m => m.time > playhead + 0.01).length || !selectedVideo} className="p-2 rounded-lg bg-stone-800 border border-stone-700 text-stone-400 hover:bg-stone-700 disabled:opacity-40" title="Next marker">⟩</button>
-              <button onClick={() => setTracksLinked(l => !l)} disabled={!videoForPreview} className={`p-2 rounded-lg border transition-colors ${tracksLinked ? 'bg-rose-900/40 border-rose-800/50 text-rose-400' : 'bg-stone-800 border-stone-700 text-stone-400 hover:bg-stone-700'} disabled:opacity-40`} title={`Link Main+Audio (${tracksLinked ? 'on' : 'off'})`}><Link2 size={13} /></button>
-              <button onClick={() => setSnapEnabled(s => !s)} disabled={!videoForPreview} className={`p-2 rounded-lg border transition-colors ${snapEnabled ? 'bg-rose-900/40 border-rose-800/50 text-rose-400' : 'bg-stone-800 border-stone-700 text-stone-400 hover:bg-stone-700'} disabled:opacity-40`} title={`Snap (${snapEnabled ? 'on' : 'off'})`}><Magnet size={13} /></button>
             </div>
           </div>
 
           {/* HOOK STRENGTH SCORE */}
           {videoForPreview && (() => {
-            // Compute hook score: 0–100
             let score = 0;
             const tips = [];
-            // Caption in first 3 seconds
             const hasFastCaption = textClips.some(c => (c.start ?? 0) < 3 && c.text);
             if (hasFastCaption) score += 28;
             else tips.push('Add a caption in the first 3s');
-            // Caption count (encourages captioning)
             const captionCount = textClips.filter(c => c.text).length;
             score += Math.min(captionCount * 6, 18);
-            if (captionCount === 0) tips.push('Add captions to boost watch time');
-            // Traffic overlay / CTA
-            const hasCTA = textClips.some(c => c.lowerThird || (c.text && (c.text.toLowerCase().includes('link') || c.text.toLowerCase().includes('bio') || c.text.toLowerCase().includes('click'))));
+            if (captionCount === 0) tips.push('Add captions — boosts watch time');
+            const hasCTA = textClips.some(c => c.lowerThird || (c.text && /link|bio|click/i.test(c.text)));
             if (hasCTA) score += 18;
-            else tips.push('Add a CTA overlay (+ Traffic Overlay)');
-            // Video length optimal 15–90s
+            else tips.push('Add a CTA (Link in Bio)');
             const dur = timelineDuration || 0;
             if (dur >= 15 && dur <= 90) score += 12;
-            else if (dur > 0 && dur < 15) tips.push('Keep videos 15–90s for best reach');
-            else if (dur > 90) tips.push('Trim under 90s — shorter = more replays');
-            // Has audio/background music
-            const hasAudio = audioSegments.length > 0;
-            if (hasAudio) score += 10;
-            else tips.push('Add background music for retention');
-            // Has seamless transition
-            const hasSeamless = mainSegments.some(s => s.transition && s.transition !== 'cut');
-            if (hasSeamless) score += 14;
-            else if (mainSegments.length > 1) tips.push('Use Crossfade to make cuts invisible');
+            else if (dur > 90) tips.push('Trim under 90s for more replays');
+            if (audioSegments.length > 0) score += 10;
+            else tips.push('Add background music');
+            if (mainSegments.some(s => s.transition && s.transition !== 'cut')) score += 14;
+            else if (mainSegments.length > 1) tips.push('Use Crossfade for seamless cuts');
             score = Math.min(100, score);
             const barColor = score >= 80 ? 'bg-emerald-500' : score >= 55 ? 'bg-amber-400' : 'bg-rose-500';
-            const label = score >= 80 ? '🔥 Strong hook' : score >= 55 ? '✨ Getting there' : '💡 Needs work';
+            const label = score >= 80 ? '🔥 Strong' : score >= 55 ? '✨ Getting there' : '💡 Needs work';
             return (
-              <div className="bg-stone-800/70 border border-stone-700 rounded-xl p-3">
-                <div className="flex items-center justify-between mb-1.5">
+              <div className="bg-stone-800/70 border border-stone-700 rounded-xl p-2.5">
+                <div className="flex items-center justify-between mb-1">
                   <p className="text-[10px] font-bold text-stone-400 uppercase tracking-wider">Hook Strength</p>
-                  <span className="text-xs font-black tabular-nums" style={{ color: score >= 80 ? '#10b981' : score >= 55 ? '#fbbf24' : '#f43f5e' }}>{score}</span>
+                  <span className="text-xs font-black tabular-nums" style={{ color: score >= 80 ? '#10b981' : score >= 55 ? '#fbbf24' : '#f43f5e' }}>{score}/100</span>
                 </div>
-                <div className="h-2 bg-stone-700 rounded-full overflow-hidden mb-2">
+                <div className="h-1.5 bg-stone-700 rounded-full overflow-hidden mb-2">
                   <div className={`h-full rounded-full transition-all ${barColor}`} style={{ width: `${score}%` }} />
                 </div>
-                <p className="text-[11px] font-semibold text-stone-300 mb-1.5">{label}</p>
+                <p className="text-[11px] font-semibold text-stone-300 mb-1">{label}</p>
                 {tips.length > 0 && (
                   <ul className="space-y-0.5">
                     {tips.slice(0, 2).map((tip, i) => (

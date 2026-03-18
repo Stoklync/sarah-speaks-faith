@@ -422,8 +422,8 @@ export function Stage({ aspectPreset = '16:9', platforms, className = '', videoR
   }, [draw]);
 
   return (
-    <div className={`relative bg-stone-950 overflow-hidden flex items-center justify-center ${className}`} style={{ aspectRatio: aspect }}>
-      <canvas ref={canvasRef} className="w-full h-full object-contain" style={{ maxWidth: '100%', maxHeight: '100%' }} />
+    <div className={`relative bg-stone-950 overflow-hidden w-full h-full flex items-center justify-center ${className}`}>
+      <canvas ref={canvasRef} className="w-full h-full" style={{ display: 'block' }} />
     </div>
   );
 }

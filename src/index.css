@@ -13,8 +13,8 @@
     "stage"
     "controls"
     "timeline";
-  /* Stage max 40vh so timeline is visible without scrolling; timeline gets solid min height */
-  grid-template-rows: minmax(120px, 40vh) auto minmax(280px, 1fr);
+  /* Bigger stage on mobile so video is more visible */
+  grid-template-rows: minmax(200px, 55vh) auto minmax(240px, 1fr);
   height: 100dvh;
   overflow: hidden;
 }
@@ -24,9 +24,9 @@
     grid-template-areas:
       "stage controls"
       "timeline timeline";
-    grid-template-columns: 1fr 300px;
-    /* Stage flexes; timeline fixed 320px so it's always visible without scrolling */
-    grid-template-rows: 1fr 320px;
+    grid-template-columns: 1fr 280px;
+    /* Stage flexes; timeline fixed 300px so it's always visible without scrolling */
+    grid-template-rows: 1fr 300px;
   }
 }
 
