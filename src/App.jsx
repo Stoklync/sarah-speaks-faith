@@ -8,7 +8,7 @@ import { useMediaRecorder } from './hooks/useMediaRecorder';
 import { useQRCode } from './hooks/useQRCode';
 import { encodeToMp4WithMetadata, saveToDevice } from './services/ExportService';
 import { analyzePosts as analyzePostsGemini, hasGeminiKey } from './services/geminiApi';
-import { analyzePosts as analyzePostsOpenAI, hasOpenAIKey, generateTTS } from './services/openaiApi';
+import { analyzePosts as analyzePostsOpenAI, hasOpenAIKey, generateTTS, transcribeVideo, generateCaption, repurposeContent } from './services/openaiApi';
 import { useSEO } from './hooks/useSEO';
 import { useMarketingStore, TAG_BUNDLES } from './stores/marketingStore';
 import { Stage, EXPORT_PRESETS, derivePresetFromPlatforms } from './components/Stage';
@@ -1224,6 +1224,49 @@ const SocialPublisher = () => {
   const [growthTipToast, setGrowthTipToast] = useState(false);
   const seo = useSEO({ caption, tags });
 
+  // AI Write Caption
+  const [aiOpen, setAiOpen] = useState(false);
+  const [aiTopic, setAiTopic] = useState('');
+  const [aiPlatform, setAiPlatform] = useState('instagram');
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiResult, setAiResult] = useState('');
+  // Repurpose
+  const [repOpen, setRepOpen] = useState(false);
+  const [repScript, setRepScript] = useState('');
+  const [repLoading, setRepLoading] = useState(false);
+  const [repResult, setRepResult] = useState('');
+
+  const writeCaption = async () => {
+    if (!aiTopic.trim()) return;
+    setAiLoading(true); setAiResult('');
+    try {
+      const res = await generateCaption(aiTopic, aiPlatform);
+      setAiResult(res);
+    } catch (e) { setAiResult('Error: ' + e.message); }
+    setAiLoading(false);
+  };
+
+  const applyAiCaption = () => {
+    const m = aiResult.match(/CAPTION:\s*([\s\S]*?)(?=\nHASHTAGS:|$)/i);
+    const h = aiResult.match(/HASHTAGS:\s*([\s\S]*?)$/i);
+    if (m?.[1]) setCaption(m[1].trim());
+    if (h?.[1]) {
+      const newTags = h[1].trim().replace(/#/g, '').split(/\s+/).filter(Boolean);
+      addTags(newTags);
+    }
+    setAiOpen(false);
+  };
+
+  const doRepurpose = async () => {
+    if (!repScript.trim()) return;
+    setRepLoading(true); setRepResult('');
+    try {
+      const res = await repurposeContent(repScript);
+      setRepResult(res);
+    } catch (e) { setRepResult('Error: ' + e.message); }
+    setRepLoading(false);
+  };
+
   useEffect(() => {
     if (seo.showGrowthTip && caption?.trim()) {
       setGrowthTipToast(true);
@@ -1321,6 +1364,62 @@ const SocialPublisher = () => {
                 {selectedAudio ? <p className="font-medium text-stone-800 dark:text-stone-100 mt-0.5">Audio: {selectedAudio.name}</p> : <p className="text-stone-500 dark:text-stone-400 mt-0.5 text-xs">Optional: add music/voiceover from Media Library.</p>}
               </div>
               <label className="block text-xs font-bold text-stone-400 mb-2 uppercase tracking-widest">Master Caption</label>
+              {/* AI Write Caption */}
+              <div className="mb-4">
+                <div className="flex gap-2">
+                  <button onClick={() => { setAiOpen(o => !o); setRepOpen(false); }} className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-rose-100 hover:bg-rose-200 text-rose-700 text-xs font-bold transition-colors">
+                    <Sparkles size={13} /> AI Write Caption
+                  </button>
+                  <button onClick={() => { setRepOpen(o => !o); setAiOpen(false); }} className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-indigo-100 hover:bg-indigo-200 text-indigo-700 text-xs font-bold transition-colors">
+                    <Wand2 size={13} /> Repurpose for All Platforms
+                  </button>
+                </div>
+
+                {aiOpen && (
+                  <div className="mt-3 bg-rose-50 border border-rose-200 rounded-2xl p-4 space-y-3">
+                    <p className="text-xs font-bold text-stone-700">Write with AI</p>
+                    <textarea value={aiTopic} onChange={e => setAiTopic(e.target.value)} placeholder="What's your video about? Paste your script or describe your topic..." rows={3} className="w-full bg-white border border-rose-200 rounded-xl p-3 text-sm text-stone-700 resize-none focus:outline-none focus:border-rose-400" />
+                    <div className="flex gap-2 flex-wrap">
+                      {['instagram','tiktok','youtube','facebook'].map(p => (
+                        <button key={p} onClick={() => setAiPlatform(p)} className={`px-3 py-1.5 rounded-xl text-xs font-bold capitalize border transition-colors ${aiPlatform === p ? 'bg-rose-500 border-rose-500 text-white' : 'bg-white border-rose-200 text-stone-600 hover:border-rose-400'}`}>{p}</button>
+                      ))}
+                    </div>
+                    <button onClick={writeCaption} disabled={aiLoading || !aiTopic.trim()} className="w-full py-2.5 rounded-xl bg-rose-500 hover:bg-rose-600 text-white text-sm font-bold disabled:opacity-50 transition-all">
+                      {aiLoading ? 'Writing...' : 'Generate Caption + Hashtags'}
+                    </button>
+                    {aiResult && (
+                      <div className="bg-white border border-rose-200 rounded-xl p-3 text-xs text-stone-700 whitespace-pre-wrap max-h-48 overflow-y-auto">{aiResult}</div>
+                    )}
+                    {aiResult && (
+                      <button onClick={applyAiCaption} className="w-full py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-bold transition-all">
+                        Apply Caption + Tags
+                      </button>
+                    )}
+                    {!hasOpenAIKey() && <p className="text-[10px] text-stone-500 text-center">Add OpenAI key in App Settings</p>}
+                  </div>
+                )}
+
+                {repOpen && (
+                  <div className="mt-3 bg-indigo-50 border border-indigo-200 rounded-2xl p-4 space-y-3">
+                    <p className="text-xs font-bold text-stone-700">Repurpose for Every Platform</p>
+                    <p className="text-[10px] text-stone-500">Paste your script or idea. AI rewrites it for Instagram, TikTok, YouTube, Email, Tweet + gives you 3 hook options.</p>
+                    <textarea value={repScript} onChange={e => setRepScript(e.target.value)} placeholder="Paste your script or describe what your video is about..." rows={3} className="w-full bg-white border border-indigo-200 rounded-xl p-3 text-sm text-stone-700 resize-none focus:outline-none focus:border-indigo-400" />
+                    <button onClick={doRepurpose} disabled={repLoading || !repScript.trim()} className="w-full py-2.5 rounded-xl bg-indigo-500 hover:bg-indigo-600 text-white text-sm font-bold disabled:opacity-50 transition-all">
+                      {repLoading ? 'Repurposing...' : '⚡ Repurpose for All Platforms'}
+                    </button>
+                    {repResult && (
+                      <div className="bg-white border border-indigo-200 rounded-xl p-3 text-xs text-stone-700 whitespace-pre-wrap max-h-64 overflow-y-auto">{repResult}</div>
+                    )}
+                    {repResult && (
+                      <button onClick={() => { navigator.clipboard.writeText(repResult).catch(() => {}); }} className="w-full py-2 rounded-xl bg-stone-200 hover:bg-stone-300 text-stone-700 text-sm font-bold transition-all">
+                        Copy All
+                      </button>
+                    )}
+                    {!hasOpenAIKey() && <p className="text-[10px] text-stone-500 text-center">Add OpenAI key in App Settings</p>}
+                  </div>
+                )}
+              </div>
+
               <textarea rows="5" value={caption} onChange={(e) => setCaption(e.target.value)} placeholder="Write your message..." className="w-full bg-rose-50/50 border border-rose-100 rounded-2xl p-4 text-sm text-stone-700 focus:outline-none focus:border-rose-400 focus:ring-4 focus:ring-rose-50 transition-all resize-none" />
             </div>
             <div>
@@ -1823,6 +1922,49 @@ const MARKETING_GOALS = [
 ];
 
 // ── AI Voice Presets ────────────────────────────────────────────────────────
+// ── Color / Look Filter Presets ───────────────────────────────────────────
+const FILTER_PRESETS = [
+  { id: 'none',      label: 'Original',    emoji: '⚪', b: 100, c: 100, s: 100 },
+  { id: 'cinematic', label: 'Cinematic',   emoji: '🎬', b: 95,  c: 122, s: 82  },
+  { id: 'punch',     label: 'Punch',       emoji: '⚡', b: 105, c: 132, s: 138 },
+  { id: 'neon',      label: 'Neon',        emoji: '🌈', b: 100, c: 125, s: 168 },
+  { id: 'golden',    label: 'Golden Hour', emoji: '✨', b: 108, c: 105, s: 112 },
+  { id: 'vintage',   label: 'Vintage',     emoji: '📷', b: 95,  c: 88,  s: 70  },
+  { id: 'drama',     label: 'Drama',       emoji: '🎭', b: 88,  c: 148, s: 65  },
+  { id: 'faith',     label: 'Faith Glow',  emoji: '🙏', b: 107, c: 108, s: 90  },
+  { id: 'cool',      label: 'Cool',        emoji: '❄️', b: 100, c: 112, s: 108 },
+  { id: 'fade',      label: 'Fade',        emoji: '🌫', b: 114, c: 80,  s: 70  },
+];
+
+// ── Popular Scripture Verses ──────────────────────────────────────────────
+const POPULAR_VERSES = [
+  { ref: 'Philippians 4:13',      text: 'I can do all things through Christ who strengthens me.' },
+  { ref: 'Jeremiah 29:11',        text: 'For I know the plans I have for you, declares the Lord, plans to prosper you and not to harm you, plans to give you hope and a future.' },
+  { ref: 'Romans 8:28',           text: 'And we know that in all things God works for the good of those who love him, who have been called according to his purpose.' },
+  { ref: 'Isaiah 41:10',          text: 'So do not fear, for I am with you; do not be dismayed, for I am your God. I will strengthen you and help you.' },
+  { ref: 'Proverbs 3:5-6',        text: 'Trust in the Lord with all your heart and lean not on your own understanding; in all your ways submit to him, and he will make your paths straight.' },
+  { ref: 'Psalm 46:10',           text: 'Be still, and know that I am God.' },
+  { ref: 'Matthew 6:33',          text: 'But seek first his kingdom and his righteousness, and all these things will be given to you as well.' },
+  { ref: 'John 3:16',             text: 'For God so loved the world that he gave his one and only Son, that whoever believes in him shall not perish but have eternal life.' },
+  { ref: 'Romans 8:31',           text: 'If God is for us, who can be against us?' },
+  { ref: 'Isaiah 40:31',          text: 'But those who hope in the Lord will renew their strength. They will soar on wings like eagles; they will run and not grow weary.' },
+  { ref: 'Matthew 11:28',         text: 'Come to me, all you who are weary and burdened, and I will give you rest.' },
+  { ref: '2 Timothy 1:7',         text: 'For God has not given us a spirit of fear, but of power and of love and of a sound mind.' },
+  { ref: 'Ephesians 3:20',        text: 'Now to him who is able to do immeasurably more than all we ask or imagine, according to his power that is at work within us.' },
+  { ref: 'Joshua 1:9',            text: 'Be strong and courageous. Do not be afraid; do not be discouraged, for the Lord your God will be with you wherever you go.' },
+  { ref: 'Proverbs 31:25',        text: 'She is clothed with strength and dignity; she can laugh at the days to come.' },
+  { ref: 'Psalm 34:18',           text: 'The Lord is close to the brokenhearted and saves those who are crushed in spirit.' },
+  { ref: '1 Peter 5:7',           text: 'Cast all your anxiety on him because he cares for you.' },
+  { ref: 'Psalm 37:4',            text: 'Take delight in the Lord, and he will give you the desires of your heart.' },
+  { ref: 'Romans 12:2',           text: 'Do not conform to the pattern of this world, but be transformed by the renewing of your mind.' },
+  { ref: 'Psalm 139:14',          text: 'I praise you because I am fearfully and wonderfully made; your works are wonderful, I know that full well.' },
+  { ref: 'Lamentations 3:22-23',  text: 'Because of the Lord\'s great love we are not consumed, for his compassions never fail. They are new every morning; great is your faithfulness.' },
+  { ref: '2 Corinthians 5:7',     text: 'For we live by faith, not by sight.' },
+  { ref: 'Psalm 23:1',            text: 'The Lord is my shepherd, I lack nothing.' },
+  { ref: 'Galatians 5:22-23',     text: 'But the fruit of the Spirit is love, joy, peace, forbearance, kindness, goodness, faithfulness, gentleness and self-control.' },
+  { ref: 'Psalm 28:7',            text: 'The Lord is my strength and my shield; my heart trusts in him, and he helps me.' },
+];
+
 const TTS_VOICES = [
   { id: 'onyx',    name: 'Onyx',    desc: 'Deep male narrator' },
   { id: 'echo',    name: 'Echo',    desc: 'Warm male voice' },
@@ -1831,6 +1973,63 @@ const TTS_VOICES = [
   { id: 'shimmer', name: 'Shimmer', desc: 'Soft female' },
   { id: 'alloy',   name: 'Alloy',   desc: 'Professional neutral' },
 ];
+
+// ── Scripture Finder ──────────────────────────────────────────────────────
+const ScriptureFinder = ({ onInsert }) => {
+  const [query, setQuery] = useState('');
+  const [lookupRef, setLookupRef] = useState('');
+  const [lookupResult, setLookupResult] = useState(null);
+  const [lookupLoading, setLookupLoading] = useState(false);
+  const [lookupError, setLookupError] = useState('');
+
+  const filtered = query.trim()
+    ? POPULAR_VERSES.filter(v => v.ref.toLowerCase().includes(query.toLowerCase()) || v.text.toLowerCase().includes(query.toLowerCase()))
+    : POPULAR_VERSES;
+
+  const lookupVerse = async () => {
+    if (!lookupRef.trim()) return;
+    setLookupLoading(true);
+    setLookupError('');
+    setLookupResult(null);
+    try {
+      const r = await fetch(`https://bible-api.com/${encodeURIComponent(lookupRef)}?translation=web`);
+      const data = await r.json();
+      if (data.error) throw new Error(data.error);
+      setLookupResult({ ref: data.reference, text: data.text?.replace(/\n/g, ' ').trim() });
+    } catch (e) {
+      setLookupError('Verse not found — try e.g. "John 3:16" or "Psalm 23"');
+    }
+    setLookupLoading(false);
+  };
+
+  return (
+    <div className="space-y-2">
+      <input value={query} onChange={e => setQuery(e.target.value)} placeholder="Search verses by keyword..." className="w-full bg-stone-800 border border-stone-700 rounded-xl px-3 py-2 text-xs text-stone-100 focus:outline-none focus:border-rose-500" />
+      <div className="max-h-48 overflow-y-auto space-y-1 pr-0.5">
+        {filtered.map(v => (
+          <button key={v.ref} onClick={() => onInsert(v.ref, v.text)}
+            className="w-full text-left bg-stone-800 border border-stone-700 hover:border-rose-600 rounded-xl px-3 py-2 transition-colors group">
+            <span className="text-[10px] font-black text-rose-400 block">{v.ref}</span>
+            <span className="text-[10px] text-stone-400 group-hover:text-stone-200 transition-colors line-clamp-2">{v.text}</span>
+          </button>
+        ))}
+        {filtered.length === 0 && <p className="text-[10px] text-stone-600 text-center py-2">No matches — try a custom lookup below</p>}
+      </div>
+      <div className="flex gap-1.5">
+        <input value={lookupRef} onChange={e => setLookupRef(e.target.value)} onKeyDown={e => e.key === 'Enter' && lookupVerse()} placeholder="Any verse... e.g. Romans 8:1" className="flex-1 bg-stone-800 border border-stone-700 rounded-xl px-3 py-1.5 text-xs text-stone-100 focus:outline-none focus:border-rose-500" />
+        <button onClick={lookupVerse} disabled={lookupLoading} className="px-3 py-1.5 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-bold disabled:opacity-50">{lookupLoading ? '...' : 'Find'}</button>
+      </div>
+      {lookupError && <p className="text-[10px] text-rose-400">{lookupError}</p>}
+      {lookupResult && (
+        <button onClick={() => onInsert(lookupResult.ref, lookupResult.text)} className="w-full text-left bg-rose-950/40 border border-rose-700 rounded-xl px-3 py-2 hover:border-rose-500 transition-colors">
+          <span className="text-[10px] font-black text-rose-400 block">{lookupResult.ref}</span>
+          <span className="text-[10px] text-stone-300 line-clamp-3">{lookupResult.text}</span>
+          <span className="text-[10px] text-rose-500 font-bold mt-1 block">Tap to insert as overlay</span>
+        </button>
+      )}
+    </div>
+  );
+};
 
 // ── Animated Character ────────────────────────────────────────────────────
 const AnimatedCharacter = ({ anim }) => (
@@ -1959,6 +2158,20 @@ const ClassicEditor = () => {
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [showAIHelper, setShowAIHelper] = useState(false);
   const [inspectorTab, setInspectorTab] = useState('edit');
+  // ── Color Filters state ───────────────────────────────────────────────────
+  const [filterPreset, setFilterPreset] = useState('none');
+  const [filterB, setFilterB] = useState(100);
+  const [filterC, setFilterC] = useState(100);
+  const [filterS, setFilterS] = useState(100);
+  const videoFiltersRef = useRef({ b: 100, c: 100, s: 100 });
+  useEffect(() => { videoFiltersRef.current = { b: filterB, c: filterC, s: filterS }; }, [filterB, filterC, filterS]);
+  const applyFilterPreset = (preset) => { setFilterPreset(preset.id); setFilterB(preset.b); setFilterC(preset.c); setFilterS(preset.s); };
+  const vidFilterCSS = filterB === 100 && filterC === 100 && filterS === 100 ? undefined : `brightness(${filterB}%) contrast(${filterC}%) saturate(${filterS}%)`;
+
+  // Auto-caption state
+  const [autoCaptionLoading, setAutoCaptionLoading] = useState(false);
+  const [autoCaptionError, setAutoCaptionError] = useState('');
+
   // Animate tab state
   const [animOverlays, setAnimOverlays] = useState(() => { try { return JSON.parse(localStorage.getItem('faith-studio-anim-overlays') || '[]'); } catch { return []; } });
   const animOverlaysRef = useRef(animOverlays);
@@ -2089,6 +2302,47 @@ const ClassicEditor = () => {
     } finally {
       setTtsLoading(false);
     }
+  };
+
+  const autoCaption = async () => {
+    if (!selectedVideo) return;
+    setAutoCaptionLoading(true);
+    setAutoCaptionError('');
+    try {
+      const resp = await fetch(selectedVideo.url);
+      if (!resp.ok) throw new Error('Could not read video file');
+      const blob = await resp.blob();
+      if (blob.size > 24 * 1024 * 1024) throw new Error('Video is over 24 MB — trim it first or export a shorter clip');
+      const result = await transcribeVideo(blob);
+      const clips = (result.segments || []).map(seg => ({
+        id: 'sub' + Date.now() + Math.random().toString(36).slice(2),
+        text: seg.text?.trim() || '',
+        x: 50, y: 85,
+        size: 'sm', font: 'sans', color: 'white', bold: false,
+        lowerThird: false,
+        start: Number((seg.start || 0).toFixed(2)),
+        end: Number((seg.end || ((seg.start || 0) + 3)).toFixed(2)),
+        animStyle: 'minimal',
+      })).filter(c => c.text);
+      setTextClips(prev => [...prev, ...clips]);
+    } catch (e) {
+      setAutoCaptionError(e.message);
+    }
+    setAutoCaptionLoading(false);
+  };
+
+  const insertScripture = (ref, text) => {
+    const start = Math.round(playhead * 10) / 10;
+    setTextClips(prev => [...prev, {
+      id: 'scr' + Date.now(),
+      text: `"${text}" — ${ref}`,
+      x: 50, y: 80,
+      size: 'sm', font: 'serif', color: 'gold', bold: false,
+      lowerThird: true,
+      start, end: start + 6,
+      animStyle: 'faith',
+    }]);
+    setInspectorTab('text');
   };
 
   const addAnimOverlay = () => {
@@ -3061,7 +3315,12 @@ const ClassicEditor = () => {
           let sx = 0, sy = 0, sW = vw, sH = vh;
           if (vAsp > outAsp) { sW = vh * outAsp; sx = (vw - sW) / 2; }
           else { sH = vw / outAsp; sy = (vh - sH) / 2; }
+          const { b, c, s } = videoFiltersRef.current;
+          if (b !== 100 || c !== 100 || s !== 100) {
+            ctx.filter = `brightness(${b / 100}) contrast(${c / 100}) saturate(${s / 100})`;
+          }
           ctx.drawImage(v, sx, sy, sW, sH, 0, 0, outW, outH);
+          ctx.filter = 'none';
         };
         const stream = canvas.captureStream(30);
         try {
@@ -3192,7 +3451,7 @@ const ClassicEditor = () => {
         <div ref={canvasRef} onClick={videoForPreview ? togglePlayPause : undefined} className={`flex-1 min-h-0 flex flex-col ${videoForPreview ? 'cursor-pointer' : ''}`}>
           {videoForPreview ? (
             <>
-              <div className="relative flex-1 min-h-0 flex items-center justify-center">
+              <div className="relative flex-1 min-h-0 flex items-center justify-center" style={vidFilterCSS ? { filter: vidFilterCSS } : undefined}>
                 <video
                   ref={videoRef}
                   src={videoForPreview.url}
@@ -3611,8 +3870,28 @@ const ClassicEditor = () => {
                 ))}
               </div>
 
+              {/* Auto-Subtitles */}
+              <div className="border-t border-stone-700 pt-3">
+                <p className="text-[10px] font-bold text-stone-400 uppercase tracking-wider mb-1.5">Auto-Caption (Whisper AI)</p>
+                <p className="text-[10px] text-stone-500 mb-2">One tap — AI transcribes your video and drops timed captions straight onto the timeline.</p>
+                <button onClick={autoCaption} disabled={autoCaptionLoading || !selectedVideo}
+                  className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold bg-stone-700 hover:bg-stone-600 text-stone-100 disabled:opacity-50 transition-all active:scale-95 border border-stone-600">
+                  {autoCaptionLoading ? <><span className="animate-spin">⏳</span> Transcribing...</> : <>🎙 Auto-Caption My Video</>}
+                </button>
+                {autoCaptionError && <p className="text-[10px] text-rose-400 mt-1">{autoCaptionError}</p>}
+                {!selectedVideo && <p className="text-[10px] text-stone-600 mt-1 text-center">Select a video first</p>}
+                {!hasOpenAIKey() && <p className="text-[10px] text-stone-500 mt-1 text-center">Requires OpenAI key in App Settings</p>}
+              </div>
+
+              {/* Scripture Finder */}
+              <div className="border-t border-stone-700 pt-3">
+                <p className="text-[10px] font-bold text-stone-400 uppercase tracking-wider mb-2">Scripture Finder</p>
+                <p className="text-[10px] text-stone-500 mb-2">Search any verse — tap to insert as a text overlay at your current playhead position.</p>
+                <ScriptureFinder onInsert={insertScripture} />
+              </div>
+
               {/* Animated Character */}
-              <div>
+              <div className="border-t border-stone-700 pt-3">
                 <p className="text-[10px] font-bold text-stone-400 uppercase tracking-wider mb-1.5">Companion Character</p>
                 <p className="text-[10px] text-stone-500 mb-2">Animated figure that appears beside you. Pick an animation below.</p>
                 <div className="grid grid-cols-3 gap-1.5">
@@ -3646,36 +3925,70 @@ const ClassicEditor = () => {
 
           {/* ── ENHANCE TAB ─────────────────────────────── */}
           {inspectorTab === 'enhance' && (
-            <div className="p-3 space-y-3">
-              <p className="text-[10px] font-bold text-stone-400 uppercase tracking-wider">Video Enhancement</p>
-              <label className="flex items-center justify-between bg-stone-800 border border-stone-700 rounded-xl p-3 cursor-pointer hover:border-stone-600 transition-colors">
-                <div>
-                  <span className="text-xs font-bold text-stone-200 flex items-center gap-1.5">4K AI Upscaling <span className="text-[9px] font-bold text-rose-400 bg-rose-900/40 px-1.5 py-0.5 rounded uppercase">Ultra HD</span></span>
-                  <span className="text-[10px] text-stone-500 block mt-0.5">Sharpen soft footage, add detail</span>
+            <div className="p-3 space-y-4">
+
+              {/* Look / Color Presets */}
+              <div>
+                <p className="text-[10px] font-bold text-stone-400 uppercase tracking-wider mb-2">Look &amp; Feel</p>
+                <div className="grid grid-cols-5 gap-1.5">
+                  {FILTER_PRESETS.map(fp => (
+                    <button key={fp.id} onClick={() => applyFilterPreset(fp)}
+                      className={`flex flex-col items-center py-2 rounded-xl border text-[9px] font-bold transition-all active:scale-95 ${filterPreset === fp.id ? 'bg-rose-900/60 border-rose-500 text-rose-300' : 'bg-stone-800 border-stone-700 text-stone-400 hover:border-stone-500'}`}>
+                      <span className="text-base leading-none mb-0.5">{fp.emoji}</span>
+                      <span className="leading-tight text-center">{fp.label}</span>
+                    </button>
+                  ))}
                 </div>
-                <button onClick={() => setAiUpscale(!aiUpscale)} className={`relative w-10 h-5 rounded-full transition-colors shrink-0 ${aiUpscale ? 'bg-rose-500' : 'bg-stone-600'}`}>
-                  <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-transform ${aiUpscale ? 'translate-x-5' : 'translate-x-0.5'}`} />
-                </button>
-              </label>
-              <label className="flex items-center justify-between bg-stone-800 border border-stone-700 rounded-xl p-3 cursor-pointer hover:border-stone-600 transition-colors">
-                <div>
-                  <span className="text-xs font-bold text-stone-200">Cinematic Color Grade</span>
-                  <span className="text-[10px] text-stone-500 block mt-0.5">Flat iPhone footage → moody cinematic</span>
-                </div>
-                <button onClick={() => setCinematicGrade(!cinematicGrade)} className={`relative w-10 h-5 rounded-full transition-colors shrink-0 ${cinematicGrade ? 'bg-rose-500' : 'bg-stone-600'}`}>
-                  <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-transform ${cinematicGrade ? 'translate-x-5' : 'translate-x-0.5'}`} />
-                </button>
-              </label>
-              {(aiUpscale || cinematicGrade) && (
-                <p className="text-[10px] text-emerald-400 bg-emerald-950/30 border border-emerald-800/50 rounded-lg px-3 py-2">Active — will be applied on export.</p>
-              )}
-              <div className="pt-1">
-                <p className="text-[10px] font-bold text-stone-400 uppercase tracking-wider mb-2">AI Editing Assistant</p>
-                <button onClick={() => setShowAIHelper(h => !h)} className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold bg-rose-900/40 border border-rose-700/50 text-rose-300 hover:bg-rose-800/50 active:scale-95 transition-all">
-                  <Sparkles size={15} /> AI Editing Tips
-                </button>
-                <p className="text-[10px] text-stone-500 mt-1.5 text-center">Smart zoom, cut tips, audio layering help</p>
               </div>
+
+              {/* Manual Sliders */}
+              <div className="bg-stone-800 border border-stone-700 rounded-xl p-3 space-y-3">
+                <p className="text-[10px] font-bold text-stone-400 uppercase tracking-wider">Fine Tune</p>
+                {[
+                  { label: 'Brightness', val: filterB, set: setFilterB, min: 50, max: 160 },
+                  { label: 'Contrast',   val: filterC, set: setFilterC, min: 50, max: 200 },
+                  { label: 'Saturation', val: filterS, set: setFilterS, min: 0,  max: 250 },
+                ].map(({ label, val, set, min, max }) => (
+                  <div key={label}>
+                    <div className="flex justify-between mb-1">
+                      <span className="text-[10px] text-stone-400">{label}</span>
+                      <span className="text-[10px] font-mono text-stone-300">{val}%</span>
+                    </div>
+                    <input type="range" min={min} max={max} value={val} onChange={e => { set(Number(e.target.value)); setFilterPreset('custom'); }}
+                      className="w-full accent-rose-500" />
+                  </div>
+                ))}
+                {(filterB !== 100 || filterC !== 100 || filterS !== 100) && (
+                  <button onClick={() => applyFilterPreset(FILTER_PRESETS[0])} className="text-[10px] text-stone-500 hover:text-rose-400 transition-colors w-full text-right">Reset to original</button>
+                )}
+              </div>
+
+              {/* Pro Enhance toggles */}
+              <div className="space-y-2">
+                <p className="text-[10px] font-bold text-stone-400 uppercase tracking-wider">AI Enhancement</p>
+                {[
+                  { label: '4K AI Upscaling', badge: 'Ultra HD', desc: 'Sharpen soft footage, add detail', val: aiUpscale, set: setAiUpscale },
+                  { label: 'Cinematic Grade', badge: null, desc: 'Flat iPhone footage → moody cinematic', val: cinematicGrade, set: setCinematicGrade },
+                ].map(({ label, badge, desc, val, set }) => (
+                  <label key={label} className="flex items-center justify-between bg-stone-800 border border-stone-700 rounded-xl p-3 cursor-pointer hover:border-stone-600 transition-colors">
+                    <div>
+                      <span className="text-xs font-bold text-stone-200 flex items-center gap-1.5">{label}{badge && <span className="text-[9px] font-bold text-rose-400 bg-rose-900/40 px-1.5 py-0.5 rounded uppercase">{badge}</span>}</span>
+                      <span className="text-[10px] text-stone-500 block mt-0.5">{desc}</span>
+                    </div>
+                    <button onClick={() => set(!val)} className={`relative w-10 h-5 rounded-full transition-colors shrink-0 ${val ? 'bg-rose-500' : 'bg-stone-600'}`}>
+                      <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-transform ${val ? 'translate-x-5' : 'translate-x-0.5'}`} />
+                    </button>
+                  </label>
+                ))}
+                {(aiUpscale || cinematicGrade) && (
+                  <p className="text-[10px] text-emerald-400 bg-emerald-950/30 border border-emerald-800/50 rounded-lg px-3 py-2">Active — applied on export.</p>
+                )}
+              </div>
+
+              {/* AI editing tips */}
+              <button onClick={() => setShowAIHelper(h => !h)} className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold bg-rose-900/40 border border-rose-700/50 text-rose-300 hover:bg-rose-800/50 active:scale-95 transition-all">
+                <Sparkles size={15} /> AI Editing Tips
+              </button>
             </div>
           )}
 
