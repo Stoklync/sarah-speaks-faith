@@ -8,7 +8,7 @@ import { useMediaRecorder } from './hooks/useMediaRecorder';
 import { useQRCode } from './hooks/useQRCode';
 import { encodeToMp4WithMetadata, saveToDevice } from './services/ExportService';
 import { analyzePosts as analyzePostsGemini, hasGeminiKey } from './services/geminiApi';
-import { analyzePosts as analyzePostsOpenAI, hasOpenAIKey } from './services/openaiApi';
+import { analyzePosts as analyzePostsOpenAI, hasOpenAIKey, generateTTS } from './services/openaiApi';
 import { useSEO } from './hooks/useSEO';
 import { useMarketingStore, TAG_BUNDLES } from './stores/marketingStore';
 import { Stage, EXPORT_PRESETS, derivePresetFromPlatforms } from './components/Stage';
@@ -1822,6 +1822,89 @@ const MARKETING_GOALS = [
   { id: 'prayer', label: 'Prayer Request (Her Stewardship)' },
 ];
 
+// ── AI Voice Presets ────────────────────────────────────────────────────────
+const TTS_VOICES = [
+  { id: 'onyx',    name: 'Onyx',    desc: 'Deep male narrator' },
+  { id: 'echo',    name: 'Echo',    desc: 'Warm male voice' },
+  { id: 'fable',   name: 'Fable',   desc: 'British storyteller' },
+  { id: 'nova',    name: 'Nova',    desc: 'Natural female' },
+  { id: 'shimmer', name: 'Shimmer', desc: 'Soft female' },
+  { id: 'alloy',   name: 'Alloy',   desc: 'Professional neutral' },
+];
+
+// ── Animated Character ────────────────────────────────────────────────────
+const AnimatedCharacter = ({ anim }) => (
+  <div className={`char-entrance char-body-${anim} relative select-none`} style={{ width: 56, height: 92, filter: 'drop-shadow(0 6px 18px rgba(0,0,0,0.6))' }}>
+    {/* Head */}
+    <div className="absolute top-0 left-1/2 -translate-x-1/2 w-11 h-11 rounded-full bg-gradient-to-br from-rose-200 to-rose-400 border-2 border-rose-500 flex items-center justify-center">
+      <span className="text-lg leading-none">😊</span>
+    </div>
+    {/* Body */}
+    <div className="absolute top-10 left-1/2 -translate-x-1/2 w-8 h-11 rounded-xl bg-gradient-to-b from-rose-400 to-rose-600" />
+    {/* Left arm */}
+    <div className={`absolute top-12 left-0 w-6 h-2.5 rounded-full bg-rose-400 origin-right ${anim === 'wave' ? 'char-arm-wave' : anim === 'point' ? 'char-arm-point' : ''}`}
+      style={{ transform: anim === 'point' ? 'rotate(-55deg)' : 'rotate(22deg)' }} />
+    {/* Right arm */}
+    <div className="absolute top-12 right-0 w-6 h-2.5 rounded-full bg-rose-400" style={{ transform: 'rotate(-22deg)' }} />
+    {/* Legs */}
+    <div className="absolute bottom-0 left-3 w-2.5 h-8 rounded-full bg-rose-500" style={{ transform: 'rotate(6deg)' }} />
+    <div className="absolute bottom-0 right-3 w-2.5 h-8 rounded-full bg-rose-500" style={{ transform: 'rotate(-6deg)' }} />
+  </div>
+);
+
+// ── Overlay Editor (inline card) ──────────────────────────────────────────
+const OverlayEditor = ({ overlay, onChange, onDelete }) => {
+  const [expanded, setExpanded] = useState(false);
+  return (
+    <div className="bg-stone-800 border border-stone-700 rounded-xl mb-2 overflow-hidden">
+      <div className="flex items-center gap-2 px-3 py-2 cursor-pointer" onClick={() => setExpanded(e => !e)}>
+        <span className="text-[11px] font-bold text-stone-300 flex-1 truncate">{overlay.content || 'New overlay'}</span>
+        <span className="text-[10px] text-stone-500 shrink-0">{overlay.startTime}s · {overlay.animStyle}</span>
+        <button onPointerDown={e => { e.stopPropagation(); onDelete(); }} className="text-stone-600 hover:text-rose-400 shrink-0"><X size={12} /></button>
+      </div>
+      {expanded && (
+        <div className="px-3 pb-3 space-y-2 border-t border-stone-700 pt-2">
+          <input value={overlay.content} onChange={e => onChange({ ...overlay, content: e.target.value })} placeholder="Text content" className="w-full bg-stone-900 border border-stone-700 rounded-lg px-2 py-1.5 text-xs text-stone-100 focus:outline-none focus:border-rose-500" />
+          <div className="grid grid-cols-2 gap-1.5">
+            <div>
+              <p className="text-[10px] text-stone-500 mb-0.5">Start (s)</p>
+              <input type="number" min="0" step="0.5" value={overlay.startTime} onChange={e => onChange({ ...overlay, startTime: Number(e.target.value) })} className="w-full bg-stone-900 border border-stone-700 rounded-lg px-2 py-1 text-xs text-stone-100" />
+            </div>
+            <div>
+              <p className="text-[10px] text-stone-500 mb-0.5">Duration (s)</p>
+              <input type="number" min="0.5" step="0.5" value={overlay.duration} onChange={e => onChange({ ...overlay, duration: Number(e.target.value) })} className="w-full bg-stone-900 border border-stone-700 rounded-lg px-2 py-1 text-xs text-stone-100" />
+            </div>
+          </div>
+          <div>
+            <p className="text-[10px] text-stone-500 mb-1">Position</p>
+            <div className="flex flex-wrap gap-1">
+              {['upper','center','lower','left','right'].map(p => (
+                <button key={p} onClick={() => onChange({ ...overlay, position: p })} className={`px-2 py-1 rounded-lg text-[10px] font-bold border capitalize transition-colors ${overlay.position === p ? 'bg-rose-600 border-rose-600 text-white' : 'bg-stone-900 border-stone-700 text-stone-400 hover:border-stone-500'}`}>{p}</button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <p className="text-[10px] text-stone-500 mb-1">Animation</p>
+            <div className="flex flex-wrap gap-1">
+              {['fade','slide-up','slide-right','zoom','bounce','typewriter'].map(a => (
+                <button key={a} onClick={() => onChange({ ...overlay, animStyle: a })} className={`px-2 py-1 rounded-lg text-[10px] font-bold border transition-colors ${overlay.animStyle === a ? 'bg-rose-600 border-rose-600 text-white' : 'bg-stone-900 border-stone-700 text-stone-400 hover:border-stone-500'}`}>{a}</button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <p className="text-[10px] text-stone-500 mb-1">Color</p>
+            <div className="flex flex-wrap gap-1">
+              {[['white','#fff'],['gold','#fbbf24'],['rose','#fb7185'],['cyan','#67e8f9'],['lime','#bef264']].map(([name, hex]) => (
+                <button key={name} onClick={() => onChange({ ...overlay, color: name })} className={`w-7 h-7 rounded-full border-2 transition-all ${overlay.color === name ? 'border-white scale-110' : 'border-stone-600'}`} style={{ background: hex }} />
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 const ClassicEditor = () => {
   const { selectedVideo, selectedAudio, filteredAssets, setSelectedVideoId, setSelectedAudioId, setActiveTab, activeBusinessId, businesses, addAsset, platforms = {}, caption, setCaption, tags, contactPageUrl, setContactPageUrl, marketingGoal, setMarketingGoal, setSidebarOpen, voiceIsolation, setVoiceIsolation, deReverb, setDeReverb, deReverbStrength, setDeReverbStrength, aiUpscale, setAiUpscale, cinematicGrade, setCinematicGrade } = useStudio();
   const { processVideo, revoke, cleanup, togglePlayPause: editorTogglePlay } = useEditor();
@@ -1875,7 +1958,18 @@ const ClassicEditor = () => {
   const [resizingTrack, setResizingTrack] = useState(null);
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [showAIHelper, setShowAIHelper] = useState(false);
-  const [inspectorTab, setInspectorTab] = useState('edit'); // 'edit' | 'text' | 'audio' | 'enhance' | 'camera' | 'export'
+  const [inspectorTab, setInspectorTab] = useState('edit');
+  // Animate tab state
+  const [animOverlays, setAnimOverlays] = useState(() => { try { return JSON.parse(localStorage.getItem('faith-studio-anim-overlays') || '[]'); } catch { return []; } });
+  const animOverlaysRef = useRef(animOverlays);
+  useEffect(() => { animOverlaysRef.current = animOverlays; localStorage.setItem('faith-studio-anim-overlays', JSON.stringify(animOverlays)); }, [animOverlays]);
+  const [ttsScript, setTtsScript] = useState('');
+  const [ttsVoice, setTtsVoice] = useState('onyx');
+  const [ttsSpeed, setTtsSpeed] = useState(1.0);
+  const [ttsLoading, setTtsLoading] = useState(false);
+  const [ttsError, setTtsError] = useState('');
+  const [charAnim, setCharAnim] = useState('off'); // 'off' | 'wave' | 'point' | 'nod' | 'dance'
+  const [charPos, setCharPos] = useState('right');
   const [userMuted, setUserMuted] = useState(false);
   const [tracksLinked, setTracksLinked] = useState(true);
   const [splitFeedback, setSplitFeedback] = useState(null);
@@ -1979,6 +2073,36 @@ const ClassicEditor = () => {
       storePushHistory(JSON.stringify({ main: s.mainSegments, audio: s.audioSegments, audioExtra: s.audioExtraTracks, text: s.textClips, timelineTracks: s.timelineTracks, selectedVideoId: s.selectedVideoId }));
     } catch (_) { /* avoid crash */ }
   };
+  // ── AI Voice / Overlays ──────────────────────────────────────────────────
+  const generateVoice = async () => {
+    if (!ttsScript.trim()) return;
+    setTtsLoading(true);
+    setTtsError('');
+    try {
+      const blob = await generateTTS(ttsScript, ttsVoice, ttsSpeed);
+      const fileName = `AI-${ttsVoice}-${Date.now()}.mp3`;
+      const file = new File([blob], fileName, { type: 'audio/mpeg' });
+      addAsset(file, 'audio');
+      setTtsScript('');
+    } catch (e) {
+      setTtsError(e.message);
+    } finally {
+      setTtsLoading(false);
+    }
+  };
+
+  const addAnimOverlay = () => {
+    setAnimOverlays(prev => [...prev, {
+      id: 'ao' + Date.now(),
+      content: 'Your text here',
+      startTime: Math.round(playhead * 10) / 10,
+      duration: 4,
+      position: 'center',
+      animStyle: 'fade',
+      color: 'white',
+    }]);
+  };
+
   const undoAll = () => {
     if (history.length === 0) return;
     try {
@@ -2999,6 +3123,21 @@ const ClassicEditor = () => {
             ctx.textBaseline = 'middle';
             ctx.fillText(c.text, x, y);
           });
+          // Draw animated overlays on canvas
+          const ovColorMap = { white: '#fff', gold: '#fbbf24', rose: '#fb7185', cyan: '#67e8f9', lime: '#bef264' };
+          const ovPosMap = { upper: [0.5, 0.1], center: [0.5, 0.5], lower: [0.5, 0.88], left: [0.15, 0.5], right: [0.85, 0.5] };
+          animOverlaysRef.current.filter(ov => t >= ov.startTime && t < ov.startTime + ov.duration).forEach(ov => {
+            const [px, py] = ovPosMap[ov.position] || [0.5, 0.5];
+            ctx.save();
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.font = `bold ${Math.round(32 * scale)}px sans-serif`;
+            ctx.shadowColor = 'rgba(0,0,0,0.95)';
+            ctx.shadowBlur = 10;
+            ctx.fillStyle = ovColorMap[ov.color] || '#fff';
+            ctx.fillText(ov.content, outW * px, outH * py);
+            ctx.restore();
+          });
           setExportProgress(p => Math.min(0.5, p + 0.005));
           requestAnimationFrame(drawFrame);
         };
@@ -3082,6 +3221,30 @@ const ClassicEditor = () => {
               </div>
               {playheadInGap && <div className="absolute inset-0 bg-black z-10 pointer-events-none" aria-hidden title="Gap — no video at this time" />}
               {liveCaption && <CaptionOverlay text={liveCaption} preset="faith" />}
+              {/* Animated motion overlays */}
+              {animOverlays.filter(ov => playhead >= ov.startTime && playhead < ov.startTime + ov.duration).map(ov => {
+                const posStyle = {
+                  upper:  { top: '10%',  left: '50%',  transform: 'translateX(-50%)' },
+                  center: { top: '50%',  left: '50%',  transform: 'translate(-50%,-50%)' },
+                  lower:  { bottom: '12%', left: '50%', transform: 'translateX(-50%)' },
+                  left:   { top: '50%',  left: '12%',  transform: 'translateY(-50%)' },
+                  right:  { top: '50%',  right: '12%', transform: 'translateY(-50%)' },
+                }[ov.position] || { top: '50%', left: '50%', transform: 'translate(-50%,-50%)' };
+                const animClass = { fade: 'anim-overlay-fade', 'slide-up': 'anim-overlay-slide-up', 'slide-right': 'anim-overlay-slide-right', zoom: 'anim-overlay-zoom', bounce: 'anim-overlay-bounce', typewriter: 'anim-overlay-typewriter' }[ov.animStyle] || 'anim-overlay-fade';
+                const colorHex = { white: '#fff', gold: '#fbbf24', rose: '#fb7185', cyan: '#67e8f9', lime: '#bef264' }[ov.color] || '#fff';
+                return (
+                  <div key={`${ov.id}-${ov.startTime}`} className={`absolute z-30 pointer-events-none ${animClass}`}
+                    style={{ ...posStyle, color: colorHex, fontWeight: 700, fontSize: 20, textShadow: '0 2px 10px rgba(0,0,0,0.95)', textAlign: 'center', maxWidth: '72%' }}>
+                    {ov.content}
+                  </div>
+                );
+              })}
+              {/* Animated character companion */}
+              {charAnim !== 'off' && videoForPreview && (
+                <div className={`absolute z-25 bottom-6 ${charPos === 'left' ? 'left-3' : 'right-3'} pointer-events-none`}>
+                  <AnimatedCharacter anim={charAnim} />
+                </div>
+              )}
               {textClips.filter(c => {
                 const start = c.start ?? 0;
                 const end = c.end ?? start + 5;
@@ -3139,17 +3302,18 @@ const ClassicEditor = () => {
         {/* Tab bar — always visible, big touch targets */}
         <div className="flex shrink-0 border-b border-stone-700/60 bg-stone-950 overflow-x-auto">
           {[
-            { id: 'edit', icon: <Scissors size={14} />, label: 'Edit' },
-            { id: 'text', icon: <Type size={14} />, label: 'Text' },
-            { id: 'audio', icon: <Music size={14} />, label: 'Audio' },
-            { id: 'enhance', icon: <Wand2 size={14} />, label: 'Enhance' },
-            { id: 'camera', icon: <Camera size={14} />, label: 'Camera' },
-            { id: 'export', icon: <Download size={14} />, label: 'Export' },
+            { id: 'edit',    icon: <Scissors size={13} />, label: 'Edit' },
+            { id: 'text',    icon: <Type size={13} />,     label: 'Text' },
+            { id: 'audio',   icon: <Music size={13} />,    label: 'Audio' },
+            { id: 'animate', icon: <Sparkles size={13} />, label: 'Animate' },
+            { id: 'enhance', icon: <Wand2 size={13} />,    label: 'Enhance' },
+            { id: 'camera',  icon: <Camera size={13} />,   label: 'Camera' },
+            { id: 'export',  icon: <Download size={13} />, label: 'Export' },
           ].map(tab => (
             <button
               key={tab.id}
               onClick={() => setInspectorTab(tab.id)}
-              className={`flex-1 min-w-[50px] flex flex-col items-center justify-center gap-0.5 py-2.5 text-[10px] font-bold transition-colors border-b-2 ${inspectorTab === tab.id ? 'border-rose-500 text-rose-400 bg-rose-950/30' : 'border-transparent text-stone-500 hover:text-stone-300'}`}
+              className={`flex-1 min-w-[44px] flex flex-col items-center justify-center gap-0.5 py-2.5 text-[10px] font-bold transition-colors border-b-2 ${inspectorTab === tab.id ? 'border-rose-500 text-rose-400 bg-rose-950/30' : 'border-transparent text-stone-500 hover:text-stone-300'}`}
             >
               {tab.icon}
               {tab.label}
@@ -3384,6 +3548,99 @@ const ClassicEditor = () => {
                   </div>
                 </div>
               )}
+            </div>
+          )}
+
+          {/* ── ANIMATE TAB ─────────────────────────────── */}
+          {inspectorTab === 'animate' && (
+            <div className="p-3 space-y-4">
+
+              {/* AI Voice */}
+              <div>
+                <p className="text-[10px] font-bold text-stone-400 uppercase tracking-wider mb-2">AI Voice</p>
+                <textarea
+                  value={ttsScript}
+                  onChange={e => setTtsScript(e.target.value)}
+                  placeholder="Write your script or narration here... the AI will speak it in the voice you pick."
+                  rows={3}
+                  className="w-full bg-stone-800 border border-stone-700 rounded-xl px-3 py-2 text-xs text-stone-100 resize-none focus:outline-none focus:border-rose-500"
+                />
+                <div className="grid grid-cols-2 gap-1.5 mt-2">
+                  {TTS_VOICES.map(v => (
+                    <button key={v.id} onClick={() => setTtsVoice(v.id)}
+                      className={`px-2 py-2 rounded-xl border text-left transition-colors ${ttsVoice === v.id ? 'bg-rose-900/60 border-rose-500 text-rose-200' : 'bg-stone-800 border-stone-700 text-stone-400 hover:border-stone-500'}`}>
+                      <span className="text-[11px] font-bold block">{v.name}</span>
+                      <span className="text-[10px] text-stone-500">{v.desc}</span>
+                    </button>
+                  ))}
+                </div>
+                <div className="flex items-center gap-2 mt-2">
+                  <span className="text-[10px] text-stone-500 shrink-0">Speed</span>
+                  <input type="range" min="0.5" max="2" step="0.25" value={ttsSpeed} onChange={e => setTtsSpeed(Number(e.target.value))} className="flex-1 accent-rose-500" />
+                  <span className="text-[10px] text-stone-400 font-mono w-7 shrink-0">{ttsSpeed}x</span>
+                </div>
+                {ttsError && <p className="text-[10px] text-rose-400 mt-1">{ttsError}</p>}
+                <button onClick={generateVoice} disabled={ttsLoading || !ttsScript.trim()}
+                  className="w-full mt-2 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold bg-rose-600 hover:bg-rose-500 text-white disabled:opacity-50 transition-all active:scale-95">
+                  {ttsLoading ? <>Generating...</> : <><Mic size={15} /> Generate Voice</>}
+                </button>
+                {!hasOpenAIKey() && (
+                  <p className="text-[10px] text-stone-500 mt-1 text-center">Add OpenAI key in App Settings to use AI Voice</p>
+                )}
+                {ttsLoading && (
+                  <p className="text-[10px] text-emerald-400 text-center mt-1 animate-pulse">Generating HD voice... drops straight into your Audio track</p>
+                )}
+              </div>
+
+              {/* Motion Overlays */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-[10px] font-bold text-stone-400 uppercase tracking-wider">Motion Overlays</p>
+                  <button onClick={addAnimOverlay} className="flex items-center gap-1 text-[10px] font-bold text-rose-400 hover:text-rose-300 transition-colors">
+                    <Plus size={12} /> Add
+                  </button>
+                </div>
+                {animOverlays.length === 0 && (
+                  <p className="text-[10px] text-stone-600 text-center py-3 bg-stone-800/50 rounded-xl border border-stone-700">Tap Add to create animated text, scripture verse, or badge that syncs to your video timeline.</p>
+                )}
+                {animOverlays.map(ov => (
+                  <OverlayEditor key={ov.id} overlay={ov}
+                    onChange={updated => setAnimOverlays(prev => prev.map(o => o.id === ov.id ? updated : o))}
+                    onDelete={() => setAnimOverlays(prev => prev.filter(o => o.id !== ov.id))}
+                  />
+                ))}
+              </div>
+
+              {/* Animated Character */}
+              <div>
+                <p className="text-[10px] font-bold text-stone-400 uppercase tracking-wider mb-1.5">Companion Character</p>
+                <p className="text-[10px] text-stone-500 mb-2">Animated figure that appears beside you. Pick an animation below.</p>
+                <div className="grid grid-cols-3 gap-1.5">
+                  {[
+                    { id: 'off',   label: 'Off',   emoji: '🚫' },
+                    { id: 'wave',  label: 'Wave',  emoji: '👋' },
+                    { id: 'point', label: 'Point', emoji: '👉' },
+                    { id: 'nod',   label: 'Nod',   emoji: '🙂' },
+                    { id: 'dance', label: 'Dance', emoji: '💃' },
+                  ].map(a => (
+                    <button key={a.id} onClick={() => setCharAnim(a.id)}
+                      className={`flex flex-col items-center py-2 rounded-xl border text-[10px] font-bold transition-colors ${charAnim === a.id ? 'bg-rose-900/50 border-rose-600 text-rose-300' : 'bg-stone-800 border-stone-700 text-stone-400 hover:border-stone-500'}`}>
+                      <span className="text-base leading-none mb-0.5">{a.emoji}</span>
+                      {a.label}
+                    </button>
+                  ))}
+                </div>
+                {charAnim !== 'off' && (
+                  <div className="flex gap-1.5 mt-2">
+                    {['left','right'].map(p => (
+                      <button key={p} onClick={() => setCharPos(p)}
+                        className={`flex-1 py-1.5 rounded-xl text-[11px] font-bold capitalize border transition-colors ${charPos === p ? 'bg-stone-600 border-stone-500 text-stone-100' : 'bg-stone-800 border-stone-700 text-stone-400'}`}>
+                        {p} side
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           )}
 

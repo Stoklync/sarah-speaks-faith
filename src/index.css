@@ -130,6 +130,39 @@
   text-transform: uppercase;
 }
 
+/* ── Animate Overlay Presets ─────────────────────────────────────────────── */
+@keyframes anim-fade-in   { from { opacity: 0; } to { opacity: 1; } }
+@keyframes anim-slide-up  { from { opacity: 0; transform: translateY(28px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes anim-slide-right { from { opacity: 0; transform: translateX(-32px); } to { opacity: 1; transform: translateX(0); } }
+@keyframes anim-zoom-in   { from { opacity: 0; transform: scale(0.6); } to { opacity: 1; transform: scale(1); } }
+@keyframes anim-bounce-in { 0% { opacity: 0; transform: scale(0.5); } 60% { transform: scale(1.1); opacity: 1; } 80% { transform: scale(0.95); } 100% { transform: scale(1); } }
+@keyframes anim-typewriter-ov { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0% 0 0); } }
+
+.anim-overlay-fade       { animation: anim-fade-in    0.5s ease-out both; }
+.anim-overlay-slide-up   { animation: anim-slide-up   0.45s cubic-bezier(0.22,1,0.36,1) both; }
+.anim-overlay-slide-right{ animation: anim-slide-right 0.45s cubic-bezier(0.22,1,0.36,1) both; }
+.anim-overlay-zoom       { animation: anim-zoom-in    0.35s cubic-bezier(0.34,1.56,0.64,1) both; }
+.anim-overlay-bounce     { animation: anim-bounce-in  0.5s cubic-bezier(0.34,1.56,0.64,1) both; }
+.anim-overlay-typewriter { overflow: hidden; animation: anim-typewriter-ov 1.4s steps(40,end) both; white-space: nowrap; }
+
+/* ── Animated Character ───────────────────────────────────────────────────── */
+@keyframes char-idle   { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+@keyframes char-wave   { 0%,100% { transform: rotate(0deg); } 25% { transform: rotate(-30deg); } 75% { transform: rotate(30deg); } }
+@keyframes char-nod    { 0%,100% { transform: rotate(0deg); } 25% { transform: rotate(-15deg); } 75% { transform: rotate(10deg); } }
+@keyframes char-dance  { 0%,100% { transform: translateX(0) rotate(0deg); } 25% { transform: translateX(-6px) rotate(-8deg); } 75% { transform: translateX(6px) rotate(8deg); } }
+@keyframes char-point  { 0%,100% { transform: rotate(0deg); } 50% { transform: rotate(-50deg) translateX(-6px); } }
+@keyframes char-talk   { 0%,100% { transform: scaleY(0.3); } 50% { transform: scaleY(1); } }
+
+.char-body-idle  { animation: char-idle  2s ease-in-out infinite; }
+.char-body-wave  { animation: char-idle  2s ease-in-out infinite; }
+.char-body-nod   { animation: char-nod   0.6s ease-in-out infinite; }
+.char-body-dance { animation: char-dance 0.6s ease-in-out infinite; }
+.char-body-point { animation: char-idle  2s ease-in-out infinite; }
+.char-arm-wave   { animation: char-wave  0.45s ease-in-out infinite; transform-origin: right center; }
+.char-arm-point  { animation: char-point 1.2s ease-in-out infinite; transform-origin: right center; }
+.char-mouth      { animation: char-talk  0.25s ease-in-out infinite; transform-origin: center; }
+.char-entrance   { animation: anim-zoom-in 0.4s cubic-bezier(0.34,1.56,0.64,1) both; }
+
 /* Typewriter */
 .caption-typewriter {
   overflow: hidden;

@@ -5,6 +5,7 @@
  */
 
 const OPENAI_URL = 'https://api.openai.com/v1/chat/completions';
+const OPENAI_TTS_URL = 'https://api.openai.com/v1/audio/speech';
 
 function getApiKey() {
   try {
@@ -16,6 +17,25 @@ function getApiKey() {
 
 export function hasOpenAIKey() {
   return !!getApiKey().trim();
+}
+
+/**
+ * Text-to-Speech using OpenAI TTS-1-HD.
+ * Returns an audio/mpeg Blob ready to createObjectURL().
+ */
+export async function generateTTS(text, voice = 'onyx', speed = 1.0) {
+  const key = getApiKey();
+  if (!key.trim()) throw new Error('Add your OpenAI API key in App Settings to use AI Voice.');
+  const res = await fetch(OPENAI_TTS_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` },
+    body: JSON.stringify({ model: 'tts-1-hd', voice, input: text.slice(0, 4096), speed }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error?.message || `TTS error ${res.status}`);
+  }
+  return res.blob();
 }
 
 export async function analyzePosts(posts, businessName = 'your brand') {
