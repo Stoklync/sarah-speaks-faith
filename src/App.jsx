@@ -2881,11 +2881,18 @@ const ClassicEditor = () => {
   const [exportFormat, setExportFormat] = useState('9:16');
   const [showCreatorInsights, setShowCreatorInsights] = useState(false);
   const EXPORT_FORMATS = [
-    { id: '9:16', label: 'Reels / Shorts', w: 1080, h: 1920, platform: 'Instagram, TikTok, YouTube Shorts' },
-    { id: '16:9', label: 'YouTube', w: 1920, h: 1080, platform: 'YouTube, Facebook' },
-    { id: '1:1', label: 'Feed', w: 1080, h: 1080, platform: 'Instagram feed, Pinterest' },
+    // Vertical (Reels / Shorts / TikTok)
+    { id: '9:16-4k', label: '4K Vertical', w: 2160, h: 3840, platform: 'Reels, Shorts, TikTok — ultra quality' },
+    { id: '9:16', label: '1080p Vertical', w: 1080, h: 1920, platform: 'Reels, Shorts, TikTok — standard' },
+    // Landscape (YouTube)
+    { id: '16:9-4k', label: '4K YouTube', w: 3840, h: 2160, platform: 'YouTube — ultra quality' },
+    { id: '16:9-2k', label: '2K YouTube', w: 2560, h: 1440, platform: 'YouTube — 2K quality' },
+    { id: '16:9', label: '1080p YouTube', w: 1920, h: 1080, platform: 'YouTube, Facebook' },
+    // Square / Portrait feed
+    { id: '1:1', label: '1080 Square', w: 1080, h: 1080, platform: 'Instagram feed, Pinterest' },
     { id: '4:5', label: 'Portrait feed', w: 1080, h: 1350, platform: 'Instagram portrait' },
-    { id: 'source', label: 'Source', w: null, h: null, platform: 'Original resolution' }
+    // Original
+    { id: 'source', label: 'Source quality', w: null, h: null, platform: 'Original resolution, no resampling' },
   ];
   const exportVideo = async () => {
     if (!selectedVideo || exporting) return;
@@ -2952,6 +2959,14 @@ const ClassicEditor = () => {
         const webmPromise = new Promise(resolve => {
           recorder.onstop = () => resolve(new Blob(chunks, { type: mimeType }));
         });
+        // Apply speed from first segment
+        const firstSeg = (mainSegments || []).find(s => s && typeof s.start === 'number');
+        if (firstSeg?.speed && firstSeg.speed !== 1) v.playbackRate = firstSeg.speed;
+        // Boost bitrate for 4K
+        const is4k = (fmt?.w ?? 0) >= 3840 || (fmt?.h ?? 0) >= 3840;
+        const is2k = (fmt?.w ?? 0) >= 2560 || (fmt?.h ?? 0) >= 2560;
+        if (is4k) { try { recorder.videoBitsPerSecond = 25000000; } catch(_){} }
+        else if (is2k) { try { recorder.videoBitsPerSecond = 12000000; } catch(_){} }
         recorder.start(100);
         v.currentTime = 0;
         await new Promise(r => { v.onseeked = r; });
@@ -3212,10 +3227,15 @@ const ClassicEditor = () => {
               {selectedSegmentId && (() => {
                 const seg = mainSegments.find(s => s.id === selectedSegmentId);
                 if (!seg) return null;
-                const currTx = TIMELINE_TRANSITIONS.find(t => t.id === (seg.transition || 'cut'));
+                const currTxId = seg.transition || 'cut';
+                const setTx = (txId) => { pushHistory(); setMainSegments(prev => prev.map(x => x.id === selectedSegmentId ? { ...x, transition: txId } : x)); };
+                const setSpeed = (sp) => { pushHistory(); setMainSegments(prev => prev.map(x => x.id === selectedSegmentId ? { ...x, speed: sp } : x)); };
+                const currSpeed = seg.speed || 1;
                 return (
-                  <div className="bg-stone-800 border border-stone-700 rounded-xl p-3 space-y-2">
-                    <p className="text-[10px] font-bold text-stone-400 uppercase">Selected Clip</p>
+                  <div className="bg-stone-800 border border-stone-700 rounded-xl p-3 space-y-3">
+                    <p className="text-[10px] font-bold text-stone-400 uppercase tracking-wider">Selected Clip</p>
+
+                    {/* In / Out */}
                     <div className="grid grid-cols-2 gap-2">
                       <div>
                         <p className="text-[10px] text-stone-500 mb-1">In point</p>
@@ -3226,8 +3246,32 @@ const ClassicEditor = () => {
                         <input key={`out-${seg.id}`} defaultValue={secToTimecode(seg.end)} onBlur={(e) => { const t = parseTimecode(e.target.value); if (t != null && t <= duration && t > seg.start + 0.5) { pushHistory(); setMainSegments(prev => prev.map(x => x.id === selectedSegmentId ? { ...x, end: t } : x)); }}} className="w-full font-mono px-2 py-1.5 rounded-lg border bg-stone-700 border-stone-600 text-stone-100 text-xs" />
                       </div>
                     </div>
-                    <div className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-xs font-bold ${currTx?.seamless ? 'border-emerald-700 text-emerald-400 bg-emerald-900/20' : 'border-stone-600 text-stone-400 bg-stone-700'}`}>
-                      {currTx?.icon} {currTx?.label} transition
+
+                    {/* Speed */}
+                    <div>
+                      <p className="text-[10px] text-stone-500 uppercase font-bold mb-1.5">Speed</p>
+                      <div className="flex gap-1.5 flex-wrap">
+                        {[0.25, 0.5, 0.75, 1, 1.5, 2, 3].map(sp => (
+                          <button key={sp} onClick={() => setSpeed(sp)} className={`px-2.5 py-1.5 rounded-lg text-xs font-bold border transition-colors ${currSpeed === sp ? 'bg-rose-500 border-rose-500 text-white' : 'bg-stone-700 border-stone-600 text-stone-300 hover:bg-stone-600'}`}>{sp}x</button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Transition picker */}
+                    <div>
+                      <p className="text-[10px] text-stone-500 uppercase font-bold mb-1.5">Transition into next clip</p>
+                      <div className="grid grid-cols-3 gap-1.5">
+                        {TIMELINE_TRANSITIONS.map(tx => (
+                          <button key={tx.id} onClick={() => setTx(tx.id)} title={tx.when}
+                            className={`flex flex-col items-center gap-0.5 py-2 rounded-xl border text-[10px] font-bold transition-all active:scale-95 ${currTxId === tx.id ? (tx.seamless ? 'bg-emerald-900/50 border-emerald-600 text-emerald-300' : 'bg-rose-900/50 border-rose-600 text-rose-300') : 'bg-stone-700 border-stone-600 text-stone-400 hover:border-stone-500 hover:text-stone-200'}`}>
+                            <span className="text-base leading-none">{tx.icon}</span>
+                            <span className="leading-tight text-center">{tx.label}</span>
+                          </button>
+                        ))}
+                      </div>
+                      {TIMELINE_TRANSITIONS.find(t => t.id === currTxId)?.when && (
+                        <p className="text-[10px] text-stone-500 italic mt-1.5">{TIMELINE_TRANSITIONS.find(t => t.id === currTxId).when}</p>
+                      )}
                     </div>
                   </div>
                 );
@@ -3354,11 +3398,23 @@ const ClassicEditor = () => {
               })()}
               {/* Export format */}
               <div>
-                <p className="text-[10px] font-bold text-stone-500 uppercase mb-2">Format</p>
-                <select value={exportFormat} onChange={(e) => setExportFormat(e.target.value)} className="w-full text-xs px-3 py-2.5 rounded-xl border border-stone-700 bg-stone-800 text-stone-100 mb-2">
-                  {EXPORT_FORMATS.map(f => <option key={f.id} value={f.id}>{f.w ? `${f.label} ${f.w}×${f.h}` : `${f.label} (original)`}</option>)}
-                </select>
-                <label className="flex items-center gap-2 text-xs text-stone-400 cursor-pointer">
+                <p className="text-[10px] font-bold text-stone-500 uppercase mb-2">Quality & Format</p>
+                <div className="space-y-1 mb-3">
+                  {EXPORT_FORMATS.map(f => (
+                    <button key={f.id} onClick={() => setExportFormat(f.id)}
+                      className={`w-full text-left px-3 py-2.5 rounded-xl border transition-colors ${exportFormat === f.id ? 'bg-rose-900/40 border-rose-600 text-rose-300' : 'bg-stone-800 border-stone-700 text-stone-300 hover:border-stone-600'}`}>
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold">{f.label}</span>
+                        {f.w && <span className="text-[10px] font-mono text-stone-500">{f.w}×{f.h}</span>}
+                      </div>
+                      <p className="text-[10px] text-stone-500 mt-0.5">{f.platform}</p>
+                    </button>
+                  ))}
+                </div>
+                {(exportFormat.includes('4k') || exportFormat.includes('2k')) && (
+                  <p className="text-[10px] text-amber-400 mb-2">4K/2K export takes longer — keep device awake during export.</p>
+                )}
+                <label className="flex items-center gap-2 text-xs text-stone-400 cursor-pointer mb-1">
                   <input type="checkbox" checked={appendContactUrlToMetadata} onChange={(e) => setAppendContactUrlToMetadata(e.target.checked)} className="rounded" />
                   Append contact URL to metadata
                 </label>
