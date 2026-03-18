@@ -142,17 +142,18 @@ export function Stage({ aspectPreset = '16:9', platforms, className = '', videoR
           else { sH = vw / outAsp; sy = (vh - sH) / 2; }
           try { ctx.drawImage(v, sx, sy, sW, sH, x, y, w, h); } catch (_) {}
         } else {
+          // CONTAIN — show entire video, letterbox/pillarbox as needed
           const outAsp = outW / outH;
           let dX = 0, dY = 0, dW = outW, dH = outH;
-          if (vAsp > outAsp) { dW = outH * vAsp; dH = outH; dX = (outW - dW) / 2; }
-          else { dW = outW; dH = outW / vAsp; dY = (outH - dH) / 2; }
+          if (vAsp > outAsp) { dW = outW; dH = outW / vAsp; dY = (outH - dH) / 2; }
+          else { dH = outH; dW = outH * vAsp; dX = (outW - dW) / 2; }
           try { ctx.drawImage(v, 0, 0, vw, vh, dX, dY, dW, dH); } catch (_) {}
         }
         ctx.restore();
       }
     };
 
-    // Draw a video element at specific time to canvas region, with optional transform
+    // Draw a video element at specific time to canvas region, with optional transform (CONTAIN)
     const drawVideoAt = (v, outW, outH, alpha, transform) => {
       if (!v || v.tagName !== 'VIDEO') return;
       const vw = v.videoWidth || 1920;
@@ -160,8 +161,8 @@ export function Stage({ aspectPreset = '16:9', platforms, className = '', videoR
       const vAsp = vw / vh;
       const outAsp = outW / outH;
       let dX = 0, dY = 0, dW = outW, dH = outH;
-      if (vAsp > outAsp) { dW = outH * vAsp; dH = outH; dX = (outW - dW) / 2; }
-      else { dW = outW; dH = outW / vAsp; dY = (outH - dH) / 2; }
+      if (vAsp > outAsp) { dW = outW; dH = outW / vAsp; dY = (outH - dH) / 2; }
+      else { dH = outH; dW = outH * vAsp; dX = (outW - dW) / 2; }
       ctx.save();
       ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
       if (transform) transform(ctx, outW, outH, dX, dY, dW, dH);
@@ -229,8 +230,9 @@ export function Stage({ aspectPreset = '16:9', platforms, className = '', videoR
       const vAsp = vw / vh;
       const outAsp = outW / outH;
       let dX = 0, dY = 0, dW = outW, dH = outH;
-      if (vAsp > outAsp) { dW = outH * vAsp; dH = outH; dX = (outW - dW) / 2; }
-      else { dW = outW; dH = outW / vAsp; dY = (outH - dH) / 2; }
+      // CONTAIN — full video always visible
+      if (vAsp > outAsp) { dW = outW; dH = outW / vAsp; dY = (outH - dH) / 2; }
+      else { dH = outH; dW = outH * vAsp; dX = (outW - dW) / 2; }
 
       // Detect transition zone using segment info
       const segs = transitionSegments;
