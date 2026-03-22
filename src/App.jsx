@@ -2183,7 +2183,17 @@ const ClassicEditor = () => {
   const handleInlineUpload = (e, typeFilter) => {
     Array.from(e.target.files || []).forEach(f => {
       const t = f.type.startsWith('video/') ? 'video' : f.type.startsWith('audio/') ? 'audio' : 'image';
-      if (!typeFilter || t === typeFilter) addAsset(f, t);
+      if (!typeFilter || t === typeFilter) {
+        const id = addAsset(f, t);
+        // Auto-place on the right timeline track immediately after adding to library
+        if (id) {
+          setTimeout(() => {
+            if (t === 'video') insertClipAtPlayhead(0, id);
+            else if (t === 'image') insertClipAtPlayhead(0, id);
+            else if (t === 'audio') insertClipAtPlayhead(3, id);
+          }, 80); // small delay so asset probe can register duration first
+        }
+      }
     });
     e.target.value = '';
   };
@@ -2211,7 +2221,7 @@ const ClassicEditor = () => {
   const [markers, setMarkers] = useState(() => JSON.parse(localStorage.getItem('faith-studio-markers') || '[]'));
   const [timelineZoom, setTimelineZoom] = useState(1);
   const [snapEnabled, setSnapEnabled] = useState(true);
-  const [trackHeights, setTrackHeights] = useState({ text: 48, video: 80, audio: 48, extra: 48 });
+  const [trackHeights, setTrackHeights] = useState({ text: 36, video: 100, audio: 64, extra: 48 });
   const [resizingTrack, setResizingTrack] = useState(null);
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [showAIHelper, setShowAIHelper] = useState(false);
@@ -5122,10 +5132,10 @@ const ClassicEditor = () => {
             }
           }
         }}
-        style={{ height: 320, minHeight: 200, maxHeight: '50vh', touchAction: 'manipulation' }}
+        style={{ height: '100%', touchAction: 'manipulation' }}
       >
         <div className="flex flex-col shrink-0" style={{ minWidth: 80 + 500 * timelineZoom, width: 80 + 500 * timelineZoom }}>
-        <div className="h-8 shrink-0 flex items-center font-mono text-[10px] font-bold text-stone-400 border-b border-stone-700 bg-stone-800">
+        <div className="h-10 shrink-0 flex items-center font-mono text-[10px] font-bold text-stone-400 border-b border-stone-700 bg-stone-800">
           <div className="w-20 shrink-0 flex flex-col items-center px-1">
             <span className="text-stone-400">TRACK</span>
             <button onClick={addAudioTrack} className="text-[9px] font-semibold text-emerald-400 hover:text-emerald-300" title="Add unlimited audio tracks">+ track</button>
@@ -5230,7 +5240,7 @@ const ClassicEditor = () => {
               <Video size={14} />
               <span>Video</span>
             </div>
-            <div ref={mainTrackRef} onMouseDown={(e) => { e.preventDefault(); handlePlayheadDrag(e); setDraggingPlayheadSynced(true); }} className="flex-1 h-full relative overflow-hidden rounded bg-stone-700/80" style={{ userSelect: 'none', minWidth: `${500 * timelineZoom}px`, cursor: 'default' }}>
+            <div ref={mainTrackRef} className="flex-1 h-full relative overflow-hidden rounded bg-stone-700/80" style={{ userSelect: 'none', minWidth: `${500 * timelineZoom}px`, cursor: 'default' }}>
               {selectedVideo ? (
                 <>
                   {getMainTimelineRanges(mainSegments).map(({ seg, tlStart, tlEnd }) => {
@@ -5270,7 +5280,7 @@ const ClassicEditor = () => {
               <Mic size={14} />
               <span>Audio</span>
             </div>
-            <div ref={audioTrackRef} onMouseDown={(e) => { e.preventDefault(); handlePlayheadDrag(e); setDraggingPlayheadSynced(true); }} className="flex-1 h-full relative overflow-hidden rounded bg-stone-900" style={{ userSelect: 'none', minWidth: `${500 * timelineZoom}px`, cursor: 'default' }}>
+            <div ref={audioTrackRef} className="flex-1 h-full relative overflow-hidden rounded bg-stone-900" style={{ userSelect: 'none', minWidth: `${500 * timelineZoom}px`, cursor: 'default' }}>
               {hasAudio ? (
                 <>
                   {getAudioTimelineRanges(audioSegments).map(({ seg, tlStart, tlEnd }) => {
