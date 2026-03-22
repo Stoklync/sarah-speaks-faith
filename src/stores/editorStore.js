@@ -4,12 +4,16 @@
  */
 
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 import { probeAsset } from '../services/assetProbe';
+import { idbSaveAsset, idbDeleteAsset, idbLoadAllAssets } from '../services/idbAssets';
 
 const genId = () => `c${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 const genTrackId = () => `t${Date.now()}`;
 
-export const useEditorStore = create((set, get) => ({
+export const useEditorStore = create(persist((set, get) => ({
+  // expose on window so we can live-test in browser console
+  __init: (() => { if (typeof window !== 'undefined') setTimeout(() => { window.__editorStore = useEditorStore; }, 0); })(),
   // Assets with probed meta (duration, width, height)
   assets: [],
   addAsset: (file, type) => {
@@ -24,6 +28,8 @@ export const useEditorStore = create((set, get) => ({
         assets: s.assets.map(a => a.id === id ? { ...a, ...probe } : a)
       }));
     });
+    // Persist to IndexedDB so asset survives page refresh
+    idbSaveAsset(id, file, { name: file.name, mimeType: file.type, size: file.size, type, addedAt: Date.now() });
     return id;
   },
   updateAssetBlob: (id, blob) => {
@@ -34,10 +40,14 @@ export const useEditorStore = create((set, get) => ({
     set(s => ({
       assets: s.assets.map(x => x.id === id ? { ...x, url, file: blob, size: blob.size } : x),
     }));
+    // Update IndexedDB with new blob
+    idbSaveAsset(id, blob, { name: a.name, mimeType: blob.type, size: blob.size, type: a.type, addedAt: Date.now() });
   },
   removeAsset: (id) => {
     const a = get().assets.find(x => x.id === id);
     if (a?.url) URL.revokeObjectURL(a.url);
+    // Remove from IndexedDB
+    idbDeleteAsset(id);
     set(s => ({
       assets: s.assets.filter(x => x.id !== id),
       timelineTracks: s.timelineTracks.map(tr => ({
@@ -48,6 +58,47 @@ export const useEditorStore = create((set, get) => ({
       selectedAudioId: s.selectedAudioId === id ? null : s.selectedAudioId,
       selectedImageId: s.selectedImageId === id ? null : s.selectedImageId,
     }));
+  },
+
+  /** Restore persisted assets from IndexedDB on app start */
+  initAssetsFromIDB: async () => {
+    try {
+      const stored = await idbLoadAllAssets();
+      if (!stored?.length) return;
+      const restored = stored.map(entry => {
+        const { id, file, meta } = entry;
+        if (!file) return null;
+        const url = URL.createObjectURL(file);
+        return {
+          id,
+          file,
+          url,
+          name: meta?.name || file.name || 'asset',
+          size: meta?.size || file.size || 0,
+          type: meta?.type || (file.type?.startsWith('video') ? 'video' : file.type?.startsWith('audio') ? 'audio' : 'image'),
+          addedAt: meta?.addedAt ? new Date(meta.addedAt) : new Date(),
+          duration: 0,
+          width: 0,
+          height: 0,
+        };
+      }).filter(Boolean);
+      if (!restored.length) return;
+      // Only add assets that don't already exist (avoid duplication if called twice)
+      set(s => {
+        const existingIds = new Set(s.assets.map(a => a.id));
+        const newAssets = restored.filter(a => !existingIds.has(a.id));
+        if (!newAssets.length) return s;
+        // Probe each restored asset asynchronously
+        newAssets.forEach(a => {
+          probeAsset(a.url, a.type).then(probe => {
+            set(st => ({ assets: st.assets.map(x => x.id === a.id ? { ...x, ...probe } : x) }));
+          });
+        });
+        return { assets: [...s.assets, ...newAssets] };
+      });
+    } catch (e) {
+      console.warn('initAssetsFromIDB failed:', e);
+    }
   },
 
   selectedVideoId: null,
@@ -307,6 +358,18 @@ export const useEditorStore = create((set, get) => ({
 
   playing: false,
   setPlaying: (v) => set({ playing: v }),
+}), {
+  name: 'faith-studio-editor',
+  // Only persist timeline/project data — NOT assets (they have blob URLs that die on refresh)
+  // Assets are restored separately from IndexedDB
+  partialize: (s) => ({
+    timelineTracks: s.timelineTracks,
+    textClips: s.textClips,
+    mainSegments: s.mainSegments,
+    audioSegments: s.audioSegments,
+    audioExtraTracks: s.audioExtraTracks,
+    duration: s.duration,
+  }),
 }));
 
 export const selectSelectedVideo = (s) => s.assets.find(a => a.id === s.selectedVideoId);
@@ -333,3 +396,4 @@ export const selectFilteredAssets = (s, filter, search) =>
     const matchSearch = !search || a.name?.toLowerCase().includes(search?.toLowerCase());
     return matchFilter && matchSearch;
   });
+

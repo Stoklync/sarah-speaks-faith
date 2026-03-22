@@ -68,7 +68,20 @@ import {
   ArrowLeft,
   Type,
   Download,
-  Volume2
+  Volume2,
+  Palette,
+  Layers,
+  AlignLeft,
+  AlignCenter,
+  AlignRight,
+  Bold,
+  Italic,
+  Underline,
+  Square,
+  Circle,
+  Triangle,
+  Minus,
+  Star
 } from 'lucide-react';
 
 // --- App Context ---
@@ -144,10 +157,14 @@ const App = () => {
 
   const cycleTheme = () => setTheme(t => t === 'light' ? 'dark' : t === 'dark' ? 'system' : 'light');
 
+  // Restore uploaded videos/audio/images from IndexedDB on every page load
+  useEffect(() => { initAssetsFromIDB?.(); }, []);
+
   const [activeTab, setActiveTab] = useState('start');
   const assets = useEditorStore(s => Array.isArray(s?.assets) ? s.assets : []);
   const addAsset = useEditorStore(s => s.addAsset);
   const removeAsset = useEditorStore(s => s.removeAsset);
+  const initAssetsFromIDB = useEditorStore(s => s.initAssetsFromIDB);
   const selectedVideoId = useEditorStore(s => s.selectedVideoId);
   const setSelectedVideoId = useEditorStore(s => s.setSelectedVideoId);
   const selectedAudioId = useEditorStore(s => s.selectedAudioId);
@@ -205,11 +222,11 @@ const App = () => {
     if (activeBusinessId) localStorage.setItem('faith-studio-active-business', activeBusinessId);
   }, [activeBusinessId]);
 
-  const [voiceIsolation, setVoiceIsolation] = useState(true);
-  const [deReverb, setDeReverb] = useState(true);
-  const [deReverbStrength, setDeReverbStrength] = useState(80);
-  const [aiUpscale, setAiUpscale] = useState(true);
-  const [cinematicGrade, setCinematicGrade] = useState(true);
+  const [voiceIsolation, setVoiceIsolation] = useState(false);
+  const [deReverb, setDeReverb] = useState(false);
+  const [deReverbStrength, setDeReverbStrength] = useState(60);
+  const [aiUpscale, setAiUpscale] = useState(false);
+  const [cinematicGrade, setCinematicGrade] = useState(false);
 
   const [igPosts, setIgPosts] = useState([]);
   const [pinterestPins, setPinterestPins] = useState([]);
@@ -224,6 +241,7 @@ const App = () => {
     ['start', Target, 'Start Here'],
     ['video', Sliders, 'Video Editor'],
     ['photo-edit', ImageIcon, 'Photo Editor'],
+    ['design', Palette, 'Design Studio'],
     ['pro', Zap, 'Content Toolkit'],
     ['social', Share2, 'Social & Podcast'],
     ['traffic', Link2, 'Traffic Links'],
@@ -434,12 +452,13 @@ const App = () => {
               <span>
                 {activeTab === 'start' && 'Start Here'}
                 {activeTab === 'photo-edit' && 'Photo Editor'}
+                {activeTab === 'design' && 'Design Studio'}
                 {activeTab === 'pro' && 'Content Toolkit'}
                 {activeTab === 'social' && 'Social & Podcast'}
                 {activeTab === 'traffic' && 'Traffic Links'}
                 {activeTab === 'analytics' && 'Analytics'}
               </span>
-              {(businesses || []).find(b => b && b.id === activeBusinessId) && ['photo-edit','pro','social','traffic','analytics'].includes(activeTab) && (
+              {(businesses || []).find(b => b && b.id === activeBusinessId) && ['photo-edit','design','pro','social','traffic','analytics'].includes(activeTab) && (
                 <span className="text-sm font-normal text-rose-600 dark:text-rose-400 normal-case bg-rose-50 dark:bg-rose-900/20 px-3 py-1 rounded-full">Creating for: {(businesses || []).find(b => b && b.id === activeBusinessId)?.name || 'Unknown'}</span>
               )}
             </h2>
@@ -524,11 +543,12 @@ const App = () => {
               </EditorErrorBoundary>
             )}
             {activeTab === 'photo-edit' && <PhotoEditor />}
+            {activeTab === 'design' && <DesignStudio />}
             {activeTab === 'pro' && <ProContentToolkit />}
             {activeTab === 'social' && <SocialPublisher />}
             {activeTab === 'traffic' && <TrafficHub />}
             {activeTab === 'analytics' && <PostAnalytics onOpenSettings={() => setShowSettings(true)} />}
-            {!['start','video','photo-edit','pro','social','traffic','analytics'].includes(activeTab) && <StartHere setActiveTab={setActiveTab} />}
+            {!['start','video','photo-edit','design','pro','social','traffic','analytics'].includes(activeTab) && <StartHere setActiveTab={setActiveTab} />}
           </div>
         </main>
       </div>
@@ -1957,16 +1977,21 @@ const MARKETING_GOALS = [
 // ── AI Voice Presets ────────────────────────────────────────────────────────
 // ── Color / Look Filter Presets ───────────────────────────────────────────
 const FILTER_PRESETS = [
-  { id: 'none',      label: 'Original',    emoji: '⚪', b: 100, c: 100, s: 100 },
-  { id: 'cinematic', label: 'Cinematic',   emoji: '🎬', b: 95,  c: 122, s: 82  },
-  { id: 'punch',     label: 'Punch',       emoji: '⚡', b: 105, c: 132, s: 138 },
-  { id: 'neon',      label: 'Neon',        emoji: '🌈', b: 100, c: 125, s: 168 },
-  { id: 'golden',    label: 'Golden Hour', emoji: '✨', b: 108, c: 105, s: 112 },
-  { id: 'vintage',   label: 'Vintage',     emoji: '📷', b: 95,  c: 88,  s: 70  },
-  { id: 'drama',     label: 'Drama',       emoji: '🎭', b: 88,  c: 148, s: 65  },
-  { id: 'faith',     label: 'Faith Glow',  emoji: '🙏', b: 107, c: 108, s: 90  },
-  { id: 'cool',      label: 'Cool',        emoji: '❄️', b: 100, c: 112, s: 108 },
-  { id: 'fade',      label: 'Fade',        emoji: '🌫', b: 114, c: 80,  s: 70  },
+  { id: 'none',      label: 'Original',    emoji: '⚪', b: 100, c: 100, s: 100, h: 0,  temp: 0,  vignette: 0  },
+  { id: 'cinematic', label: 'Cinematic',   emoji: '🎬', b: 95,  c: 122, s: 82,  h: 0,  temp: 15, vignette: 35 },
+  { id: 'punch',     label: 'Punch',       emoji: '⚡', b: 105, c: 132, s: 138, h: 0,  temp: 5,  vignette: 0  },
+  { id: 'neon',      label: 'Neon',        emoji: '🌈', b: 100, c: 125, s: 168, h: 15, temp: -10,vignette: 40 },
+  { id: 'golden',    label: 'Golden Hour', emoji: '✨', b: 108, c: 105, s: 112, h: 5,  temp: 40, vignette: 25 },
+  { id: 'vintage',   label: 'Vintage',     emoji: '📷', b: 95,  c: 88,  s: 70,  h: 10, temp: 25, vignette: 50 },
+  { id: 'drama',     label: 'Drama',       emoji: '🎭', b: 88,  c: 148, s: 65,  h: 0,  temp: -5, vignette: 60 },
+  { id: 'faith',     label: 'Faith Glow',  emoji: '🙏', b: 107, c: 108, s: 90,  h: 0,  temp: 20, vignette: 20 },
+  { id: 'cool',      label: 'Cool',        emoji: '❄️', b: 100, c: 112, s: 108, h: -8, temp: -30,vignette: 15 },
+  { id: 'fade',      label: 'Fade',        emoji: '🌫', b: 114, c: 80,  s: 70,  h: 0,  temp: 10, vignette: 0  },
+  { id: 'matte',     label: 'Matte',       emoji: '🎞', b: 102, c: 85,  s: 72,  h: 0,  temp: 8,  vignette: 30 },
+  { id: 'vivid',     label: 'Vivid',       emoji: '🌟', b: 110, c: 118, s: 155, h: 0,  temp: 0,  vignette: 0  },
+  { id: 'mono',      label: 'B&W',         emoji: '◐',  b: 100, c: 115, s: 0,   h: 0,  temp: 0,  vignette: 25 },
+  { id: 'warm',      label: 'Warm',        emoji: '🔥', b: 105, c: 105, s: 110, h: 5,  temp: 55, vignette: 0  },
+  { id: 'bleach',    label: 'Bleach',      emoji: '💎', b: 112, c: 90,  s: 55,  h: 0,  temp: -8, vignette: 20 },
 ];
 
 // ── Popular Scripture Verses ──────────────────────────────────────────────
@@ -2191,15 +2216,109 @@ const ClassicEditor = () => {
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [showAIHelper, setShowAIHelper] = useState(false);
   const [inspectorTab, setInspectorTab] = useState('edit');
+  // ── Camera recording state ─────────────────────────────────────────────────
+  const [recordTimer, setRecordTimer] = useState(0);
+  const recordTimerRef = useRef(null);
+  const cameraPreviewRef = useRef(null);
+  const cameraPreviewStreamRef = useRef(null);
+  const [cameraPreviewActive, setCameraPreviewActive] = useState(false);
+  const [cameraPreviewError, setCameraPreviewError] = useState(null);
+  const [cameraFacing, setCameraFacing] = useState('user'); // 'user' | 'environment'
+  useEffect(() => {
+    if (isRecording) {
+      setRecordTimer(0);
+      recordTimerRef.current = setInterval(() => setRecordTimer(t => t + 1), 1000);
+    } else {
+      clearInterval(recordTimerRef.current);
+    }
+    return () => clearInterval(recordTimerRef.current);
+  }, [isRecording]);
+  const startCameraPreview = async (facing = cameraFacing) => {
+    setCameraPreviewError(null);
+    try {
+      if (cameraPreviewStreamRef.current) {
+        cameraPreviewStreamRef.current.getTracks().forEach(t => t.stop());
+      }
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: facing }, audio: false });
+      cameraPreviewStreamRef.current = stream;
+      if (cameraPreviewRef.current) {
+        cameraPreviewRef.current.srcObject = stream;
+        cameraPreviewRef.current.play().catch(() => {});
+      }
+      setCameraPreviewActive(true);
+    } catch (e) {
+      setCameraPreviewError(e.message || 'Camera access denied');
+    }
+  };
+  const stopCameraPreview = () => {
+    cameraPreviewStreamRef.current?.getTracks().forEach(t => t.stop());
+    cameraPreviewStreamRef.current = null;
+    setCameraPreviewActive(false);
+  };
+  useEffect(() => {
+    if (inspectorTab !== 'camera') stopCameraPreview();
+  }, [inspectorTab]);
+  useEffect(() => { return () => stopCameraPreview(); }, []);
   // ── Color Filters state ───────────────────────────────────────────────────
   const [filterPreset, setFilterPreset] = useState('none');
   const [filterB, setFilterB] = useState(100);
   const [filterC, setFilterC] = useState(100);
   const [filterS, setFilterS] = useState(100);
-  const videoFiltersRef = useRef({ b: 100, c: 100, s: 100 });
-  useEffect(() => { videoFiltersRef.current = { b: filterB, c: filterC, s: filterS }; }, [filterB, filterC, filterS]);
-  const applyFilterPreset = (preset) => { setFilterPreset(preset.id); setFilterB(preset.b); setFilterC(preset.c); setFilterS(preset.s); };
-  const vidFilterCSS = filterB === 100 && filterC === 100 && filterS === 100 ? undefined : `brightness(${filterB}%) contrast(${filterC}%) saturate(${filterS}%)`;
+  const [filterH, setFilterH] = useState(0);             // hue-rotate degrees
+  const [filterTemp, setFilterTemp] = useState(0);       // temperature -100 cool → +100 warm
+  const [filterVignette, setFilterVignette] = useState(0); // 0-100 vignette strength
+  const [filterHighlights, setFilterHighlights] = useState(0); // -50 to +50
+  const [filterShadows, setFilterShadows] = useState(0);      // -50 to +50
+  const [filterBlur, setFilterBlur] = useState(0);       // 0-10px
+  // Transform
+  const [transformRotation, setTransformRotation] = useState(0); // degrees
+  const [transformFlipH, setTransformFlipH] = useState(false);
+  const [transformFlipV, setTransformFlipV] = useState(false);
+  const [transformScale, setTransformScale] = useState(100);  // percent 50-200
+  const [transformPanX, setTransformPanX] = useState(0);      // -50 to 50
+  const [transformPanY, setTransformPanY] = useState(0);      // -50 to 50
+  const [cropAspect, setCropAspect] = useState('free');
+
+  const videoFiltersRef = useRef({ b: 100, c: 100, s: 100, h: 0, temp: 0, vignette: 0, blur: 0, highlights: 0, shadows: 0 });
+  useEffect(() => {
+    videoFiltersRef.current = { b: filterB, c: filterC, s: filterS, h: filterH, temp: filterTemp, vignette: filterVignette, blur: filterBlur, highlights: filterHighlights, shadows: filterShadows };
+  }, [filterB, filterC, filterS, filterH, filterTemp, filterVignette, filterBlur, filterHighlights, filterShadows]);
+
+  const applyFilterPreset = (preset) => {
+    setFilterPreset(preset.id);
+    setFilterB(preset.b);
+    setFilterC(preset.c);
+    setFilterS(preset.s);
+    setFilterH(preset.h ?? 0);
+    setFilterTemp(preset.temp ?? 0);
+    setFilterVignette(preset.vignette ?? 0);
+  };
+  const resetAllFilters = () => applyFilterPreset(FILTER_PRESETS[0]);
+  const resetTransform = () => { setTransformRotation(0); setTransformFlipH(false); setTransformFlipV(false); setTransformScale(100); setTransformPanX(0); setTransformPanY(0); setCropAspect('free'); };
+
+  const buildCSSFilter = () => {
+    const parts = [];
+    // Combine brightness with highlights/shadows approximation
+    const bAdj = filterB + (filterHighlights * 0.25) + (filterShadows * 0.18);
+    if (Math.abs(bAdj - 100) > 0.5) parts.push(`brightness(${Math.max(10, bAdj).toFixed(1)}%)`);
+    // Combine contrast: high highlights = slight contrast reduction; lifted shadows = slight contrast dip
+    const cAdj = filterC - Math.abs(filterHighlights) * 0.08 + filterShadows * 0.06;
+    if (Math.abs(cAdj - 100) > 0.5) parts.push(`contrast(${Math.max(10, cAdj).toFixed(1)}%)`);
+    if (filterS !== 100) parts.push(`saturate(${filterS}%)`);
+    if (filterH !== 0) parts.push(`hue-rotate(${filterH}deg)`);
+    if (filterBlur > 0) parts.push(`blur(${filterBlur}px)`);
+    return parts.length ? parts.join(' ') : undefined;
+  };
+  const vidFilterCSS = buildCSSFilter();
+  const stageTransformCSS = (() => {
+    const parts = [];
+    const scaleX = (transformScale / 100) * (transformFlipH ? -1 : 1);
+    const scaleY = (transformScale / 100) * (transformFlipV ? -1 : 1);
+    parts.push(`scaleX(${scaleX}) scaleY(${scaleY})`);
+    if (transformRotation !== 0) parts.push(`rotate(${transformRotation}deg)`);
+    if (transformPanX !== 0 || transformPanY !== 0) parts.push(`translate(${transformPanX}%, ${transformPanY}%)`);
+    return parts.join(' ');
+  })();
 
   // Auto-caption state
   const [autoCaptionLoading, setAutoCaptionLoading] = useState(false);
@@ -2209,6 +2328,9 @@ const ClassicEditor = () => {
   const [animOverlays, setAnimOverlays] = useState(() => { try { return JSON.parse(localStorage.getItem('faith-studio-anim-overlays') || '[]'); } catch { return []; } });
   const animOverlaysRef = useRef(animOverlays);
   useEffect(() => { animOverlaysRef.current = animOverlays; localStorage.setItem('faith-studio-anim-overlays', JSON.stringify(animOverlays)); }, [animOverlays]);
+  // Image/GIF/sticker overlays — uploaded by user, shown on stage at set time
+  const [imageOverlays, setImageOverlays] = useState([]);
+  const stickerUploadRef = useRef(null);
   const [ttsScript, setTtsScript] = useState('');
   const [ttsVoice, setTtsVoice] = useState('onyx');
   const [ttsSpeed, setTtsSpeed] = useState(1.0);
@@ -2655,6 +2777,9 @@ const ClassicEditor = () => {
 
   const onVideoTimeUpdate = (e) => {
     try {
+      // While user is scrubbing, don't let the video's lagging currentTime snap the playhead back
+      if (draggingPlayheadRef.current) return;
+
       const v = e.target;
       const sourceT = v.currentTime;
       const segs = mainSegmentsRef.current || [];
@@ -2711,8 +2836,11 @@ const ClassicEditor = () => {
     if (!ruler || effectiveDuration <= 0) return;
     const rect = ruler.getBoundingClientRect();
     const x = getEventX(e) - rect.left;
+    // Use actual rendered width — NOT a hardcoded value — so clicks map 1:1 to the ruler
     const pct = Math.max(0, Math.min(1, rect.width > 0 ? x / rect.width : 0));
     const t = snapToNearest(pct * effectiveDuration);
+    draggingPlayheadRef.current = true;
+    dragTargetRef.current = t;
     setPlayhead(t);
     seekTo(t);
   };
@@ -2728,9 +2856,12 @@ const ClassicEditor = () => {
     const seg = mainSegments[idx];
     if (!seg || seg.end == null) return false;
     pushHistory();
-    const newSeg = { id: `seg${Date.now()}`, start: t, end: seg.end, transition: seg.transition || 'cut' };
+    const newId = `seg${Date.now()}`;
+    const newSeg = { id: newId, start: t, end: seg.end, transition: seg.transition || 'cut' };
     const updated = { ...seg, end: t };
     setMainSegments(prev => [...prev.slice(0, idx), updated, newSeg, ...prev.slice(idx + 1)]);
+    // Auto-select the new (second) segment so user can immediately delete it
+    setTimeout(() => setSelectedSegmentId(newId), 50);
     return true;
   };
   const splitAudioAt = (t) => {
@@ -2947,10 +3078,10 @@ const ClassicEditor = () => {
   const audioExtraTrackRefs = useRef([]);
   const hasAudio = selectedVideo || selectedAudio;
 
-  const handleResizeMain = (e, seg, edge) => { e.stopPropagation(); pushHistory(); setResizingMainId(seg.id); setResizingMainEdge(edge); };
-  const handleResizeAudio = (e, seg, edge) => { e.stopPropagation(); pushHistory(); setResizingAudioId(seg.id); setResizingAudioEdge(edge); };
-  const handleMoveMainStart = (e, seg) => { e.stopPropagation(); setMovingMainId(seg.id); };
-  const handleMoveAudioStart = (e, seg) => { e.stopPropagation(); setMovingAudioId(seg.id); };
+  const handleResizeMain = (e, seg, edge) => { e.stopPropagation(); pushHistory(); setResizingMainId(seg.id); setResizingMainEdge(edge); setSelectedSegmentId(seg.id); setSelectedAudioSegmentId(null); };
+  const handleResizeAudio = (e, seg, edge) => { e.stopPropagation(); pushHistory(); setResizingAudioId(seg.id); setResizingAudioEdge(edge); setSelectedAudioSegmentId(seg.id); setSelectedSegmentId(null); };
+  const handleMoveMainStart = (e, seg) => { e.stopPropagation(); setMovingMainId(seg.id); setSelectedSegmentId(seg.id); setSelectedAudioSegmentId(null); };
+  const handleMoveAudioStart = (e, seg) => { e.stopPropagation(); setMovingAudioId(seg.id); setSelectedAudioSegmentId(seg.id); setSelectedSegmentId(null); };
   useEffect(() => {
     if (!resizingMainId || !mainTrackRef.current) return;
     const edge = resizingMainEdge;
@@ -3218,18 +3349,29 @@ const ClassicEditor = () => {
 
   const playheadPct = effectiveDuration > 0 ? (playhead / effectiveDuration) * 100 : 0;
   const [draggingPlayhead, setDraggingPlayhead] = useState(false);
+  // Ref mirrors state so onVideoTimeUpdate (stale closure) can read it synchronously
+  const draggingPlayheadRef = useRef(false);
+  const setDraggingPlayheadSynced = (val) => {
+    draggingPlayheadRef.current = val;
+    setDraggingPlayhead(val);
+  };
+
   const rafRef = useRef(null);
+  // Cache of the intended playhead time while dragging — prevents timeupdate from snapping back
+  const dragTargetRef = useRef(null);
+
   const handlePlayheadDrag = (e) => {
-    // Use the ruler's own rect — accurate regardless of label width or scroll container structure
     const ruler = timelineRulerRef.current;
     if (!ruler || effectiveDuration <= 0) return;
     const rect = ruler.getBoundingClientRect();
     const x = getEventX(e) - rect.left;
+    // Use actual rendered width — must match handleRulerClick
     const pct = Math.max(0, Math.min(1, rect.width > 0 ? x / rect.width : 0));
     const t = snapToNearest(pct * effectiveDuration);
-    setPlayhead(t);
+    dragTargetRef.current = t;
     if (rafRef.current) cancelAnimationFrame(rafRef.current);
     rafRef.current = requestAnimationFrame(() => {
+      setPlayhead(t);
       seekTo(t);
       rafRef.current = null;
     });
@@ -3237,7 +3379,15 @@ const ClassicEditor = () => {
   useEffect(() => {
     if (!draggingPlayhead) return;
     const onMove = (e) => { e.preventDefault(); handlePlayheadDrag(e); };
-    const onUp = () => { setDraggingPlayhead(false); if (rafRef.current) cancelAnimationFrame(rafRef.current); };
+    const onUp = () => {
+      // Keep lock for 200ms while the video seek settles — prevents timeupdate snap-back
+      setTimeout(() => {
+        draggingPlayheadRef.current = false;
+        dragTargetRef.current = null;
+      }, 200);
+      setDraggingPlayhead(false);
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    };
     window.addEventListener('mousemove', onMove, { passive: false });
     window.addEventListener('mouseup', onUp);
     window.addEventListener('touchmove', onMove, { passive: false });
@@ -3344,12 +3494,35 @@ const ClassicEditor = () => {
           let sx = 0, sy = 0, sW = vw, sH = vh;
           if (vAsp > outAsp) { sW = vh * outAsp; sx = (vw - sW) / 2; }
           else { sH = vw / outAsp; sy = (vh - sH) / 2; }
-          const { b, c, s } = videoFiltersRef.current;
-          if (b !== 100 || c !== 100 || s !== 100) {
-            ctx.filter = `brightness(${b / 100}) contrast(${c / 100}) saturate(${s / 100})`;
-          }
+          const { b, c, s, h, blur, temp } = videoFiltersRef.current;
+          const filterParts = [];
+          if (b !== 100) filterParts.push(`brightness(${b / 100})`);
+          if (c !== 100) filterParts.push(`contrast(${c / 100})`);
+          if (s !== 100) filterParts.push(`saturate(${s / 100})`);
+          if (h !== 0) filterParts.push(`hue-rotate(${h}deg)`);
+          if (blur > 0) filterParts.push(`blur(${blur}px)`);
+          ctx.filter = filterParts.length ? filterParts.join(' ') : 'none';
           ctx.drawImage(v, sx, sy, sW, sH, 0, 0, outW, outH);
           ctx.filter = 'none';
+          // Temperature overlay
+          if (temp && temp !== 0) {
+            const alpha = Math.abs(temp) / 100 * 0.22;
+            ctx.globalAlpha = alpha;
+            ctx.globalCompositeOperation = 'multiply';
+            ctx.fillStyle = temp > 0 ? `rgb(255,200,80)` : `rgb(80,140,255)`;
+            ctx.fillRect(0, 0, outW, outH);
+            ctx.globalAlpha = 1;
+            ctx.globalCompositeOperation = 'source-over';
+          }
+          // Vignette overlay
+          const { vignette } = videoFiltersRef.current;
+          if (vignette > 0) {
+            const grad = ctx.createRadialGradient(outW / 2, outH / 2, outW * 0.3, outW / 2, outH / 2, outW * 0.75);
+            grad.addColorStop(0, 'rgba(0,0,0,0)');
+            grad.addColorStop(1, `rgba(0,0,0,${vignette / 100 * 0.85})`);
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, outW, outH);
+          }
         };
         const stream = canvas.captureStream(30);
         try {
@@ -3392,7 +3565,7 @@ const ClassicEditor = () => {
             ctx.drawImage(qrImgExport, outW - qrSize - 16, outH - qrSize - 16, qrSize, qrSize);
           }
           const t = v.currentTime;
-          const sizeMap = { sm: 24, md: 36, lg: 56 };
+          const sizeMap = { sm: 24, md: 36, lg: 56, xl: 80 };
           const fontMap = { sans: 'sans-serif', serif: '"Playfair Display", serif', mono: 'monospace', display: 'sans-serif' };
           const colorMap = { white: '#fff', black: '#000', yellow: '#fef08a', rose: '#fda4af', cyan: '#67e8f9', lime: '#bef264', orange: '#fb923c', gold: '#fbbf24', amber: '#fbbf24', indigo: '#a5b4fc' };
           const scale = Math.min(outW, outH) / 1080;
@@ -3401,15 +3574,34 @@ const ClassicEditor = () => {
             return c.text && t >= start && t < end;
           }).forEach(c => {
             const x = ((c.x ?? 50) / 100) * outW, y = ((c.y ?? 50) / 100) * outH;
-            if (c.lowerThird) {
+            const textColor = (c.color && String(c.color).startsWith('#')) ? c.color : (colorMap[c.color] || '#fff');
+            ctx.globalAlpha = (c.opacity ?? 100) / 100;
+            if (c.bgBox) {
+              const fs = Math.round((sizeMap[c.size] || 36) * scale);
+              ctx.font = `${c.bold ? 'bold' : ''} ${fs}px ${fontMap[c.font] || 'sans-serif'}`;
+              const mw = ctx.measureText(c.text).width;
+              ctx.fillStyle = 'rgba(0,0,0,0.6)';
+              ctx.roundRect(x - mw / 2 - 12, y - fs / 2 - 8, mw + 24, fs + 16, 8);
+              ctx.fill();
+            }
+            if (c.lowerThird && !c.bgBox) {
               ctx.fillStyle = 'rgba(0,0,0,0.55)';
               ctx.fillRect(0, outH * 0.82, outW, outH * 0.18);
             }
-            ctx.fillStyle = (c.color && String(c.color).startsWith('#')) ? c.color : (colorMap[c.color] || '#fff');
+            ctx.fillStyle = textColor;
             ctx.font = `${c.bold ? 'bold' : ''} ${Math.round((sizeMap[c.size] || 36) * scale)}px ${fontMap[c.font] || 'sans-serif'}`;
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
+            if (c.shadow !== false) {
+              ctx.shadowColor = 'rgba(0,0,0,0.9)';
+              ctx.shadowBlur = 6;
+              ctx.shadowOffsetX = 0;
+              ctx.shadowOffsetY = 2;
+            }
             ctx.fillText(c.text, x, y);
+            ctx.shadowColor = 'transparent';
+            ctx.shadowBlur = 0;
+            ctx.globalAlpha = 1;
           });
           // Draw animated overlays on canvas
           const ovColorMap = { white: '#fff', gold: '#fbbf24', rose: '#fb7185', cyan: '#67e8f9', lime: '#bef264' };
@@ -3480,7 +3672,7 @@ const ClassicEditor = () => {
         <div ref={canvasRef} onClick={videoForPreview ? togglePlayPause : undefined} className={`flex-1 min-h-0 flex flex-col ${videoForPreview ? 'cursor-pointer' : ''}`}>
           {videoForPreview ? (
             <>
-              <div className="relative flex-1 min-h-0 flex items-center justify-center" style={vidFilterCSS ? { filter: vidFilterCSS } : undefined}>
+              <div className="relative flex-1 min-h-0 flex items-center justify-center overflow-hidden" style={{ filter: vidFilterCSS || undefined }}>
                 <video
                   ref={videoRef}
                   src={videoForPreview.url}
@@ -3492,20 +3684,35 @@ const ClassicEditor = () => {
                   onPlay={() => setPlaying(true)}
                   onPause={() => setPlaying(false)}
                 />
-                <Stage
-                  aspectPreset={exportFormat}
-                  platforms={platforms}
-                  videoRef={videoRef}
-                  selectedVideo={selectedVideo}
-                  qrCodeDataUrl={qrCodeDataUrl}
-                  transitionSegments={getMainTimelineRanges(mainSegments)}
-                  onPlayheadUpdate={() => {
-                    const mainRanges = getMainTimelineRanges(mainSegments);
-                    const eps = 0.001;
-                    const activeRange = mainRanges.find(r => playhead >= r.tlStart - eps && playhead < r.tlEnd + eps);
-                    return activeRange ? activeRange.seg.start + (playhead - activeRange.tlStart) : playhead;
-                  }}
-                />
+                <div style={{ transform: stageTransformCSS !== 'scaleX(1) scaleY(1)' ? stageTransformCSS : undefined, transformOrigin: 'center center', width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Stage
+                    aspectPreset={exportFormat}
+                    platforms={platforms}
+                    videoRef={videoRef}
+                    selectedVideo={selectedVideo}
+                    qrCodeDataUrl={qrCodeDataUrl}
+                    transitionSegments={getMainTimelineRanges(mainSegments)}
+                    onPlayheadUpdate={() => {
+                      const mainRanges = getMainTimelineRanges(mainSegments);
+                      const eps = 0.001;
+                      const activeRange = mainRanges.find(r => playhead >= r.tlStart - eps && playhead < r.tlEnd + eps);
+                      return activeRange ? activeRange.seg.start + (playhead - activeRange.tlStart) : playhead;
+                    }}
+                  />
+                </div>
+                {/* Temperature overlay */}
+                {filterTemp !== 0 && (
+                  <div className="absolute inset-0 pointer-events-none z-[4]" style={{
+                    background: filterTemp > 0 ? `rgba(255,180,60,${Math.abs(filterTemp) / 100 * 0.28})` : `rgba(60,130,255,${Math.abs(filterTemp) / 100 * 0.28})`,
+                    mixBlendMode: 'multiply',
+                  }} />
+                )}
+                {/* Vignette overlay */}
+                {filterVignette > 0 && (
+                  <div className="absolute inset-0 pointer-events-none z-[4]" style={{
+                    background: `radial-gradient(ellipse at center, transparent ${Math.max(0, 70 - filterVignette * 0.5)}%, rgba(0,0,0,${filterVignette / 100 * 0.88}) 100%)`,
+                  }} />
+                )}
               </div>
               {playheadInGap && <div className="absolute inset-0 bg-black z-10 pointer-events-none" aria-hidden title="Gap — no video at this time" />}
               {liveCaption && <CaptionOverlay text={liveCaption} preset="faith" />}
@@ -3527,6 +3734,23 @@ const ClassicEditor = () => {
                   </div>
                 );
               })}
+              {/* Image / GIF / sticker overlays */}
+              {imageOverlays.filter(ov => playhead >= ov.startTime && playhead < ov.startTime + ov.duration).map(ov => {
+                const posMap = {
+                  'top-left':     { top: '8%',    left: '8%'   },
+                  'top-right':    { top: '8%',    right: '8%'  },
+                  'center':       { top: '50%',   left: '50%', transform: 'translate(-50%,-50%)' },
+                  'bottom-left':  { bottom: '8%', left: '8%'   },
+                  'bottom-right': { bottom: '8%', right: '8%'  },
+                  'bottom-center':{ bottom: '8%', left: '50%', transform: 'translateX(-50%)' },
+                };
+                return (
+                  <div key={ov.id} className="absolute z-[28] pointer-events-none"
+                    style={{ ...(posMap[ov.position] || posMap.center), width: `${ov.size || 20}%` }}>
+                    <img src={ov.url} alt="" className="w-full h-auto object-contain drop-shadow-lg" style={{ opacity: (ov.opacity ?? 100) / 100 }} />
+                  </div>
+                );
+              })}
               {/* Animated character companion */}
               {charAnim !== 'off' && videoForPreview && (
                 <div className={`absolute z-25 bottom-6 ${charPos === 'left' ? 'left-3' : 'right-3'} pointer-events-none`}>
@@ -3541,7 +3765,7 @@ const ClassicEditor = () => {
                 const isEditing = editingClipId === c.id || draggingTextId === c.id;
                 return c.text && (inRange || isEditing);
               }).map((c) => {
-                const sizeMap = { sm: 'text-base', md: 'text-xl', lg: 'text-3xl' };
+                const sizeMap = { sm: 'text-base', md: 'text-xl', lg: 'text-3xl', xl: 'text-5xl' };
                 const fontMap = { sans: 'font-sans', serif: 'font-serif', mono: 'font-mono', display: 'font-bold tracking-tight' };
                 const colorMap = { white: 'text-white', black: 'text-black', yellow: 'text-yellow-300', rose: 'text-rose-300', cyan: 'text-cyan-300', lime: 'text-lime-300', orange: 'text-orange-400', gold: 'text-amber-400', amber: 'text-amber-400', indigo: 'text-indigo-300' };
                 const isHex = c.color && String(c.color).startsWith('#');
@@ -3550,20 +3774,21 @@ const ClassicEditor = () => {
                 const x = c.x ?? 50;
                 const y = c.y ?? 50;
                 const isSelected = editingClipId === c.id;
-                // Animated caption style — overrides base styling when set
-                const animStyle = c.animStyle; // 'tiktok-bold' | 'faith' | 'minimal' | 'highlight' | 'neon' | 'typewriter' | null
+                const animStyle = c.animStyle;
                 const animClass = animStyle ? `caption-${animStyle}` : '';
-                // When an animStyle is active, let the CSS preset drive colors/fonts
                 const noAnimBase = !animStyle;
+                const textOpacity = (c.opacity ?? 100) / 100;
+                const hasShadow = c.shadow !== false; // default true
+                const hasBgBox = !!c.bgBox;
                 return (
                   <div
                     key={`${c.id}-${animStyle}`}
-                    className={`absolute transform -translate-x-1/2 -translate-y-1/2 select-none ${animClass} ${noAnimBase ? `${fontMap[c.font] || fontMap.sans} ${colorClass} ${c.bold ? 'font-bold' : 'font-normal'}` : ''} ${isSelected || draggingTextId === c.id ? 'ring-2 ring-rose-400 ring-offset-2 cursor-move' : 'cursor-move'} ${c.lowerThird && !animStyle ? 'bg-black/55 px-6 py-2 rounded' : ''}`}
-                    style={{ left: `${x}%`, top: `${y}%`, zIndex: 20, ...(noAnimBase ? colorStyle : {}), ...(noAnimBase && c.font === 'serif' ? { fontFamily: '"Playfair Display", Georgia, serif' } : {}) }}
+                    className={`absolute transform -translate-x-1/2 -translate-y-1/2 select-none ${animClass} ${noAnimBase ? `${fontMap[c.font] || fontMap.sans} ${colorClass} ${c.bold ? 'font-bold' : 'font-normal'}` : ''} ${isSelected || draggingTextId === c.id ? 'ring-2 ring-rose-400 ring-offset-2 cursor-move' : 'cursor-move'} ${hasBgBox && noAnimBase ? 'bg-black/60 px-3 py-1.5 rounded-lg' : (c.lowerThird && !animStyle ? 'bg-black/55 px-6 py-2 rounded' : '')}`}
+                    style={{ left: `${x}%`, top: `${y}%`, zIndex: 20, opacity: textOpacity, ...(noAnimBase ? colorStyle : {}), ...(noAnimBase && c.font === 'serif' ? { fontFamily: '"Playfair Display", Georgia, serif' } : {}) }}
                     onMouseDown={(e) => handleTextDragStart(e, c)}
                     onClick={(e) => { e.stopPropagation(); setEditingClipId(c.id); }}
                   >
-                    <span className={noAnimBase ? `drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)] ${sizeMap[c.size] || sizeMap.md}` : ''}>{c.text}</span>
+                    <span className={noAnimBase ? `${sizeMap[c.size] || sizeMap.md} ${hasShadow ? 'drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]' : ''}` : ''}>{c.text}</span>
                   </div>
                 );
               })}
@@ -3587,16 +3812,30 @@ const ClassicEditor = () => {
                   </div>
                   <label className="cursor-pointer flex items-center gap-2 text-xs text-rose-400 font-bold hover:text-rose-300 transition-colors">
                     <Plus size={14} /> Add more clips
-                    <input type="file" accept="video/*" multiple className="hidden" onChange={e => Array.from(e.target.files || []).forEach(f => addAsset(f, 'video'))} />
+                    <input type="file" accept="video/*" multiple className="hidden" onChange={e => { Array.from(e.target.files || []).forEach(f => addAsset(f, 'video')); e.target.value = ''; }} />
                   </label>
                 </>
               ) : (
-                <label className="cursor-pointer flex flex-col items-center gap-3 text-center group">
-                  <div className="w-20 h-20 rounded-2xl bg-stone-800 border-2 border-dashed border-stone-600 group-hover:border-rose-500 flex items-center justify-center transition-colors">
-                    <Plus size={28} className="text-stone-500 group-hover:text-rose-400 transition-colors" />
+                <label className="cursor-pointer flex flex-col items-center gap-4 text-center group w-full max-w-xs">
+                  {/* Upload icon with glow */}
+                  <div className="relative">
+                    <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-rose-900/60 to-stone-800 border-2 border-dashed border-stone-600 group-hover:border-rose-500 flex items-center justify-center transition-all group-hover:scale-105 shadow-lg group-hover:shadow-rose-900/30">
+                      <Upload size={32} className="text-stone-500 group-hover:text-rose-400 transition-colors" />
+                    </div>
+                    <div className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-rose-600 group-hover:bg-rose-500 flex items-center justify-center shadow-lg transition-colors">
+                      <Plus size={14} className="text-white" />
+                    </div>
                   </div>
-                  <span className="text-sm font-bold text-stone-400 group-hover:text-stone-200 transition-colors">Drop video here or tap to upload</span>
-                  <input type="file" accept="video/*" multiple className="hidden" onChange={e => Array.from(e.target.files || []).forEach(f => { const id = addAsset(f, 'video'); if (id && !selectedVideo) setSelectedVideoId(id); })} />
+                  <div>
+                    <p className="text-base font-bold text-stone-300 group-hover:text-white transition-colors">Drop your video here</p>
+                    <p className="text-xs text-stone-500 mt-1">or tap to browse files</p>
+                  </div>
+                  <div className="flex gap-2 flex-wrap justify-center">
+                    {['MP4', 'MOV', 'WebM', 'MKV'].map(f => (
+                      <span key={f} className="text-[10px] font-bold text-stone-600 bg-stone-800 border border-stone-700 rounded-md px-2 py-0.5">{f}</span>
+                    ))}
+                  </div>
+                  <input type="file" accept="video/*" multiple className="hidden" onChange={e => { Array.from(e.target.files || []).forEach(f => { const id = addAsset(f, 'video'); if (id && !selectedVideo) setSelectedVideoId(id); }); e.target.value = ''; }} />
                 </label>
               )}
             </div>
@@ -3651,22 +3890,62 @@ const ClassicEditor = () => {
           {/* ── EDIT TAB ─────────────────────────────── */}
           {inspectorTab === 'edit' && (
             <div className="p-3 space-y-3">
-              {/* Video source */}
-              <div className="flex gap-1.5">
-                <select value={selectedVideo?.id || ''} onChange={(e) => setSelectedVideoId(Number(e.target.value) || null)} className="flex-1 bg-stone-800 border border-stone-700 rounded-lg px-2 py-2 text-xs text-stone-100 truncate min-w-0">
-                  <option value="">{videos.length > 0 ? 'Select video…' : 'Upload a video first →'}</option>
-                  {videos.map(v => <option key={v.id} value={v.id}>{v.name}</option>)}
-                </select>
-                <input ref={clipUploadRef} type="file" multiple accept="video/*,image/*" onChange={(e) => handleInlineUpload(e)} className="hidden" />
-                <button onClick={() => clipUploadRef.current?.click()} className="px-2.5 py-2 bg-rose-600 hover:bg-rose-500 rounded-lg text-xs text-white font-bold shrink-0">+ Add</button>
+              {/* Video source — thumbnail picker */}
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-[10px] font-bold text-stone-500 uppercase tracking-wider">Clips</span>
+                  <div className="flex items-center gap-1">
+                    <input ref={clipUploadRef} type="file" multiple accept="video/*,image/*" onChange={(e) => handleInlineUpload(e)} className="hidden" />
+                    <button onClick={() => clipUploadRef.current?.click()} className="px-2 py-1 bg-rose-600 hover:bg-rose-500 rounded-md text-[10px] text-white font-bold">+ Add</button>
+                  </div>
+                </div>
+                {videos.length === 0 ? (
+                  <button onClick={() => clipUploadRef.current?.click()} className="w-full py-4 rounded-xl border-2 border-dashed border-stone-700 text-stone-500 text-xs hover:border-rose-600 hover:text-rose-400 transition-all">
+                    Upload a video to get started
+                  </button>
+                ) : (
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {videos.map(v => (
+                      <button key={v.id} onClick={() => setSelectedVideoId(v.id)}
+                        className={`relative rounded-lg overflow-hidden aspect-video border-2 transition-all group ${selectedVideo?.id === v.id ? 'border-rose-500 ring-1 ring-rose-500' : 'border-stone-700 hover:border-stone-500'}`}
+                        title={v.name}>
+                        <video src={v.url} muted playsInline preload="metadata" className="w-full h-full object-cover"
+                          onLoadedMetadata={e => { e.target.currentTime = 0.5; }} />
+                        {selectedVideo?.id === v.id && (
+                          <div className="absolute inset-0 bg-rose-500/20 flex items-center justify-center">
+                            <div className="w-4 h-4 rounded-full bg-rose-500 flex items-center justify-center">
+                              <div className="w-1.5 h-1.5 rounded-full bg-white" />
+                            </div>
+                          </div>
+                        )}
+                        <div className="absolute bottom-0 left-0 right-0 px-1 py-0.5 bg-black/70 text-[9px] text-stone-300 truncate opacity-0 group-hover:opacity-100 transition-opacity">
+                          {v.name?.replace(/\.[^.]+$/, '').slice(0, 18) || 'Clip'}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
+
+              {/* Selection status */}
+              {(selectedSegmentId || selectedAudioSegmentId) ? (
+                <div className="flex items-center gap-2 px-3 py-2 bg-rose-950/40 border border-rose-700/50 rounded-xl text-[11px] text-rose-300 font-bold">
+                  <span className="w-2 h-2 rounded-full bg-rose-500 shrink-0" />
+                  {selectedSegmentId ? 'Video clip selected' : 'Audio clip selected'} — ready to edit
+                </div>
+              ) : videoForPreview ? (
+                <p className="text-[10px] text-stone-500 text-center py-1">Click a clip on the timeline to select it, then Split or Delete</p>
+              ) : null}
 
               {/* Primary edit actions — big buttons */}
               <div className="grid grid-cols-2 gap-2">
                 <button onClick={splitAtPlayhead} disabled={!videoForPreview} className="flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold bg-rose-900/50 border border-rose-700/60 text-rose-300 hover:bg-rose-800/60 active:scale-95 disabled:opacity-40 transition-all" title="Split clip at playhead (S)">
                   <Scissors size={16} /> Split Here
                 </button>
-                <button onClick={deleteSelectedSegment} disabled={!selectedSegmentId && !selectedClipId} className="flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold bg-stone-800 border border-stone-700 text-stone-300 hover:bg-stone-700 active:scale-95 disabled:opacity-40 transition-all">
+                <button
+                  onClick={() => { deleteSelectedSegment(); if (selectedAudioSegmentId) deleteSelectedAudioSegment(); }}
+                  disabled={!selectedSegmentId && !selectedClipId && !selectedAudioSegmentId}
+                  className="flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold bg-red-900/50 border border-red-700/60 text-red-300 hover:bg-red-800/60 active:scale-95 disabled:opacity-40 transition-all">
                   <Trash2 size={16} /> Delete
                 </button>
               </div>
@@ -3697,6 +3976,8 @@ const ClassicEditor = () => {
                 const setTx = (txId) => { pushHistory(); setMainSegments(prev => prev.map(x => x.id === selectedSegmentId ? { ...x, transition: txId } : x)); };
                 const setSpeed = (sp) => { pushHistory(); setMainSegments(prev => prev.map(x => x.id === selectedSegmentId ? { ...x, speed: sp } : x)); };
                 const currSpeed = seg.speed || 1;
+                const setVolume = (vol) => setMainSegments(prev => prev.map(x => x.id === selectedSegmentId ? { ...x, vol } : x));
+                const currVol = seg.vol ?? 100;
                 return (
                   <div className="bg-stone-800 border border-stone-700 rounded-xl p-3 space-y-3">
                     <p className="text-[10px] font-bold text-stone-400 uppercase tracking-wider">Selected Clip</p>
@@ -3713,6 +3994,19 @@ const ClassicEditor = () => {
                       </div>
                     </div>
 
+                    {/* Clip Volume */}
+                    <div>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <p className="text-[10px] text-stone-500 uppercase font-bold">Clip Volume</p>
+                        <span className="text-[10px] font-mono text-stone-400">{currVol}%</span>
+                      </div>
+                      <input type="range" min={0} max={150} value={currVol}
+                        onChange={e => setVolume(Number(e.target.value))}
+                        className="w-full accent-emerald-500 h-1" />
+                      <div className="flex justify-between text-[9px] text-stone-600 mt-0.5">
+                        <span>Mute</span><span>100%</span><span>+50%</span>
+                      </div>
+                    </div>
                     {/* Speed */}
                     <div>
                       <p className="text-[10px] text-stone-500 uppercase font-bold mb-1.5">Speed</p>
@@ -3742,6 +4036,96 @@ const ClassicEditor = () => {
                   </div>
                 );
               })()}
+
+              {/* ── Transform ── */}
+              <div className="border-t border-stone-800 pt-3 space-y-3">
+                <div className="flex items-center justify-between">
+                  <p className="text-[10px] font-bold text-stone-400 uppercase tracking-wider">Transform</p>
+                  {(transformRotation !== 0 || transformFlipH || transformFlipV || transformScale !== 100 || transformPanX !== 0 || transformPanY !== 0) && (
+                    <button onClick={resetTransform} className="text-[10px] text-rose-400 hover:text-rose-300">Reset</button>
+                  )}
+                </div>
+
+                {/* Crop Aspect */}
+                <div>
+                  <p className="text-[10px] text-stone-500 mb-1.5">Aspect Ratio</p>
+                  <div className="grid grid-cols-5 gap-1">
+                    {[
+                      { id: 'free', label: 'Free' },
+                      { id: '9:16', label: '9:16' },
+                      { id: '16:9', label: '16:9' },
+                      { id: '1:1',  label: '1:1'  },
+                      { id: '4:5',  label: '4:5'  },
+                    ].map(a => (
+                      <button key={a.id} onClick={() => setCropAspect(a.id)}
+                        className={`py-1.5 rounded-lg text-[10px] font-bold border transition-colors ${cropAspect === a.id ? 'bg-rose-600 border-rose-500 text-white' : 'bg-stone-800 border-stone-700 text-stone-400 hover:border-stone-500'}`}>
+                        {a.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Rotate / Flip */}
+                <div>
+                  <p className="text-[10px] text-stone-500 mb-1.5">Rotate &amp; Flip</p>
+                  <div className="flex gap-1.5 mb-2">
+                    <button onClick={() => setTransformRotation(r => { const n = r - 90; return n < -180 ? n + 360 : n; })}
+                      title="Rotate 90° counter-clockwise"
+                      className="flex-1 py-2 rounded-xl bg-stone-800 border border-stone-700 text-stone-300 hover:bg-stone-700 text-xs font-bold transition-colors active:scale-95">↺ 90°</button>
+                    <button onClick={() => setTransformRotation(r => { const n = r + 90; return n > 180 ? n - 360 : n; })}
+                      title="Rotate 90° clockwise"
+                      className="flex-1 py-2 rounded-xl bg-stone-800 border border-stone-700 text-stone-300 hover:bg-stone-700 text-xs font-bold transition-colors active:scale-95">↻ 90°</button>
+                    <button onClick={() => setTransformFlipH(f => !f)} title="Flip horizontal — mirror left/right"
+                      className={`flex-1 py-2 rounded-xl border text-xs font-bold transition-colors active:scale-95 ${transformFlipH ? 'bg-rose-600 border-rose-500 text-white' : 'bg-stone-800 border-stone-700 text-stone-300 hover:bg-stone-700'}`}>
+                      ↔ Flip H
+                    </button>
+                    <button onClick={() => setTransformFlipV(f => !f)} title="Flip vertical — mirror top/bottom"
+                      className={`flex-1 py-2 rounded-xl border text-xs font-bold transition-colors active:scale-95 ${transformFlipV ? 'bg-rose-600 border-rose-500 text-white' : 'bg-stone-800 border-stone-700 text-stone-300 hover:bg-stone-700'}`}>
+                      ↕ Flip V
+                    </button>
+                  </div>
+                  {/* Fine rotation — always visible */}
+                  <div>
+                    <div className="flex justify-between mb-1">
+                      <span className="text-[10px] text-stone-500">Fine Rotation</span>
+                      <span className={`text-[10px] font-mono ${transformRotation === 0 ? 'text-stone-600' : 'text-amber-400'}`}>{transformRotation}°</span>
+                    </div>
+                    <input type="range" min={-180} max={180} value={transformRotation}
+                      onChange={e => setTransformRotation(Number(e.target.value))} className="w-full accent-rose-500 h-1" />
+                  </div>
+                </div>
+
+                {/* Scale */}
+                <div>
+                  <div className="flex justify-between mb-1">
+                    <span className="text-[10px] text-stone-500">Scale / Zoom</span>
+                    <span className={`text-[10px] font-mono ${transformScale === 100 ? 'text-stone-600' : 'text-amber-400'}`}>{transformScale}%</span>
+                  </div>
+                  <input type="range" min={50} max={200} value={transformScale}
+                    onChange={e => setTransformScale(Number(e.target.value))} className="w-full accent-rose-500 h-1" />
+                </div>
+
+                {/* Pan */}
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <div className="flex justify-between mb-1">
+                      <span className="text-[10px] text-stone-500">Pan X</span>
+                      <span className={`text-[10px] font-mono ${transformPanX === 0 ? 'text-stone-600' : 'text-amber-400'}`}>{transformPanX}%</span>
+                    </div>
+                    <input type="range" min={-50} max={50} value={transformPanX}
+                      onChange={e => setTransformPanX(Number(e.target.value))} className="w-full accent-blue-500 h-1" />
+                  </div>
+                  <div>
+                    <div className="flex justify-between mb-1">
+                      <span className="text-[10px] text-stone-500">Pan Y</span>
+                      <span className={`text-[10px] font-mono ${transformPanY === 0 ? 'text-stone-600' : 'text-amber-400'}`}>{transformPanY}%</span>
+                    </div>
+                    <input type="range" min={-50} max={50} value={transformPanY}
+                      onChange={e => setTransformPanY(Number(e.target.value))} className="w-full accent-blue-500 h-1" />
+                  </div>
+                </div>
+              </div>
+
             </div>
           )}
 
@@ -3766,17 +4150,168 @@ const ClassicEditor = () => {
               {textClips.length > 0 && (
                 <div>
                   <p className="text-[10px] font-bold text-stone-500 uppercase mb-2">Your Captions</p>
-                  <div className="space-y-1.5">
+                  <div className="space-y-1">
                     {textClips.map(c => (
-                      <button key={c.id} onClick={() => setEditingClipId(c.id)} className={`w-full text-left px-3 py-2 rounded-lg border text-xs transition-colors ${editingClipId === c.id ? 'border-rose-500 bg-rose-950/40 text-rose-300' : 'border-stone-700 bg-stone-800 text-stone-300 hover:border-stone-600'}`}>
+                      <button key={c.id} onClick={() => setEditingClipId(editingClipId === c.id ? null : c.id)}
+                        className={`w-full text-left px-3 py-2 rounded-lg border text-xs transition-colors ${editingClipId === c.id ? 'border-rose-500 bg-rose-950/40 text-rose-300' : 'border-stone-700 bg-stone-800 text-stone-300 hover:border-stone-600'}`}>
                         <span className="font-bold">{secToTimecode(c.start ?? 0)}</span>
                         <span className="text-stone-500 mx-1.5">→</span>
-                        <span className="text-stone-400">{c.text || '(empty — tap to edit)'}</span>
+                        <span className="text-stone-400 truncate">{c.text || '(empty — tap to edit)'}</span>
                       </button>
                     ))}
                   </div>
                 </div>
               )}
+
+              {/* ── Caption Editor (shows when caption selected) ── */}
+              {editingClip && (
+                <div className="bg-stone-800 border border-rose-700/40 rounded-xl p-3 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <p className="text-[10px] font-bold text-rose-300 uppercase tracking-wider">Edit Caption</p>
+                    <button onClick={() => { removeTextClip(editingClipId); setEditingClipId(null); }} className="text-[10px] text-red-400 hover:text-red-300">Delete</button>
+                  </div>
+                  {/* Text content */}
+                  <textarea value={editingClip.text || ''} rows={2}
+                    onChange={e => updateTextClip(editingClipId, { text: e.target.value })}
+                    placeholder="Caption text…"
+                    className="w-full bg-stone-900 border border-stone-600 rounded-lg px-3 py-2 text-xs text-stone-100 resize-none focus:outline-none focus:border-rose-500 placeholder-stone-600" />
+                  {/* Timing */}
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <p className="text-[10px] text-stone-500 mb-1">Start</p>
+                      <input defaultValue={secToTimecode(editingClip.start ?? 0)}
+                        onBlur={e => { const t = parseTimecode(e.target.value); if (t != null) updateTextClip(editingClipId, { start: t }); }}
+                        className="w-full font-mono px-2 py-1.5 rounded border bg-stone-700 border-stone-600 text-stone-100 text-xs" />
+                    </div>
+                    <div>
+                      <p className="text-[10px] text-stone-500 mb-1">End</p>
+                      <input defaultValue={secToTimecode(editingClip.end ?? 5)}
+                        onBlur={e => { const t = parseTimecode(e.target.value); if (t != null) updateTextClip(editingClipId, { end: t }); }}
+                        className="w-full font-mono px-2 py-1.5 rounded border bg-stone-700 border-stone-600 text-stone-100 text-xs" />
+                    </div>
+                  </div>
+                  {/* Style */}
+                  <div>
+                    <p className="text-[10px] text-stone-500 uppercase tracking-wider mb-1.5">Style</p>
+                    <div className="grid grid-cols-4 gap-1">
+                      {[
+                        { id: 'faith',  label: 'Faith',   desc: 'Bold + glow' },
+                        { id: 'clean',  label: 'Clean',   desc: 'Minimal' },
+                        { id: 'bold',   label: 'Bold',    desc: 'All caps' },
+                        { id: 'lower',  label: 'Lower',   desc: 'Bar style' },
+                      ].map(s => (
+                        <button key={s.id} onClick={() => updateTextClip(editingClipId, { animStyle: s.id })}
+                          title={s.desc}
+                          className={`py-1.5 rounded-lg border text-[10px] font-bold transition-colors ${editingClip.animStyle === s.id ? 'bg-rose-600 border-rose-600 text-white' : 'border-stone-600 text-stone-400 hover:border-stone-500'}`}>
+                          {s.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  {/* Font */}
+                  <div>
+                    <p className="text-[10px] text-stone-500 uppercase tracking-wider mb-1.5">Font</p>
+                    <div className="grid grid-cols-3 gap-1">
+                      {[['sans','Sans'],['serif','Serif'],['mono','Mono']].map(([id, lbl]) => (
+                        <button key={id} onClick={() => updateTextClip(editingClipId, { font: id })}
+                          className={`py-1.5 rounded-lg border text-[10px] font-bold transition-colors ${editingClip.font === id ? 'bg-rose-600 border-rose-600 text-white' : 'border-stone-600 text-stone-400 hover:border-stone-500'}`}>
+                          {lbl}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  {/* Color */}
+                  <div>
+                    <p className="text-[10px] text-stone-500 uppercase tracking-wider mb-1.5">Color</p>
+                    <div className="grid grid-cols-8 gap-1">
+                      {['#ffffff','#000000','#f43f5e','#fbbf24','#34d399','#60a5fa','#a78bfa','#f472b6'].map(c => (
+                        <button key={c} onClick={() => updateTextClip(editingClipId, { color: c })}
+                          className={`h-5 rounded border-2 transition-all ${editingClip.color === c ? 'border-white scale-110' : 'border-transparent'}`}
+                          style={{ background: c }} />
+                      ))}
+                    </div>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="text-[10px] text-stone-500">Custom:</span>
+                      <input type="color" value={editingClip.color || '#ffffff'}
+                        onChange={e => updateTextClip(editingClipId, { color: e.target.value })}
+                        className="h-5 w-12 rounded cursor-pointer border-0 bg-transparent" />
+                    </div>
+                  </div>
+                  {/* Size */}
+                  <div>
+                    <p className="text-[10px] text-stone-500 uppercase tracking-wider mb-1.5">Size</p>
+                    <div className="flex gap-1.5">
+                      {[['sm','Small'],['md','Med'],['lg','Large'],['xl','XL']].map(([id, lbl]) => (
+                        <button key={id} onClick={() => updateTextClip(editingClipId, { size: id })}
+                          className={`flex-1 py-1.5 rounded-lg border text-[10px] font-bold transition-colors ${editingClip.size === id ? 'bg-rose-600 border-rose-600 text-white' : 'border-stone-600 text-stone-400 hover:border-stone-500'}`}>
+                          {lbl}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  {/* Position Y */}
+                  <div>
+                    <div className="flex justify-between mb-1">
+                      <span className="text-[10px] text-stone-500">Vertical Position</span>
+                      <span className="text-[10px] font-mono text-stone-400">{editingClip.y ?? 15}%</span>
+                    </div>
+                    <input type="range" min={5} max={90} value={editingClip.y ?? 15}
+                      onChange={e => updateTextClip(editingClipId, { y: Number(e.target.value) })}
+                      className="w-full h-1 accent-rose-500" />
+                    <div className="flex justify-between text-[9px] text-stone-600 mt-0.5">
+                      <span>Top</span><span>Bottom</span>
+                    </div>
+                  </div>
+                  {/* Position X */}
+                  <div>
+                    <div className="flex justify-between mb-1">
+                      <span className="text-[10px] text-stone-500">Horizontal Position</span>
+                      <span className="text-[10px] font-mono text-stone-400">{editingClip.x ?? 50}%</span>
+                    </div>
+                    <input type="range" min={5} max={95} value={editingClip.x ?? 50}
+                      onChange={e => updateTextClip(editingClipId, { x: Number(e.target.value) })}
+                      className="w-full h-1 accent-rose-500" />
+                    <div className="flex justify-between text-[9px] text-stone-600 mt-0.5">
+                      <span>Left</span><span>Right</span>
+                    </div>
+                  </div>
+                  {/* Opacity */}
+                  <div>
+                    <div className="flex justify-between mb-1">
+                      <span className="text-[10px] text-stone-500">Opacity</span>
+                      <span className="text-[10px] font-mono text-stone-400">{editingClip.opacity ?? 100}%</span>
+                    </div>
+                    <input type="range" min={10} max={100} value={editingClip.opacity ?? 100}
+                      onChange={e => updateTextClip(editingClipId, { opacity: Number(e.target.value) })}
+                      className="w-full h-1 accent-rose-500" />
+                  </div>
+                  {/* Toggles row */}
+                  <div className="grid grid-cols-3 gap-2">
+                    <label className="flex flex-col items-center gap-1 cursor-pointer">
+                      <button onClick={() => updateTextClip(editingClipId, { bold: !editingClip.bold })}
+                        className={`relative w-10 h-5 rounded-full transition-colors ${editingClip.bold ? 'bg-rose-500' : 'bg-stone-600'}`}>
+                        <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-transform ${editingClip.bold ? 'translate-x-5' : 'translate-x-0.5'}`} />
+                      </button>
+                      <span className="text-[9px] text-stone-500">Bold</span>
+                    </label>
+                    <label className="flex flex-col items-center gap-1 cursor-pointer">
+                      <button onClick={() => updateTextClip(editingClipId, { shadow: !editingClip.shadow })}
+                        className={`relative w-10 h-5 rounded-full transition-colors ${editingClip.shadow ? 'bg-rose-500' : 'bg-stone-600'}`}>
+                        <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-transform ${editingClip.shadow ? 'translate-x-5' : 'translate-x-0.5'}`} />
+                      </button>
+                      <span className="text-[9px] text-stone-500">Shadow</span>
+                    </label>
+                    <label className="flex flex-col items-center gap-1 cursor-pointer">
+                      <button onClick={() => updateTextClip(editingClipId, { bgBox: !editingClip.bgBox })}
+                        className={`relative w-10 h-5 rounded-full transition-colors ${editingClip.bgBox ? 'bg-rose-500' : 'bg-stone-600'}`}>
+                        <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-transform ${editingClip.bgBox ? 'translate-x-5' : 'translate-x-0.5'}`} />
+                      </button>
+                      <span className="text-[9px] text-stone-500">BG Box</span>
+                    </label>
+                  </div>
+                </div>
+              )}
+
               {textClips.length === 0 && !videoForPreview && (
                 <p className="text-xs text-stone-500 text-center py-4">Load a video first, then add captions</p>
               )}
@@ -3844,12 +4379,46 @@ const ClassicEditor = () => {
               {audioSegments.length > 0 && (
                 <div>
                   <p className="text-[10px] font-bold text-stone-500 uppercase mb-2">Audio Clips</p>
-                  <div className="space-y-1.5">
+                  <div className="space-y-2">
                     {audioSegments.map(seg => (
-                      <div key={seg.id} onClick={() => setSelectedAudioSegmentId(seg.id === selectedAudioSegmentId ? null : seg.id)} className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-xs cursor-pointer transition-colors ${seg.id === selectedAudioSegmentId ? 'border-emerald-600 bg-emerald-950/30 text-emerald-300' : 'border-stone-700 bg-stone-800 text-stone-400 hover:border-stone-600'}`}>
-                        <Music size={12} className="shrink-0 text-emerald-400" />
-                        <span className="flex-1 truncate">{secToTimecode(seg.start)} – {secToTimecode(seg.end)}</span>
-                        <button onClick={(e) => { e.stopPropagation(); deleteSelectedAudioSegment(); }} className="text-stone-600 hover:text-rose-400"><X size={12} /></button>
+                      <div key={seg.id} className={`rounded-xl border overflow-hidden transition-colors ${seg.id === selectedAudioSegmentId ? 'border-emerald-600 bg-emerald-950/20' : 'border-stone-700 bg-stone-800 hover:border-stone-600'}`}>
+                        {/* Header row */}
+                        <div className="flex items-center gap-2 px-3 py-2 cursor-pointer" onClick={() => setSelectedAudioSegmentId(seg.id === selectedAudioSegmentId ? null : seg.id)}>
+                          <Music size={12} className="shrink-0 text-emerald-400" />
+                          <span className="flex-1 text-xs text-stone-300 font-mono truncate">{secToTimecode(seg.start)} – {secToTimecode(seg.end)}</span>
+                          <span className="text-[10px] text-stone-500">{((seg.end - seg.start)).toFixed(1)}s</span>
+                          <button onClick={(e) => { e.stopPropagation(); setSelectedAudioSegmentId(seg.id); deleteSelectedAudioSegment(); }} className="text-stone-600 hover:text-rose-400 ml-1"><X size={12} /></button>
+                        </div>
+                        {/* Expanded controls when selected */}
+                        {seg.id === selectedAudioSegmentId && (
+                          <div className="px-3 pb-3 space-y-2 border-t border-stone-700/50">
+                            {/* Volume */}
+                            <div className="flex items-center gap-2 pt-2">
+                              <Volume2 size={11} className="text-emerald-400 shrink-0" />
+                              <span className="text-[10px] text-stone-500 w-12 shrink-0">Volume</span>
+                              <input type="range" min={0} max={150} value={seg.vol ?? 100}
+                                onChange={e => setAudioSegments(prev => prev.map(s => s.id === seg.id ? { ...s, vol: Number(e.target.value) } : s))}
+                                className="flex-1 accent-emerald-500 h-1" />
+                              <span className="text-[10px] font-mono text-stone-400 w-8 text-right shrink-0">{seg.vol ?? 100}%</span>
+                            </div>
+                            {/* Fade In */}
+                            <div className="flex items-center gap-2">
+                              <span className="text-[10px] text-stone-500 w-14 shrink-0">Fade In</span>
+                              <input type="range" min={0} max={5} step={0.1} value={seg.fadeIn ?? 0}
+                                onChange={e => setAudioSegments(prev => prev.map(s => s.id === seg.id ? { ...s, fadeIn: Number(e.target.value) } : s))}
+                                className="flex-1 accent-sky-500 h-1" />
+                              <span className="text-[10px] font-mono text-stone-400 w-8 text-right shrink-0">{(seg.fadeIn ?? 0).toFixed(1)}s</span>
+                            </div>
+                            {/* Fade Out */}
+                            <div className="flex items-center gap-2">
+                              <span className="text-[10px] text-stone-500 w-14 shrink-0">Fade Out</span>
+                              <input type="range" min={0} max={5} step={0.1} value={seg.fadeOut ?? 0}
+                                onChange={e => setAudioSegments(prev => prev.map(s => s.id === seg.id ? { ...s, fadeOut: Number(e.target.value) } : s))}
+                                className="flex-1 accent-sky-500 h-1" />
+                              <span className="text-[10px] font-mono text-stone-400 w-8 text-right shrink-0">{(seg.fadeOut ?? 0).toFixed(1)}s</span>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -3862,87 +4431,160 @@ const ClassicEditor = () => {
           {inspectorTab === 'animate' && (
             <div className="p-3 space-y-4">
 
-              {/* AI Voice */}
-              <div>
-                <p className="text-[10px] font-bold text-stone-400 uppercase tracking-wider mb-2">AI Voice</p>
+              {/* ─ AI Voice ─ */}
+              <div className="bg-stone-800/60 border border-stone-700 rounded-xl p-3 space-y-2">
+                <p className="text-[10px] font-bold text-stone-300 uppercase tracking-wider flex items-center gap-1.5"><Mic size={11} className="text-rose-400" /> AI Voice Over</p>
                 <textarea
                   value={ttsScript}
                   onChange={e => setTtsScript(e.target.value)}
-                  placeholder="Write your script or narration here... the AI will speak it in the voice you pick."
+                  placeholder="Write your script here — AI speaks it in the voice you pick. Perfect for narration, intros, or voiceovers."
                   rows={3}
-                  className="w-full bg-stone-800 border border-stone-700 rounded-xl px-3 py-2 text-xs text-stone-100 resize-none focus:outline-none focus:border-rose-500"
+                  className="w-full bg-stone-900 border border-stone-600 rounded-lg px-3 py-2 text-xs text-stone-100 resize-none focus:outline-none focus:border-rose-500 placeholder-stone-600"
                 />
-                <div className="grid grid-cols-2 gap-1.5 mt-2">
+                <div className="grid grid-cols-3 gap-1">
                   {TTS_VOICES.map(v => (
                     <button key={v.id} onClick={() => setTtsVoice(v.id)}
-                      className={`px-2 py-2 rounded-xl border text-left transition-colors ${ttsVoice === v.id ? 'bg-rose-900/60 border-rose-500 text-rose-200' : 'bg-stone-800 border-stone-700 text-stone-400 hover:border-stone-500'}`}>
-                      <span className="text-[11px] font-bold block">{v.name}</span>
-                      <span className="text-[10px] text-stone-500">{v.desc}</span>
+                      className={`py-1.5 rounded-lg border text-center transition-colors ${ttsVoice === v.id ? 'bg-rose-900/60 border-rose-500 text-rose-200' : 'bg-stone-900 border-stone-600 text-stone-400 hover:border-stone-500'}`}>
+                      <span className="text-[10px] font-bold block">{v.name}</span>
+                      <span className="text-[9px] text-stone-500 truncate block">{v.desc}</span>
                     </button>
                   ))}
                 </div>
-                <div className="flex items-center gap-2 mt-2">
+                <div className="flex items-center gap-2">
                   <span className="text-[10px] text-stone-500 shrink-0">Speed</span>
-                  <input type="range" min="0.5" max="2" step="0.25" value={ttsSpeed} onChange={e => setTtsSpeed(Number(e.target.value))} className="flex-1 accent-rose-500" />
-                  <span className="text-[10px] text-stone-400 font-mono w-7 shrink-0">{ttsSpeed}x</span>
+                  <input type="range" min="0.5" max="2" step="0.25" value={ttsSpeed} onChange={e => setTtsSpeed(Number(e.target.value))} className="flex-1 accent-rose-500 h-1" />
+                  <span className="text-[10px] text-stone-400 font-mono w-8 text-right shrink-0">{ttsSpeed}x</span>
                 </div>
-                {ttsError && <p className="text-[10px] text-rose-400 mt-1">{ttsError}</p>}
+                {ttsError && <p className="text-[10px] text-rose-400">{ttsError}</p>}
                 <button onClick={generateVoice} disabled={ttsLoading || !ttsScript.trim()}
-                  className="w-full mt-2 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold bg-rose-600 hover:bg-rose-500 text-white disabled:opacity-50 transition-all active:scale-95">
-                  {ttsLoading ? <>Generating...</> : <><Mic size={15} /> Generate Voice</>}
+                  className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-bold bg-rose-600 hover:bg-rose-500 text-white disabled:opacity-40 transition-all active:scale-95">
+                  {ttsLoading ? <><span className="animate-spin inline-block">⏳</span> Generating…</> : <><Mic size={14} /> Generate Voice</>}
                 </button>
-                {!hasOpenAIKey() && (
-                  <p className="text-[10px] text-stone-500 mt-1 text-center">Add OpenAI key in App Settings to use AI Voice</p>
-                )}
-                {ttsLoading && (
-                  <p className="text-[10px] text-emerald-400 text-center mt-1 animate-pulse">Generating HD voice... drops straight into your Audio track</p>
+                {!hasOpenAIKey() && <p className="text-[9px] text-stone-600 text-center">Add OpenAI key in Settings to enable</p>}
+              </div>
+
+              {/* ─ Auto-Caption (Whisper) ─ */}
+              <div className="bg-stone-800/60 border border-stone-700 rounded-xl p-3 space-y-2">
+                <p className="text-[10px] font-bold text-stone-300 uppercase tracking-wider flex items-center gap-1.5">🎙 Auto-Caption</p>
+                <p className="text-[10px] text-stone-500">AI transcribes your video and drops timed captions onto the timeline. One tap.</p>
+                <button onClick={autoCaption} disabled={autoCaptionLoading || !selectedVideo}
+                  className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-bold bg-stone-700 hover:bg-stone-600 text-stone-100 disabled:opacity-40 transition-all active:scale-95 border border-stone-600">
+                  {autoCaptionLoading ? <><span className="animate-spin inline-block">⏳</span> Transcribing…</> : <>Auto-Caption My Video</>}
+                </button>
+                {autoCaptionError && <p className="text-[10px] text-rose-400">{autoCaptionError}</p>}
+                {!selectedVideo && <p className="text-[9px] text-stone-600 text-center">Select a video first</p>}
+                {!hasOpenAIKey() && <p className="text-[9px] text-stone-600 text-center">Requires OpenAI key in Settings</p>}
+              </div>
+
+              {/* ─ Stickers, GIFs & Image Overlays ─ */}
+              <div className="bg-stone-800/60 border border-stone-700 rounded-xl p-3 space-y-2">
+                <div className="flex items-center justify-between">
+                  <p className="text-[10px] font-bold text-stone-300 uppercase tracking-wider flex items-center gap-1.5">
+                    <ImageIcon size={11} className="text-amber-400" /> Stickers &amp; Overlays
+                  </p>
+                  <button
+                    onClick={() => stickerUploadRef.current?.click()}
+                    className="flex items-center gap-1 text-[10px] font-bold text-amber-400 hover:text-amber-300 transition-colors">
+                    <Plus size={11} /> Upload
+                  </button>
+                  <input ref={stickerUploadRef} type="file" accept="image/*,.gif" multiple className="hidden"
+                    onChange={e => {
+                      Array.from(e.target.files || []).forEach(f => {
+                        const url = URL.createObjectURL(f);
+                        setImageOverlays(prev => [...prev, {
+                          id: `stk${Date.now()}-${Math.random()}`,
+                          url, name: f.name,
+                          startTime: playhead, duration: 5,
+                          position: 'bottom-right', size: 22, opacity: 100,
+                        }]);
+                      });
+                    }}
+                  />
+                </div>
+                {imageOverlays.length === 0 ? (
+                  <button onClick={() => stickerUploadRef.current?.click()}
+                    className="w-full py-4 rounded-lg border-2 border-dashed border-stone-700 text-stone-500 text-xs hover:border-amber-600 hover:text-amber-400 transition-all text-center">
+                    Upload PNG, GIF, or WebP — appears on stage at playhead time
+                  </button>
+                ) : (
+                  <div className="space-y-2">
+                    {imageOverlays.map(ov => (
+                      <div key={ov.id} className="bg-stone-900 border border-stone-700 rounded-lg p-2 space-y-1.5">
+                        <div className="flex items-center gap-2">
+                          <img src={ov.url} alt="" className="w-8 h-8 rounded object-contain bg-stone-800 shrink-0" />
+                          <span className="flex-1 text-[10px] text-stone-300 truncate">{ov.name?.replace(/\.[^.]+$/, '') || 'Sticker'}</span>
+                          <button onClick={() => setImageOverlays(prev => prev.filter(o => o.id !== ov.id))} className="text-stone-600 hover:text-rose-400"><X size={12} /></button>
+                        </div>
+                        <div className="grid grid-cols-2 gap-1.5">
+                          <div>
+                            <p className="text-[9px] text-stone-600 mb-0.5">Start</p>
+                            <input type="number" min={0} step={0.5} value={ov.startTime.toFixed(1)} onChange={e => setImageOverlays(prev => prev.map(o => o.id === ov.id ? { ...o, startTime: Math.max(0, Number(e.target.value)) } : o))}
+                              className="w-full bg-stone-800 border border-stone-700 rounded px-1.5 py-1 text-[10px] text-stone-100 font-mono" />
+                          </div>
+                          <div>
+                            <p className="text-[9px] text-stone-600 mb-0.5">Duration (s)</p>
+                            <input type="number" min={0.5} step={0.5} value={ov.duration} onChange={e => setImageOverlays(prev => prev.map(o => o.id === ov.id ? { ...o, duration: Math.max(0.5, Number(e.target.value)) } : o))}
+                              className="w-full bg-stone-800 border border-stone-700 rounded px-1.5 py-1 text-[10px] text-stone-100 font-mono" />
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-3 gap-1">
+                          {['top-left','top-right','center','bottom-left','bottom-right','bottom-center'].map(pos => (
+                            <button key={pos} onClick={() => setImageOverlays(prev => prev.map(o => o.id === ov.id ? { ...o, position: pos } : o))}
+                              className={`py-1 rounded text-[9px] font-bold border transition-colors ${ov.position === pos ? 'bg-amber-600 border-amber-500 text-white' : 'bg-stone-800 border-stone-700 text-stone-500 hover:border-stone-500'}`}>
+                              {pos.replace('-', ' ')}
+                            </button>
+                          ))}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[9px] text-stone-600 shrink-0">Size</span>
+                          <input type="range" min={5} max={80} value={ov.size} onChange={e => setImageOverlays(prev => prev.map(o => o.id === ov.id ? { ...o, size: Number(e.target.value) } : o))} className="flex-1 accent-amber-500 h-1" />
+                          <span className="text-[9px] text-stone-500 font-mono w-6 shrink-0">{ov.size}%</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[9px] text-stone-600 shrink-0">Opacity</span>
+                          <input type="range" min={10} max={100} value={ov.opacity ?? 100} onChange={e => setImageOverlays(prev => prev.map(o => o.id === ov.id ? { ...o, opacity: Number(e.target.value) } : o))} className="flex-1 accent-amber-500 h-1" />
+                          <span className="text-[9px] text-stone-500 font-mono w-8 shrink-0">{ov.opacity ?? 100}%</span>
+                        </div>
+                      </div>
+                    ))}
+                    <button onClick={() => stickerUploadRef.current?.click()} className="w-full py-1.5 rounded-lg border border-dashed border-stone-700 text-stone-500 text-[10px] hover:border-amber-600 hover:text-amber-400 transition-all">
+                      + Upload another
+                    </button>
+                  </div>
                 )}
               </div>
 
-              {/* Motion Overlays */}
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <p className="text-[10px] font-bold text-stone-400 uppercase tracking-wider">Motion Overlays</p>
-                  <button onClick={addAnimOverlay} className="flex items-center gap-1 text-[10px] font-bold text-rose-400 hover:text-rose-300 transition-colors">
-                    <Plus size={12} /> Add
+              {/* ─ Text Motion Overlays ─ */}
+              <div className="bg-stone-800/60 border border-stone-700 rounded-xl p-3 space-y-2">
+                <div className="flex items-center justify-between">
+                  <p className="text-[10px] font-bold text-stone-300 uppercase tracking-wider flex items-center gap-1.5"><Sparkles size={11} className="text-purple-400" /> Motion Text</p>
+                  <button onClick={addAnimOverlay} className="flex items-center gap-1 text-[10px] font-bold text-purple-400 hover:text-purple-300 transition-colors">
+                    <Plus size={11} /> Add
                   </button>
                 </div>
-                {animOverlays.length === 0 && (
-                  <p className="text-[10px] text-stone-600 text-center py-3 bg-stone-800/50 rounded-xl border border-stone-700">Tap Add to create animated text, scripture verse, or badge that syncs to your video timeline.</p>
+                {animOverlays.length === 0 ? (
+                  <p className="text-[10px] text-stone-600 text-center py-2">Animated text, scripture verse, or badge — syncs to timeline.</p>
+                ) : (
+                  animOverlays.map(ov => (
+                    <OverlayEditor key={ov.id} overlay={ov}
+                      onChange={updated => setAnimOverlays(prev => prev.map(o => o.id === ov.id ? updated : o))}
+                      onDelete={() => setAnimOverlays(prev => prev.filter(o => o.id !== ov.id))}
+                    />
+                  ))
                 )}
-                {animOverlays.map(ov => (
-                  <OverlayEditor key={ov.id} overlay={ov}
-                    onChange={updated => setAnimOverlays(prev => prev.map(o => o.id === ov.id ? updated : o))}
-                    onDelete={() => setAnimOverlays(prev => prev.filter(o => o.id !== ov.id))}
-                  />
-                ))}
               </div>
 
-              {/* Auto-Subtitles */}
-              <div className="border-t border-stone-700 pt-3">
-                <p className="text-[10px] font-bold text-stone-400 uppercase tracking-wider mb-1.5">Auto-Caption (Whisper AI)</p>
-                <p className="text-[10px] text-stone-500 mb-2">One tap — AI transcribes your video and drops timed captions straight onto the timeline.</p>
-                <button onClick={autoCaption} disabled={autoCaptionLoading || !selectedVideo}
-                  className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold bg-stone-700 hover:bg-stone-600 text-stone-100 disabled:opacity-50 transition-all active:scale-95 border border-stone-600">
-                  {autoCaptionLoading ? <><span className="animate-spin">⏳</span> Transcribing...</> : <>🎙 Auto-Caption My Video</>}
-                </button>
-                {autoCaptionError && <p className="text-[10px] text-rose-400 mt-1">{autoCaptionError}</p>}
-                {!selectedVideo && <p className="text-[10px] text-stone-600 mt-1 text-center">Select a video first</p>}
-                {!hasOpenAIKey() && <p className="text-[10px] text-stone-500 mt-1 text-center">Requires OpenAI key in App Settings</p>}
-              </div>
-
-              {/* Scripture Finder */}
-              <div className="border-t border-stone-700 pt-3">
-                <p className="text-[10px] font-bold text-stone-400 uppercase tracking-wider mb-2">Scripture Finder</p>
-                <p className="text-[10px] text-stone-500 mb-2">Search any verse — tap to insert as a text overlay at your current playhead position.</p>
+              {/* ─ Scripture Finder ─ */}
+              <div className="bg-stone-800/60 border border-stone-700 rounded-xl p-3 space-y-2">
+                <p className="text-[10px] font-bold text-stone-300 uppercase tracking-wider flex items-center gap-1.5">📖 Scripture Finder</p>
+                <p className="text-[9px] text-stone-500">Search any verse — tap to insert as a text overlay at playhead.</p>
                 <ScriptureFinder onInsert={insertScripture} />
               </div>
 
-              {/* Animated Character */}
-              <div className="border-t border-stone-700 pt-3">
-                <p className="text-[10px] font-bold text-stone-400 uppercase tracking-wider mb-1.5">Companion Character</p>
-                <p className="text-[10px] text-stone-500 mb-2">Animated figure that appears beside you. Pick an animation below.</p>
-                <div className="grid grid-cols-3 gap-1.5">
+              {/* ─ Companion Character ─ */}
+              <div className="bg-stone-800/60 border border-stone-700 rounded-xl p-3 space-y-2">
+                <p className="text-[10px] font-bold text-stone-300 uppercase tracking-wider">Companion Character</p>
+                <div className="grid grid-cols-5 gap-1">
                   {[
                     { id: 'off',   label: 'Off',   emoji: '🚫' },
                     { id: 'wave',  label: 'Wave',  emoji: '👋' },
@@ -3951,23 +4593,24 @@ const ClassicEditor = () => {
                     { id: 'dance', label: 'Dance', emoji: '💃' },
                   ].map(a => (
                     <button key={a.id} onClick={() => setCharAnim(a.id)}
-                      className={`flex flex-col items-center py-2 rounded-xl border text-[10px] font-bold transition-colors ${charAnim === a.id ? 'bg-rose-900/50 border-rose-600 text-rose-300' : 'bg-stone-800 border-stone-700 text-stone-400 hover:border-stone-500'}`}>
-                      <span className="text-base leading-none mb-0.5">{a.emoji}</span>
+                      className={`flex flex-col items-center py-1.5 rounded-lg border text-[9px] font-bold transition-colors ${charAnim === a.id ? 'bg-rose-900/50 border-rose-600 text-rose-300' : 'bg-stone-900 border-stone-700 text-stone-500 hover:border-stone-500'}`}>
+                      <span className="text-sm leading-none mb-0.5">{a.emoji}</span>
                       {a.label}
                     </button>
                   ))}
                 </div>
                 {charAnim !== 'off' && (
-                  <div className="flex gap-1.5 mt-2">
+                  <div className="flex gap-1.5">
                     {['left','right'].map(p => (
                       <button key={p} onClick={() => setCharPos(p)}
-                        className={`flex-1 py-1.5 rounded-xl text-[11px] font-bold capitalize border transition-colors ${charPos === p ? 'bg-stone-600 border-stone-500 text-stone-100' : 'bg-stone-800 border-stone-700 text-stone-400'}`}>
+                        className={`flex-1 py-1.5 rounded-lg text-[10px] font-bold capitalize border transition-colors ${charPos === p ? 'bg-stone-600 border-stone-500 text-stone-100' : 'bg-stone-900 border-stone-700 text-stone-500'}`}>
                         {p} side
                       </button>
                     ))}
                   </div>
                 )}
               </div>
+
             </div>
           )}
 
@@ -3975,50 +4618,94 @@ const ClassicEditor = () => {
           {inspectorTab === 'enhance' && (
             <div className="p-3 space-y-4">
 
-              {/* Look / Color Presets */}
+              {/* Look Presets */}
               <div>
-                <p className="text-[10px] font-bold text-stone-400 uppercase tracking-wider mb-2">Look &amp; Feel</p>
-                <div className="grid grid-cols-5 gap-1.5">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-[10px] font-bold text-stone-400 uppercase tracking-wider">Cinematic Looks</p>
+                  {filterPreset !== 'none' && <button onClick={resetAllFilters} className="text-[10px] text-rose-400 hover:text-rose-300">Reset</button>}
+                </div>
+                <div className="grid grid-cols-5 gap-1">
                   {FILTER_PRESETS.map(fp => (
                     <button key={fp.id} onClick={() => applyFilterPreset(fp)}
                       className={`flex flex-col items-center py-2 rounded-xl border text-[9px] font-bold transition-all active:scale-95 ${filterPreset === fp.id ? 'bg-rose-900/60 border-rose-500 text-rose-300' : 'bg-stone-800 border-stone-700 text-stone-400 hover:border-stone-500'}`}>
-                      <span className="text-base leading-none mb-0.5">{fp.emoji}</span>
+                      <span className="text-sm leading-none mb-0.5">{fp.emoji}</span>
                       <span className="leading-tight text-center">{fp.label}</span>
                     </button>
                   ))}
                 </div>
               </div>
 
-              {/* Manual Sliders */}
+              {/* Exposure & Tone */}
               <div className="bg-stone-800 border border-stone-700 rounded-xl p-3 space-y-3">
-                <p className="text-[10px] font-bold text-stone-400 uppercase tracking-wider">Fine Tune</p>
+                <p className="text-[10px] font-bold text-stone-400 uppercase tracking-wider">Exposure &amp; Tone</p>
                 {[
-                  { label: 'Brightness', val: filterB, set: setFilterB, min: 50, max: 160 },
-                  { label: 'Contrast',   val: filterC, set: setFilterC, min: 50, max: 200 },
-                  { label: 'Saturation', val: filterS, set: setFilterS, min: 0,  max: 250 },
-                ].map(({ label, val, set, min, max }) => (
+                  { label: 'Brightness',  val: filterB,          set: setFilterB,          min: 50,  max: 160, unit: '%', zero: 100 },
+                  { label: 'Contrast',    val: filterC,          set: setFilterC,          min: 50,  max: 200, unit: '%', zero: 100 },
+                  { label: 'Highlights',  val: filterHighlights, set: setFilterHighlights, min: -50, max: 50,  unit: '',  zero: 0   },
+                  { label: 'Shadows',     val: filterShadows,    set: setFilterShadows,    min: -50, max: 50,  unit: '',  zero: 0   },
+                ].map(({ label, val, set, min, max, unit, zero }) => (
                   <div key={label}>
                     <div className="flex justify-between mb-1">
                       <span className="text-[10px] text-stone-400">{label}</span>
-                      <span className="text-[10px] font-mono text-stone-300">{val}%</span>
+                      <span className={`text-[10px] font-mono ${val === zero ? 'text-stone-600' : 'text-amber-400'}`}>{val > 0 && val !== zero ? '+' : ''}{val}{unit}</span>
                     </div>
-                    <input type="range" min={min} max={max} value={val} onChange={e => { set(Number(e.target.value)); setFilterPreset('custom'); }}
-                      className="w-full accent-rose-500" />
+                    <input type="range" min={min} max={max} value={val}
+                      onChange={e => { set(Number(e.target.value)); setFilterPreset('custom'); }}
+                      className="w-full accent-amber-500 h-1" />
                   </div>
                 ))}
-                {(filterB !== 100 || filterC !== 100 || filterS !== 100) && (
-                  <button onClick={() => applyFilterPreset(FILTER_PRESETS[0])} className="text-[10px] text-stone-500 hover:text-rose-400 transition-colors w-full text-right">Reset to original</button>
-                )}
               </div>
 
-              {/* Pro Enhance toggles */}
+              {/* Color */}
+              <div className="bg-stone-800 border border-stone-700 rounded-xl p-3 space-y-3">
+                <p className="text-[10px] font-bold text-stone-400 uppercase tracking-wider">Color</p>
+                {[
+                  { label: 'Saturation', val: filterS,    set: setFilterS,    min: 0,    max: 250, unit: '%', zero: 100 },
+                  { label: 'Hue Shift',  val: filterH,    set: setFilterH,    min: -180, max: 180, unit: '°', zero: 0   },
+                  { label: 'Temperature',val: filterTemp,  set: setFilterTemp, min: -100, max: 100, unit: '',  zero: 0   },
+                ].map(({ label, val, set, min, max, unit, zero }) => (
+                  <div key={label}>
+                    <div className="flex justify-between mb-1">
+                      <span className="text-[10px] text-stone-400">{label}</span>
+                      <span className={`text-[10px] font-mono ${val === zero ? 'text-stone-600' : 'text-amber-400'}`}>
+                        {val > 0 && val !== zero ? '+' : ''}{val}{unit}
+                        {label === 'Temperature' && val !== 0 && <span className="ml-1 text-[9px] text-stone-500">{val > 0 ? '🔥 warm' : '❄️ cool'}</span>}
+                      </span>
+                    </div>
+                    <input type="range" min={min} max={max} value={val}
+                      onChange={e => { set(Number(e.target.value)); setFilterPreset('custom'); }}
+                      className="w-full accent-rose-500 h-1" />
+                  </div>
+                ))}
+              </div>
+
+              {/* Effects */}
+              <div className="bg-stone-800 border border-stone-700 rounded-xl p-3 space-y-3">
+                <p className="text-[10px] font-bold text-stone-400 uppercase tracking-wider">Effects</p>
+                {[
+                  { label: 'Vignette', val: filterVignette, set: setFilterVignette, min: 0, max: 100, unit: '%', zero: 0 },
+                  { label: 'Blur',     val: filterBlur,     set: setFilterBlur,     min: 0, max: 10,  unit: 'px', zero: 0 },
+                ].map(({ label, val, set, min, max, unit, zero }) => (
+                  <div key={label}>
+                    <div className="flex justify-between mb-1">
+                      <span className="text-[10px] text-stone-400">{label}</span>
+                      <span className={`text-[10px] font-mono ${val === zero ? 'text-stone-600' : 'text-amber-400'}`}>{val}{unit}</span>
+                    </div>
+                    <input type="range" min={min} max={max} value={val}
+                      onChange={e => { set(Number(e.target.value)); setFilterPreset('custom'); }}
+                      className="w-full accent-purple-500 h-1" />
+                  </div>
+                ))}
+              </div>
+
+              {/* AI Enhancement */}
               <div className="space-y-2">
                 <p className="text-[10px] font-bold text-stone-400 uppercase tracking-wider">AI Enhancement</p>
                 {[
                   { label: '4K AI Upscaling', badge: 'Ultra HD', desc: 'Sharpen soft footage, add detail', val: aiUpscale, set: setAiUpscale },
                   { label: 'Cinematic Grade', badge: null, desc: 'Flat iPhone footage → moody cinematic', val: cinematicGrade, set: setCinematicGrade },
                 ].map(({ label, badge, desc, val, set }) => (
-                  <label key={label} className="flex items-center justify-between bg-stone-800 border border-stone-700 rounded-xl p-3 cursor-pointer hover:border-stone-600 transition-colors">
+                  <label key={label} className="flex items-center justify-between bg-stone-700/50 border border-stone-700 rounded-xl p-3 cursor-pointer hover:border-stone-600 transition-colors">
                     <div>
                       <span className="text-xs font-bold text-stone-200 flex items-center gap-1.5">{label}{badge && <span className="text-[9px] font-bold text-rose-400 bg-rose-900/40 px-1.5 py-0.5 rounded uppercase">{badge}</span>}</span>
                       <span className="text-[10px] text-stone-500 block mt-0.5">{desc}</span>
@@ -4028,12 +4715,8 @@ const ClassicEditor = () => {
                     </button>
                   </label>
                 ))}
-                {(aiUpscale || cinematicGrade) && (
-                  <p className="text-[10px] text-emerald-400 bg-emerald-950/30 border border-emerald-800/50 rounded-lg px-3 py-2">Active — applied on export.</p>
-                )}
               </div>
 
-              {/* AI editing tips */}
               <button onClick={() => setShowAIHelper(h => !h)} className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold bg-rose-900/40 border border-rose-700/50 text-rose-300 hover:bg-rose-800/50 active:scale-95 transition-all">
                 <Sparkles size={15} /> AI Editing Tips
               </button>
@@ -4042,8 +4725,83 @@ const ClassicEditor = () => {
 
           {/* ── CAMERA TAB ─────────────────────────────── */}
           {inspectorTab === 'camera' && (
-            <div className="overflow-y-auto">
-              <InlineCameraGuide />
+            <div className="p-3 space-y-3">
+
+              {/* Live camera preview */}
+              <div className="relative bg-stone-900 rounded-xl overflow-hidden" style={{ aspectRatio: '16/9' }}>
+                <video ref={cameraPreviewRef} autoPlay playsInline muted
+                  className={`w-full h-full object-cover transition-opacity ${cameraPreviewActive ? 'opacity-100' : 'opacity-0'}`}
+                  style={{ transform: cameraFacing === 'user' ? 'scaleX(-1)' : 'none' }} />
+                {!cameraPreviewActive && !isRecording && (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
+                    <Camera size={32} className="text-stone-600" />
+                    <p className="text-[11px] text-stone-500">Camera preview</p>
+                    {cameraPreviewError && <p className="text-[10px] text-rose-400 text-center px-4">{cameraPreviewError}</p>}
+                    <button onClick={() => startCameraPreview()}
+                      className="px-4 py-2 bg-stone-800 border border-stone-600 rounded-lg text-xs font-bold text-stone-200 hover:bg-stone-700 active:scale-95 transition-all">
+                      Enable Preview
+                    </button>
+                  </div>
+                )}
+                {isRecording && (
+                  <div className="absolute top-2 left-2 flex items-center gap-1.5 bg-red-500 text-white text-[11px] font-bold px-2.5 py-1 rounded-full shadow-lg">
+                    <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                    REC {Math.floor(recordTimer / 60).toString().padStart(2, '0')}:{(recordTimer % 60).toString().padStart(2, '0')}
+                  </div>
+                )}
+                {cameraPreviewActive && !isRecording && (
+                  <div className="absolute bottom-2 right-2 flex items-center gap-1">
+                    <button onClick={() => {
+                      const newFacing = cameraFacing === 'user' ? 'environment' : 'user';
+                      setCameraFacing(newFacing);
+                      startCameraPreview(newFacing);
+                    }} className="p-1.5 bg-black/60 rounded-lg text-white hover:bg-black/80" title="Flip camera">
+                      <RotateCcw size={13} />
+                    </button>
+                    <button onClick={stopCameraPreview} className="p-1.5 bg-black/60 rounded-lg text-stone-300 hover:bg-black/80" title="Close preview">
+                      <X size={13} />
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Record / Stop */}
+              <button
+                onClick={isRecording ? stopRecord : async () => {
+                  stopCameraPreview();
+                  await startRecord(true, true);
+                }}
+                disabled={!!recordError}
+                className={`w-full flex items-center justify-center gap-2 py-4 rounded-xl text-sm font-bold transition-all active:scale-95 disabled:opacity-40 ${isRecording ? 'bg-red-500 hover:bg-red-400 text-white shadow-lg shadow-red-900/40' : 'bg-rose-600 hover:bg-rose-500 text-white shadow-lg shadow-rose-900/30'}`}>
+                {isRecording
+                  ? <><span className="w-3 h-3 rounded bg-white" /> Stop Recording</>
+                  : <><Camera size={18} /> Record Video</>}
+              </button>
+              {recordError && <p className="text-[11px] text-rose-400 text-center">{recordError}</p>}
+
+              {/* Quick tips */}
+              <div className="bg-stone-800 border border-stone-700 rounded-xl p-3 space-y-2">
+                <p className="text-[10px] font-bold text-stone-400 uppercase tracking-wider mb-1">📸 Pro Recording Tips</p>
+                {[
+                  { icon: '💡', tip: 'Face a window or ring light — never shoot with light behind you' },
+                  { icon: '🎙', tip: 'Speak 6–12 inches from mic for warm, clear audio' },
+                  { icon: '📐', tip: 'Eye level = authority. Camera slightly above = relatable' },
+                  { icon: '🎬', tip: 'Record 3-second silent buffer before speaking for clean edits' },
+                  { icon: '🔁', tip: 'Re-record hooks until first 3 seconds feel punchy' },
+                ].map(({ icon, tip }) => (
+                  <div key={tip} className="flex items-start gap-2">
+                    <span className="text-sm shrink-0 leading-tight">{icon}</span>
+                    <p className="text-[10px] text-stone-400 leading-tight">{tip}</p>
+                  </div>
+                ))}
+              </div>
+
+              {/* Camera settings guide */}
+              <div className="border-t border-stone-700 pt-3">
+                <p className="text-[10px] font-bold text-stone-400 uppercase tracking-wider mb-2">Camera Settings Guide</p>
+                <InlineCameraGuide />
+              </div>
+
             </div>
           )}
 
@@ -4110,9 +4868,54 @@ const ClassicEditor = () => {
                   Append contact URL to metadata
                 </label>
               </div>
+              {/* Thumbnail grab */}
+              {videoForPreview && (
+                <div className="bg-stone-800 border border-stone-700 rounded-xl p-3 space-y-2">
+                  <p className="text-[10px] font-bold text-stone-400 uppercase tracking-wider">Thumbnail</p>
+                  <p className="text-[10px] text-stone-500">Grab the current frame as a thumbnail image for YouTube, social posts, or your thumbnail preview.</p>
+                  <button onClick={() => {
+                    try {
+                      const v = videoRef.current;
+                      if (!v) return;
+                      const canvas = document.createElement('canvas');
+                      canvas.width = v.videoWidth || 1280;
+                      canvas.height = v.videoHeight || 720;
+                      const ctx = canvas.getContext('2d');
+                      ctx.drawImage(v, 0, 0, canvas.width, canvas.height);
+                      canvas.toBlob(blob => {
+                        if (!blob) return;
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = `thumbnail-${Date.now()}.jpg`;
+                        a.click();
+                        setTimeout(() => URL.revokeObjectURL(url), 5000);
+                      }, 'image/jpeg', 0.92);
+                    } catch (e) { console.error('Thumbnail grab failed:', e); }
+                  }} className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg text-xs font-bold bg-stone-700 border border-stone-600 text-stone-200 hover:bg-stone-600 active:scale-95 transition-all">
+                    <ImageIcon size={14} /> Grab Current Frame
+                  </button>
+                </div>
+              )}
               <button onClick={exportVideo} disabled={exporting || !selectedVideo} className="w-full py-4 rounded-xl text-base font-bold bg-rose-500 hover:bg-rose-400 text-white disabled:opacity-40 shadow-lg shadow-rose-900/30 transition-all active:scale-95">
                 {exporting ? (exportProgress > 0 ? `Exporting ${Math.round(exportProgress * 100)}%…` : 'Rendering…') : '⬇ Export Video'}
               </button>
+              {/* Platform-specific final checklist */}
+              <div className="bg-stone-800/60 border border-stone-700 rounded-xl p-3 space-y-1.5">
+                <p className="text-[10px] font-bold text-stone-400 uppercase tracking-wider mb-2">Before You Post</p>
+                {[
+                  { icon: '🎣', text: 'Strong hook in first 3 seconds?' },
+                  { icon: '📝', text: 'Captions or subtitles added?' },
+                  { icon: '🔗', text: 'CTA (Link in Bio / swipe up) included?' },
+                  { icon: '🎵', text: 'Background music at right volume?' },
+                  { icon: '✂️', text: 'Pauses and filler words removed?' },
+                ].map(({ icon, text }) => (
+                  <label key={text} className="flex items-center gap-2 cursor-pointer group">
+                    <input type="checkbox" className="w-3.5 h-3.5 rounded accent-rose-500 shrink-0" />
+                    <span className="text-[10px] text-stone-400 group-hover:text-stone-300">{icon} {text}</span>
+                  </label>
+                ))}
+              </div>
             </div>
           )}
 
@@ -4327,7 +5130,7 @@ const ClassicEditor = () => {
             <span className="text-stone-400">TRACK</span>
             <button onClick={addAudioTrack} className="text-[9px] font-semibold text-emerald-400 hover:text-emerald-300" title="Add unlimited audio tracks">+ track</button>
           </div>
-          <div ref={timelineRulerRef} onMouseDown={(e) => { e.preventDefault(); handleRulerClick(e); setDraggingPlayhead(true); }} onTouchStart={(e) => { e.preventDefault(); handleRulerClick(e); setDraggingPlayhead(true); }} className="flex-1 relative flex justify-between px-4 select-none text-stone-400 min-w-0 touch-none bg-stone-800/90" style={{ cursor: draggingPlayhead ? 'grabbing' : 'grab', width: 500 * timelineZoom }}>
+          <div ref={timelineRulerRef} onMouseDown={(e) => { e.preventDefault(); handleRulerClick(e); setDraggingPlayheadSynced(true); }} onTouchStart={(e) => { e.preventDefault(); handleRulerClick(e); setDraggingPlayheadSynced(true); }} className="flex-1 relative flex justify-between px-4 select-none text-stone-400 min-w-0 touch-none bg-stone-800/90" style={{ cursor: draggingPlayhead ? 'grabbing' : 'grab', width: 500 * timelineZoom }}>
             {/* Time grid — vertical lines every 5s so you see structure (CapCut-style) */}
             {effectiveDuration > 0 && [...Array(Math.ceil(effectiveDuration / 5) + 1)].map((_, i) => {
               const t = i * 5;
@@ -4339,7 +5142,7 @@ const ClassicEditor = () => {
               <span key={i} className="shrink-0 pointer-events-none relative z-[1]" title={secToTimecode(i * 15)}>{secToTime(Math.min(i * 15, effectiveDuration))}</span>
             ))}
             {/* Playhead — triangle handle + line */}
-            <div onMouseDown={(e) => { e.stopPropagation(); handleRulerClick(e); setDraggingPlayhead(true); }} onTouchStart={(e) => { e.stopPropagation(); handleRulerClick(e); setDraggingPlayhead(true); }}
+            <div onMouseDown={(e) => { e.stopPropagation(); handleRulerClick(e); setDraggingPlayheadSynced(true); }} onTouchStart={(e) => { e.stopPropagation(); handleRulerClick(e); setDraggingPlayheadSynced(true); }}
               className="absolute top-0 bottom-0 z-30 cursor-grab active:cursor-grabbing touch-none select-none"
               style={{ left: `${playheadPct}%`, transform: 'translateX(-50%)' }}>
               {/* Triangle head */}
@@ -4415,7 +5218,7 @@ const ClassicEditor = () => {
               snapEnabled={snapEnabled}
               onPushHistory={pushHistory}
               handlePlayheadDrag={handlePlayheadDrag}
-              setDraggingPlayhead={setDraggingPlayhead}
+              setDraggingPlayhead={setDraggingPlayheadSynced}
             />
           ) : (
             <>
@@ -4427,7 +5230,7 @@ const ClassicEditor = () => {
               <Video size={14} />
               <span>Video</span>
             </div>
-            <div ref={mainTrackRef} onMouseDown={(e) => { e.preventDefault(); handlePlayheadDrag(e); setDraggingPlayhead(true); }} className="flex-1 h-full relative overflow-hidden rounded bg-stone-700/80" style={{ userSelect: 'none', minWidth: `${500 * timelineZoom}px`, cursor: 'default' }}>
+            <div ref={mainTrackRef} onMouseDown={(e) => { e.preventDefault(); handlePlayheadDrag(e); setDraggingPlayheadSynced(true); }} className="flex-1 h-full relative overflow-hidden rounded bg-stone-700/80" style={{ userSelect: 'none', minWidth: `${500 * timelineZoom}px`, cursor: 'default' }}>
               {selectedVideo ? (
                 <>
                   {getMainTimelineRanges(mainSegments).map(({ seg, tlStart, tlEnd }) => {
@@ -4435,13 +5238,17 @@ const ClassicEditor = () => {
                     const w = timelineDuration > 0 ? ((tlEnd - tlStart) / timelineDuration) * 100 : 10;
                     const left = timelineDuration > 0 ? (tlStart / timelineDuration) * 100 : 0;
                     return (
-                      <div key={seg.id} onMouseDown={(e) => e.stopPropagation()} onClick={() => { setSelectedSegmentId(seg.id); setSelectedAudioSegmentId(null); seekTo(tlStart); zoomToSelection(); }} className={`absolute h-[calc(100%-4px)] top-0.5 flex items-stretch group rounded overflow-hidden ${selectedSegmentId === seg.id ? 'ring-1 ring-white' : ''} ${movingMainId === seg.id ? 'ring-1 ring-white' : ''}`} style={{ left: `${left}%`, width: `${Math.max(2, w)}%` }}>
-                        <div onMouseDown={(e) => handleResizeMain(e, seg, 'start')} className="w-1.5 flex-shrink-0 cursor-ew-resize bg-stone-600 hover:bg-stone-500 z-10" />
+                      <div key={seg.id}
+                        onMouseDown={(e) => { e.stopPropagation(); setSelectedSegmentId(seg.id); setSelectedAudioSegmentId(null); }}
+                        onClick={() => { zoomToSelection(); }}
+                        className={`absolute h-[calc(100%-4px)] top-0.5 flex items-stretch group rounded overflow-hidden cursor-pointer ${selectedSegmentId === seg.id ? 'ring-2 ring-amber-400' : 'ring-1 ring-stone-600'} ${movingMainId === seg.id ? 'ring-2 ring-white' : ''}`}
+                        style={{ left: `${left}%`, width: `${Math.max(2, w)}%` }}>
+                        <div onMouseDown={(e) => handleResizeMain(e, seg, 'start')} className="w-2.5 flex-shrink-0 cursor-ew-resize bg-white/20 hover:bg-rose-400/60 z-10 flex items-center justify-center"><div className="w-0.5 h-4 bg-white/50 rounded-full" /></div>
                         <div onMouseDown={(e) => handleMoveMainStart(e, seg)} className="flex-1 min-w-0 relative overflow-hidden">
                           <VideoSegmentThumbnail videoUrl={selectedVideo.url} startTime={seg.start} segStart={seg.start} segEnd={seg.end} />
                           <span className="absolute bottom-0 left-0 right-0 text-[9px] font-mono text-white bg-black/60 px-1 truncate">{secToTimecode(seg.start)} – {secToTimecode(seg.end)}</span>
                         </div>
-                        <div onMouseDown={(e) => handleResizeMain(e, seg, 'end')} className="w-1.5 flex-shrink-0 cursor-ew-resize bg-stone-600 hover:bg-stone-500 z-10" />
+                        <div onMouseDown={(e) => handleResizeMain(e, seg, 'end')} className="w-2.5 flex-shrink-0 cursor-ew-resize bg-white/20 hover:bg-rose-400/60 z-10 flex items-center justify-center"><div className="w-0.5 h-4 bg-white/50 rounded-full" /></div>
                       </div>
                     );
                   })}
@@ -4463,7 +5270,7 @@ const ClassicEditor = () => {
               <Mic size={14} />
               <span>Audio</span>
             </div>
-            <div ref={audioTrackRef} onMouseDown={(e) => { e.preventDefault(); handlePlayheadDrag(e); setDraggingPlayhead(true); }} className="flex-1 h-full relative overflow-hidden rounded bg-stone-900" style={{ userSelect: 'none', minWidth: `${500 * timelineZoom}px`, cursor: 'default' }}>
+            <div ref={audioTrackRef} onMouseDown={(e) => { e.preventDefault(); handlePlayheadDrag(e); setDraggingPlayheadSynced(true); }} className="flex-1 h-full relative overflow-hidden rounded bg-stone-900" style={{ userSelect: 'none', minWidth: `${500 * timelineZoom}px`, cursor: 'default' }}>
               {hasAudio ? (
                 <>
                   {getAudioTimelineRanges(audioSegments).map(({ seg, tlStart, tlEnd }) => {
@@ -4471,13 +5278,17 @@ const ClassicEditor = () => {
                     const w = timelineDuration > 0 ? ((tlEnd - tlStart) / timelineDuration) * 100 : 10;
                     const left = timelineDuration > 0 ? (tlStart / timelineDuration) * 100 : 0;
                     return (
-                      <div key={seg.id} onMouseDown={(e) => e.stopPropagation()} onClick={() => { setSelectedAudioSegmentId(seg.id); setSelectedSegmentId(null); seekTo(tlStart); zoomToSelection(); }} className={`absolute h-[calc(100%-4px)] top-0.5 flex items-stretch group rounded overflow-hidden ${selectedAudioSegmentId === seg.id ? 'ring-1 ring-white' : ''} ${movingAudioId === seg.id ? 'ring-1 ring-white' : ''}`} style={{ left: `${left}%`, width: `${Math.max(2, w)}%` }}>
-                        <div onMouseDown={(e) => handleResizeAudio(e, seg, 'start')} className="w-1.5 flex-shrink-0 cursor-ew-resize bg-stone-600 hover:bg-stone-500 z-10" />
+                      <div key={seg.id}
+                        onMouseDown={(e) => { e.stopPropagation(); setSelectedAudioSegmentId(seg.id); setSelectedSegmentId(null); }}
+                        onClick={() => { zoomToSelection(); }}
+                        className={`absolute h-[calc(100%-4px)] top-0.5 flex items-stretch group rounded overflow-hidden cursor-pointer ${selectedAudioSegmentId === seg.id ? 'ring-2 ring-amber-400' : 'ring-1 ring-stone-600'} ${movingAudioId === seg.id ? 'ring-2 ring-white' : ''}`}
+                        style={{ left: `${left}%`, width: `${Math.max(2, w)}%` }}>
+                        <div onMouseDown={(e) => handleResizeAudio(e, seg, 'start')} className="w-2.5 flex-shrink-0 cursor-ew-resize bg-white/20 hover:bg-emerald-400/60 z-10 flex items-center justify-center"><div className="w-0.5 h-4 bg-white/50 rounded-full" /></div>
                         <div onMouseDown={(e) => handleMoveAudioStart(e, seg)} className="flex-1 min-w-0 relative overflow-hidden">
                           <AudioWaveformSegment audioUrl={selectedAudio?.url || selectedVideo?.url} segStart={seg.start} segEnd={seg.end} totalDuration={duration} />
                           <span className="absolute bottom-0 left-0 right-0 text-[9px] font-mono text-white bg-black/60 px-1 truncate">{secToTimecode(seg.start)} – {secToTimecode(seg.end)}</span>
                         </div>
-                        <div onMouseDown={(e) => handleResizeAudio(e, seg, 'end')} className="w-1.5 flex-shrink-0 cursor-ew-resize bg-stone-600 hover:bg-stone-500 z-10" />
+                        <div onMouseDown={(e) => handleResizeAudio(e, seg, 'end')} className="w-2.5 flex-shrink-0 cursor-ew-resize bg-white/20 hover:bg-emerald-400/60 z-10 flex items-center justify-center"><div className="w-0.5 h-4 bg-white/50 rounded-full" /></div>
                       </div>
                     );
                   })}
@@ -4634,13 +5445,29 @@ const ProEnhancements = () => {
 
         <div className="mb-8">
           <label className="block text-xs font-bold text-stone-400 mb-2 uppercase">Source Video</label>
-          {videos.length > 0 ? (
-            <select value={selectedVideo?.id || ''} onChange={(e) => setSelectedVideoId(Number(e.target.value) || null)} className="w-full bg-stone-50 border border-rose-100 rounded-xl px-4 py-2.5 text-sm">
-              <option value="">Select video...</option>
-              {videos.map(v => <option key={v.id} value={v.id}>{v.name}</option>)}
-            </select>
-          ) : (
+          {videos.length === 0 ? (
             <p className="text-stone-500 text-sm">Upload video in Media Library first.</p>
+          ) : (
+            <div className="grid grid-cols-4 gap-2">
+              {videos.map(v => (
+                <button key={v.id} onClick={() => setSelectedVideoId(v.id)}
+                  className={`relative rounded-xl overflow-hidden aspect-video border-2 transition-all group ${selectedVideo?.id === v.id ? 'border-rose-500 ring-2 ring-rose-400' : 'border-rose-100 hover:border-rose-300'}`}
+                  title={v.name}>
+                  <video src={v.url} muted playsInline preload="metadata" className="w-full h-full object-cover"
+                    onLoadedMetadata={e => { e.target.currentTime = 0.5; }} />
+                  {selectedVideo?.id === v.id && (
+                    <div className="absolute inset-0 bg-rose-500/20 flex items-center justify-center">
+                      <div className="w-5 h-5 rounded-full bg-rose-500 flex items-center justify-center shadow-lg">
+                        <div className="w-2 h-2 rounded-full bg-white" />
+                      </div>
+                    </div>
+                  )}
+                  <div className="absolute bottom-0 left-0 right-0 px-1 py-0.5 bg-black/60 text-[9px] text-white truncate opacity-0 group-hover:opacity-100 transition-opacity">
+                    {v.name?.replace(/\.[^.]+$/, '').slice(0, 20) || 'Clip'}
+                  </div>
+                </button>
+              ))}
+            </div>
           )}
         </div>
 
@@ -5700,152 +6527,1057 @@ const PostAnalytics = ({ onOpenSettings }) => {
 };
 
 // --- Photo Editor ---
-const PHOTO_PRESETS = [
-  { id: 'natural', label: 'Natural', brightness: 100, contrast: 100, saturation: 100, warmth: 0, sharpness: 0 },
-  { id: 'warm', label: 'Warm', brightness: 105, contrast: 105, saturation: 110, warmth: 20, sharpness: 0 },
-  { id: 'cool', label: 'Cool', brightness: 100, contrast: 105, saturation: 90, warmth: -15, sharpness: 0 },
-  { id: 'moody', label: 'Moody', brightness: 90, contrast: 120, saturation: 80, warmth: -5, sharpness: 5 },
-  { id: 'vivid', label: 'Vivid', brightness: 105, contrast: 110, saturation: 140, warmth: 10, sharpness: 10 },
-  { id: 'bw', label: 'B&W', brightness: 100, contrast: 120, saturation: 0, warmth: 0, sharpness: 5 },
+const DEFAULT_PHOTO_ADJ = {
+  exposure: 0, contrast: 0, highlights: 0, shadows: 0, whites: 0, blacks: 0,
+  temperature: 0, tint: 0, vibrance: 0, saturation: 0, hue: 0,
+  clarity: 0, sharpness: 0, dehaze: 0, noiseReduction: 0,
+  vignette: 0, grain: 0, glow: 0, fade: 0,
+  hsl: {
+    red:{h:0,s:0,l:0}, orange:{h:0,s:0,l:0}, yellow:{h:0,s:0,l:0}, green:{h:0,s:0,l:0},
+    aqua:{h:0,s:0,l:0}, blue:{h:0,s:0,l:0}, purple:{h:0,s:0,l:0}, magenta:{h:0,s:0,l:0}
+  }
+};
+
+const PHOTO_PRESETS_V2 = [
+  { id:'natural',      cat:'Auto',      label:'Natural',       emoji:'🌿', adj:{} },
+  { id:'auto-enhance', cat:'Auto',      label:'Auto Enhance',  emoji:'✨', adj:{ exposure:8, contrast:12, highlights:-15, shadows:20, vibrance:15 } },
+  { id:'port-glow',    cat:'Portrait',  label:'Soft Glow',     emoji:'🌸', adj:{ exposure:10, highlights:-20, shadows:15, temperature:8, vibrance:10, glow:20, vignette:15 } },
+  { id:'port-golden',  cat:'Portrait',  label:'Golden Hour',   emoji:'🌅', adj:{ exposure:5, contrast:10, highlights:-10, shadows:25, temperature:30, vibrance:20, vignette:20 } },
+  { id:'port-cool',    cat:'Portrait',  label:'Cool Tone',     emoji:'❄️', adj:{ exposure:5, contrast:8, temperature:-25, vibrance:15, vignette:10 } },
+  { id:'port-moody',   cat:'Portrait',  label:'Moody Dark',    emoji:'🎭', adj:{ exposure:-10, contrast:30, highlights:-30, shadows:-15, temperature:-10, vignette:40 } },
+  { id:'cin-teal',     cat:'Cinematic', label:'Teal & Orange', emoji:'🎬', adj:{ exposure:-5, contrast:25, highlights:-20, shadows:-10, temperature:15, tint:-8, vignette:30, fade:5 } },
+  { id:'cin-matte',    cat:'Cinematic', label:'Matte Film',    emoji:'🎞', adj:{ contrast:-15, highlights:-10, shadows:20, vibrance:-15, blacks:12, fade:18, vignette:20 } },
+  { id:'cin-drama',    cat:'Cinematic', label:'Drama',         emoji:'🌑', adj:{ exposure:-8, contrast:40, highlights:-35, shadows:-20, vibrance:-10, vignette:50 } },
+  { id:'cin-bleach',   cat:'Cinematic', label:'Bleach',        emoji:'⚪', adj:{ exposure:8, contrast:-10, saturation:-30, whites:20, fade:25, vignette:15 } },
+  { id:'faith-light',  cat:'Faith',     label:"Heaven's Light",emoji:'✝️', adj:{ exposure:15, highlights:10, temperature:12, vibrance:10, glow:35, vignette:-10 } },
+  { id:'faith-fire',   cat:'Faith',     label:'Holy Fire',     emoji:'🔥', adj:{ exposure:5, contrast:15, temperature:40, vibrance:25, vignette:25, glow:15 } },
+  { id:'faith-peace',  cat:'Faith',     label:'Still Waters',  emoji:'🕊', adj:{ exposure:8, contrast:-5, temperature:-15, vibrance:12, saturation:-10, glow:20, vignette:10 } },
+  { id:'land-vivid',   cat:'Landscape', label:'Vivid Nature',  emoji:'🏔', adj:{ exposure:5, contrast:20, highlights:-15, shadows:20, vibrance:35, saturation:15, clarity:20 } },
+  { id:'land-golden',  cat:'Landscape', label:'Golden Field',  emoji:'🌾', adj:{ exposure:8, contrast:15, temperature:20, vibrance:25, clarity:10, vignette:15 } },
+  { id:'land-alpine',  cat:'Landscape', label:'Alpine Cool',   emoji:'🌨', adj:{ exposure:5, contrast:15, temperature:-20, vibrance:20, clarity:15 } },
+  { id:'film-kodak',   cat:'Film',      label:'Kodak Gold',    emoji:'📷', adj:{ contrast:10, shadows:15, temperature:15, tint:5, vibrance:10, grain:20 } },
+  { id:'film-fuji',    cat:'Film',      label:'Fuji 400H',     emoji:'🎞', adj:{ contrast:-5, highlights:-15, shadows:20, temperature:-10, tint:8, vibrance:15, grain:15 } },
+  { id:'film-portra',  cat:'Film',      label:'Portra 400',    emoji:'📸', adj:{ exposure:5, contrast:-5, highlights:-10, shadows:25, temperature:10, vibrance:12, grain:12 } },
+  { id:'bw-classic',   cat:'B&W',       label:'Classic',       emoji:'◐', adj:{ saturation:-100, contrast:20, clarity:10, vignette:20 } },
+  { id:'bw-dramatic',  cat:'B&W',       label:'Dramatic',      emoji:'◼', adj:{ saturation:-100, contrast:50, highlights:-20, shadows:-15, vignette:40 } },
+  { id:'bw-fade',      cat:'B&W',       label:'Faded',         emoji:'◻', adj:{ saturation:-100, contrast:-10, blacks:12, fade:20 } },
+  { id:'bw-selenium',  cat:'B&W',       label:'Selenium',      emoji:'🔵', adj:{ saturation:-100, temperature:-10, contrast:15, vignette:25 } },
 ];
 
 const PhotoEditor = () => {
   const [imgSrc, setImgSrc] = useState(null);
   const [imgName, setImgName] = useState('photo');
-  const [rotation, setRotation] = useState(0);
+  const [showBefore, setShowBefore] = useState(false);
   const [activePreset, setActivePreset] = useState('natural');
-  const [adj, setAdj] = useState({ brightness: 100, contrast: 100, saturation: 100, warmth: 0, sharpness: 0 });
+  const [presetCat, setPresetCat] = useState('All');
+  const [activePanel, setActivePanel] = useState('light');
+  const [hslColor, setHslColor] = useState('red');
+  const [history, setHistory] = useState([DEFAULT_PHOTO_ADJ]);
+  const [historyIdx, setHistoryIdx] = useState(0);
+  const [rotation, setRotation] = useState(0);
+  const [fineRotation, setFineRotation] = useState(0);
+  const [flipH, setFlipH] = useState(false);
+  const [flipV, setFlipV] = useState(false);
+  const [cropAspect, setCropAspect] = useState('free');
+  const [exportFmt, setExportFmt] = useState('jpg');
   const canvasRef = useRef(null);
   const imgRef = useRef(null);
   const fileRef = useRef(null);
-  const isDark = document.documentElement.classList.contains('dark');
+
+  const adj = history[historyIdx];
+
+  const pushAdj = useCallback((newAdj) => {
+    setHistory(h => {
+      const next = h.slice(0, historyIdx + 1);
+      next.push(newAdj);
+      return next;
+    });
+    setHistoryIdx(i => i + 1);
+  }, [historyIdx]);
+
+  const setKey = (key, val) => pushAdj({ ...adj, [key]: val });
+  const setHslKey = (color, key, val) => pushAdj({ ...adj, hsl: { ...adj.hsl, [color]: { ...adj.hsl[color], [key]: val } } });
+  const undo = () => historyIdx > 0 && setHistoryIdx(i => i - 1);
+  const redo = () => historyIdx < history.length - 1 && setHistoryIdx(i => i + 1);
+  const resetAdj = () => { setHistory([DEFAULT_PHOTO_ADJ]); setHistoryIdx(0); setActivePreset('natural'); };
+
+  const applyPreset = (p) => {
+    const newAdj = { ...DEFAULT_PHOTO_ADJ, ...p.adj, hsl: { ...DEFAULT_PHOTO_ADJ.hsl, ...(p.adj.hsl || {}) } };
+    pushAdj(newAdj);
+    setActivePreset(p.id);
+  };
 
   const handleFile = (e) => {
     const f = e.target.files?.[0];
     if (!f) return;
     setImgName(f.name.replace(/\.[^.]+$/, ''));
-    const url = URL.createObjectURL(f);
-    setImgSrc(url);
+    setImgSrc(URL.createObjectURL(f));
     e.target.value = '';
   };
 
-  const applyPreset = (preset) => {
-    setActivePreset(preset.id);
-    setAdj({ brightness: preset.brightness, contrast: preset.contrast, saturation: preset.saturation, warmth: preset.warmth, sharpness: preset.sharpness });
-  };
+  const cssFilter = useMemo(() => {
+    const parts = [];
+    const bri = 100 + adj.exposure * 0.55 + adj.whites * 0.15 - adj.blacks * 0.1 + adj.highlights * 0.1 + adj.shadows * 0.15;
+    if (Math.abs(bri - 100) > 0.5) parts.push(`brightness(${bri.toFixed(1)}%)`);
+    const con = 100 + adj.contrast * 0.6 + adj.clarity * 0.18;
+    if (Math.abs(con - 100) > 0.5) parts.push(`contrast(${con.toFixed(1)}%)`);
+    const sat = 100 + adj.saturation * 0.7 + adj.vibrance * 0.35;
+    if (Math.abs(sat - 100) > 0.5) parts.push(`saturate(${Math.max(0, sat).toFixed(1)}%)`);
+    if (Math.abs(adj.hue) > 0.5) parts.push(`hue-rotate(${adj.hue}deg)`);
+    if (adj.noiseReduction > 25) parts.push(`blur(${(adj.noiseReduction / 100 * 0.6).toFixed(2)}px)`);
+    if (adj.dehaze > 10) parts.push(`contrast(${(100 + adj.dehaze * 0.2).toFixed(1)}%)`);
+    return parts.join(' ') || undefined;
+  }, [adj]);
 
-  const cssFilter = `brightness(${adj.brightness}%) contrast(${adj.contrast}%) saturate(${adj.saturation}%) sepia(${Math.max(0, adj.warmth) * 0.4}%) hue-rotate(${adj.warmth < 0 ? adj.warmth * 0.3 : 0}deg)`;
+  const imgTransform = `scaleX(${flipH ? -1 : 1}) scaleY(${flipV ? -1 : 1}) rotate(${rotation * 90 + fineRotation}deg)`;
 
   const downloadPhoto = () => {
     const canvas = canvasRef.current;
     const img = imgRef.current;
     if (!canvas || !img) return;
     const { naturalWidth: w, naturalHeight: h } = img;
-    const rad = (rotation * Math.PI) / 180;
-    const cos = Math.abs(Math.cos(rad));
-    const sin = Math.abs(Math.sin(rad));
-    const cw = Math.floor(w * cos + h * sin);
-    const ch = Math.floor(w * sin + h * cos);
-    canvas.width = cw;
-    canvas.height = ch;
+    const totalRot = ((rotation * 90 + fineRotation) * Math.PI) / 180;
+    const cos = Math.abs(Math.cos(totalRot)), sin = Math.abs(Math.sin(totalRot));
+    const cw = Math.ceil(w * cos + h * sin);
+    const ch = Math.ceil(w * sin + h * cos);
+    canvas.width = cw; canvas.height = ch;
     const ctx = canvas.getContext('2d');
-    ctx.filter = cssFilter;
+    ctx.save();
     ctx.translate(cw / 2, ch / 2);
-    ctx.rotate(rad);
+    if (flipH || flipV) ctx.scale(flipH ? -1 : 1, flipV ? -1 : 1);
+    ctx.rotate(totalRot);
+    ctx.filter = cssFilter || 'none';
     ctx.drawImage(img, -w / 2, -h / 2, w, h);
+    ctx.filter = 'none';
+    // Temperature overlay
+    if (adj.temperature !== 0) {
+      ctx.globalAlpha = Math.abs(adj.temperature) / 100 * 0.25;
+      ctx.globalCompositeOperation = 'multiply';
+      ctx.fillStyle = adj.temperature > 0 ? 'rgb(255,160,50)' : 'rgb(60,130,255)';
+      ctx.fillRect(-cw/2, -ch/2, cw, ch);
+      ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
+    }
+    // Tint overlay
+    if (adj.tint !== 0) {
+      ctx.globalAlpha = Math.abs(adj.tint) / 100 * 0.12;
+      ctx.globalCompositeOperation = 'screen';
+      ctx.fillStyle = adj.tint > 0 ? 'rgb(255,0,180)' : 'rgb(0,200,80)';
+      ctx.fillRect(-cw/2, -ch/2, cw, ch);
+      ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
+    }
+    // Vignette
+    if (adj.vignette > 0) {
+      const grad = ctx.createRadialGradient(0, 0, 0, 0, 0, Math.max(cw, ch) * 0.7);
+      grad.addColorStop(0, 'transparent');
+      grad.addColorStop(1, `rgba(0,0,0,${adj.vignette / 100 * 0.9})`);
+      ctx.fillStyle = grad; ctx.fillRect(-cw/2, -ch/2, cw, ch);
+    }
+    // Fade
+    if (adj.fade > 0) {
+      ctx.globalAlpha = adj.fade / 100 * 0.35;
+      ctx.globalCompositeOperation = 'screen';
+      ctx.fillStyle = 'rgb(255,255,255)';
+      ctx.fillRect(-cw/2, -ch/2, cw, ch);
+      ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
+    }
+    ctx.restore();
+    const mime = exportFmt === 'png' ? 'image/png' : exportFmt === 'webp' ? 'image/webp' : 'image/jpeg';
     const link = document.createElement('a');
-    link.download = `${imgName}-edited.jpg`;
-    link.href = canvas.toDataURL('image/jpeg', 0.95);
+    link.download = `${imgName}-edited.${exportFmt}`;
+    link.href = canvas.toDataURL(mime, 0.95);
     link.click();
   };
 
-  const Slider = ({ label, key: k, min, max, unit = '' }) => (
-    <div>
-      <div className="flex justify-between mb-1">
-        <span className="text-xs font-bold text-stone-600 dark:text-stone-400">{label}</span>
-        <span className="text-xs text-rose-600 dark:text-rose-400 font-mono">{adj[k]}{unit}</span>
+  // Slider component
+  const AdjSlider = ({ label, k, min, max, unit = '', zero = 0 }) => {
+    const val = adj[k] ?? 0;
+    const isChanged = val !== zero;
+    return (
+      <div>
+        <div className="flex justify-between items-center mb-1">
+          <span className="text-xs font-medium text-stone-400">{label}</span>
+          <span className={`text-xs font-mono tabular-nums ${isChanged ? 'text-rose-400' : 'text-stone-500'}`}>{val > 0 ? '+' : ''}{val}{unit}</span>
+        </div>
+        <input type="range" min={min} max={max} value={val}
+          onChange={e => { setKey(k, Number(e.target.value)); setActivePreset(''); }}
+          className="w-full h-1 accent-rose-500 cursor-pointer" />
       </div>
-      <input type="range" min={min} max={max} value={adj[k]} onChange={e => { setAdj(a => ({ ...a, [k]: Number(e.target.value) })); setActivePreset(''); }} className="w-full accent-rose-500 h-1.5" />
+    );
+  };
+
+  const HSLSlider = ({ label, k, min, max }) => {
+    const val = adj.hsl[hslColor]?.[k] ?? 0;
+    return (
+      <div>
+        <div className="flex justify-between items-center mb-1">
+          <span className="text-xs font-medium text-stone-400">{label}</span>
+          <span className={`text-xs font-mono ${val !== 0 ? 'text-rose-400' : 'text-stone-500'}`}>{val > 0 ? '+' : ''}{val}</span>
+        </div>
+        <input type="range" min={min} max={max} value={val}
+          onChange={e => { setHslKey(hslColor, k, Number(e.target.value)); setActivePreset(''); }}
+          className="w-full h-1 accent-rose-500 cursor-pointer" />
+      </div>
+    );
+  };
+
+  const PanelSection = ({ id, icon, label, children }) => (
+    <div className={`rounded-xl border transition-colors ${activePanel === id ? 'border-rose-600/50 bg-stone-800/80' : 'border-stone-700/50 bg-stone-800/40'}`}>
+      <button onClick={() => setActivePanel(activePanel === id ? '' : id)}
+        className="w-full flex items-center justify-between px-3 py-2.5 text-left">
+        <span className="flex items-center gap-2 text-xs font-bold text-stone-300 uppercase tracking-wider">
+          <span>{icon}</span>{label}
+        </span>
+        <span className={`text-stone-500 text-xs transition-transform ${activePanel === id ? 'rotate-180' : ''}`}>▾</span>
+      </button>
+      {activePanel === id && <div className="px-3 pb-3 space-y-3">{children}</div>}
+    </div>
+  );
+
+  const presetCategories = ['All', ...Array.from(new Set(PHOTO_PRESETS_V2.map(p => p.cat)))];
+  const visiblePresets = presetCat === 'All' ? PHOTO_PRESETS_V2 : PHOTO_PRESETS_V2.filter(p => p.cat === presetCat);
+
+  return (
+    <div className="max-w-7xl mx-auto">
+      <canvas ref={canvasRef} className="hidden" />
+      <input ref={fileRef} type="file" accept="image/*" onChange={handleFile} className="hidden" />
+
+      {!imgSrc ? (
+        /* ─── Upload State ─── */
+        <label className="cursor-pointer flex flex-col items-center justify-center gap-5 border-2 border-dashed border-stone-600 hover:border-rose-500 rounded-3xl p-20 text-center transition-all group bg-stone-900/40 hover:bg-stone-800/50">
+          <div className="relative">
+            <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-rose-900/60 to-stone-800 border-2 border-dashed border-stone-600 group-hover:border-rose-500 flex items-center justify-center transition-colors">
+              <ImageIcon size={36} className="text-stone-500 group-hover:text-rose-400 transition-colors" />
+            </div>
+            <div className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-rose-600 flex items-center justify-center shadow-lg">
+              <Plus size={14} className="text-white" />
+            </div>
+          </div>
+          <div>
+            <p className="text-lg font-bold text-stone-300 group-hover:text-white transition-colors">Drop your photo here</p>
+            <p className="text-sm text-stone-500 mt-1">or tap to browse files</p>
+          </div>
+          <div className="flex gap-2 flex-wrap justify-center">
+            {['JPG', 'PNG', 'HEIC', 'WebP', 'RAW'].map(f => (
+              <span key={f} className="text-[10px] font-bold text-stone-600 bg-stone-800 border border-stone-700 px-2 py-0.5 rounded">{f}</span>
+            ))}
+          </div>
+          <input type="file" accept="image/*" onChange={handleFile} className="hidden" />
+        </label>
+      ) : (
+        /* ─── Editor Layout ─── */
+        <div className="flex gap-3 h-[calc(100vh-140px)]">
+
+          {/* ── Left: Preset Library ── */}
+          <div className="w-[170px] flex-shrink-0 flex flex-col gap-2 overflow-hidden">
+            <p className="text-[10px] font-bold text-stone-500 uppercase tracking-wider px-1">Presets</p>
+            {/* Category pills */}
+            <div className="flex flex-wrap gap-1">
+              {presetCategories.map(c => (
+                <button key={c} onClick={() => setPresetCat(c)}
+                  className={`text-[10px] font-bold px-2 py-0.5 rounded-full border transition-colors ${presetCat === c ? 'bg-rose-600 border-rose-600 text-white' : 'border-stone-700 text-stone-400 hover:border-rose-600 hover:text-rose-400'}`}>
+                  {c}
+                </button>
+              ))}
+            </div>
+            {/* Preset list */}
+            <div className="flex-1 overflow-y-auto space-y-1 pr-0.5">
+              {visiblePresets.map(p => (
+                <button key={p.id} onClick={() => applyPreset(p)}
+                  className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-left transition-colors ${activePreset === p.id ? 'bg-rose-600/30 border border-rose-600/50 text-rose-300' : 'hover:bg-stone-700/60 text-stone-300 border border-transparent'}`}>
+                  <span className="text-base leading-none">{p.emoji}</span>
+                  <div className="min-w-0">
+                    <p className="text-[11px] font-bold truncate">{p.label}</p>
+                    <p className="text-[9px] text-stone-500">{p.cat}</p>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* ── Center: Canvas Preview ── */}
+          <div className="flex-1 flex flex-col gap-2 min-w-0">
+            {/* Toolbar */}
+            <div className="flex items-center gap-2 flex-wrap">
+              <div className="flex items-center gap-1 bg-stone-800 rounded-lg p-0.5 border border-stone-700">
+                <button onClick={() => setShowBefore(false)}
+                  className={`px-3 py-1 rounded text-xs font-bold transition-colors ${!showBefore ? 'bg-rose-600 text-white' : 'text-stone-400 hover:text-stone-200'}`}>After</button>
+                <button onClick={() => setShowBefore(true)}
+                  className={`px-3 py-1 rounded text-xs font-bold transition-colors ${showBefore ? 'bg-rose-600 text-white' : 'text-stone-400 hover:text-stone-200'}`}>Before</button>
+              </div>
+              <div className="flex items-center gap-1">
+                <button onClick={undo} disabled={historyIdx === 0}
+                  className="p-1.5 rounded bg-stone-800 border border-stone-700 text-stone-400 hover:text-white disabled:opacity-30 transition-colors" title="Undo">
+                  <RotateCcw size={13} />
+                </button>
+                <button onClick={redo} disabled={historyIdx >= history.length - 1}
+                  className="p-1.5 rounded bg-stone-800 border border-stone-700 text-stone-400 hover:text-white disabled:opacity-30 transition-colors" title="Redo">
+                  <RotateCcw size={13} className="scale-x-[-1]" />
+                </button>
+              </div>
+              <button onClick={resetAdj}
+                className="px-2.5 py-1.5 rounded bg-stone-800 border border-stone-700 text-xs font-bold text-stone-400 hover:text-rose-400 hover:border-rose-600/50 transition-colors">
+                Reset
+              </button>
+              <button onClick={() => fileRef.current?.click()}
+                className="px-2.5 py-1.5 rounded bg-stone-800 border border-stone-700 text-xs font-bold text-stone-400 hover:text-white transition-colors">
+                Change Photo
+              </button>
+              <div className="flex items-center gap-1 ml-auto">
+                {['jpg','png','webp'].map(f => (
+                  <button key={f} onClick={() => setExportFmt(f)}
+                    className={`px-2 py-1 rounded text-[10px] font-bold uppercase border transition-colors ${exportFmt === f ? 'bg-rose-600 border-rose-600 text-white' : 'border-stone-700 text-stone-400 hover:border-rose-600'}`}>
+                    {f}
+                  </button>
+                ))}
+                <button onClick={downloadPhoto}
+                  className="ml-1 flex items-center gap-1.5 px-3 py-1.5 rounded bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold transition-colors">
+                  <Download size={12} /> Export
+                </button>
+              </div>
+            </div>
+
+            {/* Canvas area */}
+            <div className="flex-1 bg-stone-950 rounded-2xl border border-stone-800 flex items-center justify-center relative overflow-hidden">
+              <div className="relative">
+                <img
+                  ref={imgRef}
+                  src={imgSrc}
+                  alt="editing"
+                  crossOrigin="anonymous"
+                  style={{
+                    filter: showBefore ? undefined : (cssFilter || undefined),
+                    transform: imgTransform,
+                    maxWidth: '100%',
+                    maxHeight: 'calc(100vh - 260px)',
+                    display: 'block',
+                    transition: 'filter 0.1s ease',
+                  }}
+                  className="object-contain select-none"
+                />
+                {/* Temperature overlay */}
+                {!showBefore && adj.temperature !== 0 && (
+                  <div className="absolute inset-0 pointer-events-none" style={{
+                    background: adj.temperature > 0 ? `rgba(255,160,50,${Math.abs(adj.temperature)/100*0.25})` : `rgba(60,130,255,${Math.abs(adj.temperature)/100*0.25})`,
+                    mixBlendMode: 'multiply', borderRadius: 2,
+                  }} />
+                )}
+                {/* Tint overlay */}
+                {!showBefore && adj.tint !== 0 && (
+                  <div className="absolute inset-0 pointer-events-none" style={{
+                    background: adj.tint > 0 ? `rgba(255,0,180,${adj.tint/100*0.12})` : `rgba(0,200,80,${Math.abs(adj.tint)/100*0.12})`,
+                    mixBlendMode: 'screen',
+                  }} />
+                )}
+                {/* Vignette */}
+                {!showBefore && adj.vignette !== 0 && (
+                  <div className="absolute inset-0 pointer-events-none" style={{
+                    background: adj.vignette > 0
+                      ? `radial-gradient(ellipse at center, transparent ${Math.max(10, 70 - adj.vignette * 0.5)}%, rgba(0,0,0,${adj.vignette/100*0.9}) 100%)`
+                      : `radial-gradient(ellipse at center, rgba(255,255,255,${Math.abs(adj.vignette)/100*0.55}) 0%, transparent 70%)`,
+                  }} />
+                )}
+                {/* Grain */}
+                {!showBefore && adj.grain > 0 && (
+                  <div className="absolute inset-0 pointer-events-none" style={{
+                    backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`,
+                    backgroundSize: '200px 200px',
+                    opacity: adj.grain / 100 * 0.45,
+                    mixBlendMode: 'overlay',
+                  }} />
+                )}
+                {/* Glow */}
+                {!showBefore && adj.glow > 0 && (
+                  <div className="absolute inset-0 pointer-events-none rounded-sm" style={{
+                    background: `radial-gradient(ellipse at center, rgba(255,255,255,${adj.glow/100*0.25}) 0%, transparent 70%)`,
+                    mixBlendMode: 'screen',
+                  }} />
+                )}
+                {/* Fade */}
+                {!showBefore && adj.fade > 0 && (
+                  <div className="absolute inset-0 pointer-events-none" style={{
+                    background: `rgba(255,255,255,${adj.fade/100*0.32})`,
+                    mixBlendMode: 'screen',
+                  }} />
+                )}
+              </div>
+              {/* Before label */}
+              {showBefore && (
+                <div className="absolute top-3 left-3 px-2 py-1 bg-black/60 rounded text-[10px] font-bold text-white uppercase tracking-wider">Original</div>
+              )}
+              {!showBefore && (
+                <div className="absolute top-3 left-3 px-2 py-1 bg-rose-600/80 rounded text-[10px] font-bold text-white uppercase tracking-wider">Edited</div>
+              )}
+              {/* Close button */}
+              <button onClick={() => { setImgSrc(null); resetAdj(); setRotation(0); setFineRotation(0); setFlipH(false); setFlipV(false); }}
+                className="absolute top-3 right-3 p-1.5 bg-black/60 hover:bg-black/80 rounded-full text-white transition-colors">
+                <X size={14} />
+              </button>
+            </div>
+          </div>
+
+          {/* ── Right: Adjustment Panels ── */}
+          <div className="w-[230px] flex-shrink-0 flex flex-col gap-1.5 overflow-y-auto">
+
+            <PanelSection id="light" icon="🌞" label="Light">
+              <AdjSlider label="Exposure"   k="exposure"   min={-100} max={100} />
+              <AdjSlider label="Contrast"   k="contrast"   min={-100} max={100} />
+              <AdjSlider label="Highlights" k="highlights" min={-100} max={100} />
+              <AdjSlider label="Shadows"    k="shadows"    min={-100} max={100} />
+              <AdjSlider label="Whites"     k="whites"     min={-100} max={100} />
+              <AdjSlider label="Blacks"     k="blacks"     min={-100} max={100} />
+            </PanelSection>
+
+            <PanelSection id="color" icon="🎨" label="Color">
+              <AdjSlider label="Temperature" k="temperature" min={-100} max={100} />
+              <AdjSlider label="Tint"        k="tint"        min={-100} max={100} />
+              <AdjSlider label="Vibrance"    k="vibrance"    min={-100} max={100} />
+              <AdjSlider label="Saturation"  k="saturation"  min={-100} max={100} />
+              <AdjSlider label="Hue Shift"   k="hue"         min={-180} max={180} unit="°" />
+            </PanelSection>
+
+            <PanelSection id="hsl" icon="🌈" label="HSL / Color Mix">
+              {/* Color selector */}
+              <div className="grid grid-cols-4 gap-1">
+                {[
+                  { id:'red', color:'#ef4444' }, { id:'orange', color:'#f97316' },
+                  { id:'yellow', color:'#eab308' }, { id:'green', color:'#22c55e' },
+                  { id:'aqua', color:'#06b6d4' }, { id:'blue', color:'#3b82f6' },
+                  { id:'purple', color:'#a855f7' }, { id:'magenta', color:'#ec4899' },
+                ].map(c => (
+                  <button key={c.id} onClick={() => setHslColor(c.id)}
+                    className={`h-6 rounded border-2 transition-all ${hslColor === c.id ? 'border-white scale-110' : 'border-transparent opacity-60 hover:opacity-100'}`}
+                    style={{ background: c.color }} title={c.id} />
+                ))}
+              </div>
+              <p className="text-[10px] font-bold text-stone-500 uppercase tracking-wider capitalize">{hslColor}</p>
+              <HSLSlider label="Hue"        k="h" min={-50}  max={50} />
+              <HSLSlider label="Saturation" k="s" min={-100} max={100} />
+              <HSLSlider label="Luminance"  k="l" min={-100} max={100} />
+            </PanelSection>
+
+            <PanelSection id="detail" icon="🔍" label="Detail">
+              <AdjSlider label="Clarity"          k="clarity"         min={-100} max={100} />
+              <AdjSlider label="Sharpness"         k="sharpness"       min={0}    max={100} />
+              <AdjSlider label="Dehaze"            k="dehaze"          min={-100} max={100} />
+              <AdjSlider label="Noise Reduction"   k="noiseReduction"  min={0}    max={100} />
+            </PanelSection>
+
+            <PanelSection id="effects" icon="✨" label="Effects">
+              <AdjSlider label="Vignette" k="vignette" min={-50}  max={100} />
+              <AdjSlider label="Grain"    k="grain"    min={0}    max={100} />
+              <AdjSlider label="Glow"     k="glow"     min={0}    max={100} />
+              <AdjSlider label="Fade"     k="fade"     min={0}    max={100} />
+            </PanelSection>
+
+            <PanelSection id="geometry" icon="📐" label="Geometry">
+              {/* Crop */}
+              <div>
+                <p className="text-[10px] font-bold text-stone-500 uppercase tracking-wider mb-1.5">Crop</p>
+                <div className="grid grid-cols-4 gap-1">
+                  {[['Free','free'],['9:16','9:16'],['16:9','16:9'],['1:1','1:1'],['4:5','4:5'],['2:3','2:3'],['3:4','3:4'],['4:3','4:3']].map(([lbl,val]) => (
+                    <button key={val} onClick={() => setCropAspect(val)}
+                      className={`py-1 text-[9px] font-bold rounded border transition-colors ${cropAspect === val ? 'bg-rose-600 border-rose-600 text-white' : 'border-stone-700 text-stone-400 hover:border-rose-600'}`}>
+                      {lbl}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              {/* Rotate & Flip */}
+              <div>
+                <p className="text-[10px] font-bold text-stone-500 uppercase tracking-wider mb-1.5">Rotate & Flip</p>
+                <div className="grid grid-cols-2 gap-1.5">
+                  <button onClick={() => setRotation(r => r - 1)} className="py-1.5 rounded-lg border border-stone-700 text-stone-300 text-xs font-bold hover:bg-stone-700 transition-colors">↺ 90°</button>
+                  <button onClick={() => setRotation(r => r + 1)} className="py-1.5 rounded-lg border border-stone-700 text-stone-300 text-xs font-bold hover:bg-stone-700 transition-colors">↻ 90°</button>
+                  <button onClick={() => setFlipH(v => !v)} className={`py-1.5 rounded-lg border text-xs font-bold transition-colors ${flipH ? 'bg-rose-600/30 border-rose-600/50 text-rose-300' : 'border-stone-700 text-stone-300 hover:bg-stone-700'}`}>↔ Flip H</button>
+                  <button onClick={() => setFlipV(v => !v)} className={`py-1.5 rounded-lg border text-xs font-bold transition-colors ${flipV ? 'bg-rose-600/30 border-rose-600/50 text-rose-300' : 'border-stone-700 text-stone-300 hover:bg-stone-700'}`}>↕ Flip V</button>
+                </div>
+              </div>
+              {/* Fine rotation */}
+              <div>
+                <div className="flex justify-between items-center mb-1">
+                  <span className="text-xs font-medium text-stone-400">Straighten</span>
+                  <span className="text-xs font-mono text-stone-500">{fineRotation > 0 ? '+' : ''}{fineRotation}°</span>
+                </div>
+                <input type="range" min={-45} max={45} value={fineRotation}
+                  onChange={e => setFineRotation(Number(e.target.value))}
+                  className="w-full h-1 accent-rose-500 cursor-pointer" />
+              </div>
+            </PanelSection>
+
+            <PanelSection id="ai" icon="🤖" label="AI Tools">
+              <div className="space-y-2">
+                {[
+                  { icon:'✨', label:'Auto Enhance', desc:'One-tap smart edit', action: () => applyPreset(PHOTO_PRESETS_V2.find(p=>p.id==='auto-enhance')) },
+                  { icon:'😊', label:'Face Retouch', desc:'Skin smooth + glow', action: null },
+                  { icon:'🎯', label:'Spot Heal',    desc:'Remove blemishes', action: null },
+                  { icon:'🌅', label:'Sky Replace',  desc:'Swap background sky', action: null },
+                  { icon:'🔍', label:'AI Upscale',   desc:'4× resolution boost', action: null },
+                ].map(tool => (
+                  <button key={tool.label} onClick={tool.action || undefined}
+                    className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg border text-left transition-colors ${tool.action ? 'border-stone-700 hover:border-rose-600/50 hover:bg-stone-700/50 text-stone-300' : 'border-stone-800 text-stone-600 cursor-default'}`}>
+                    <span className="text-base">{tool.icon}</span>
+                    <div className="min-w-0">
+                      <p className="text-xs font-bold leading-none">{tool.label}</p>
+                      <p className="text-[10px] text-stone-500 mt-0.5">{tool.action ? tool.desc : 'Requires AI key'}</p>
+                    </div>
+                    {!tool.action && <span className="ml-auto text-[9px] font-bold bg-stone-700 text-stone-400 px-1.5 py-0.5 rounded">PRO</span>}
+                  </button>
+                ))}
+              </div>
+            </PanelSection>
+
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// --- Design Studio ---
+const DESIGN_FORMATS = [
+  { id:'ig-post',   label:'Instagram Post',   emoji:'📸', w:1080, h:1080  },
+  { id:'ig-story',  label:'IG Story / Reel',  emoji:'📱', w:1080, h:1920  },
+  { id:'yt-thumb',  label:'YouTube Thumb',    emoji:'▶️', w:1280, h:720   },
+  { id:'fb-cover',  label:'Facebook Cover',   emoji:'📘', w:820,  h:312   },
+  { id:'pin',       label:'Pinterest Pin',    emoji:'📌', w:1000, h:1500  },
+  { id:'twitter',   label:'Twitter Card',     emoji:'🐦', w:1200, h:628   },
+  { id:'quote',     label:'Quote Card',       emoji:'💬', w:1080, h:1080  },
+  { id:'bulletin',  label:'Bulletin / Flyer', emoji:'📄', w:794,  h:1123  },
+  { id:'logo',      label:'Logo / Icon',      emoji:'🎨', w:800,  h:800   },
+];
+const DESIGN_FONTS = ['Inter','Poppins','Playfair Display','Merriweather','Montserrat','Lato','Oswald','Raleway','Open Sans','Dancing Script','Bebas Neue','Cinzel','Cormorant Garamond','Nunito'];
+const DESIGN_COLORS_PALETTE = ['#ffffff','#000000','#1a1a2e','#16213e','#0f3460','#e94560','#533483','#05c46b','#ffd32a','#ff5e57','#0be881','#ff4d4d','#f7b731','#a29bfe','#fd79a8','#74b9ff','#55efc4','#fdcb6e','#e17055','#6c5ce7'];
+const DESIGN_TEMPLATES = [
+  { id:'quote-dark',    label:"Dark Quote",         fmt:'ig-post',
+    bg:{ type:'gradient', color:'#1a1a2e', gradient:{ type:'linear', colors:['#1a1a2e','#533483'], angle:135 }, image:null },
+    els:[ { id:'a', type:'text', x:80,  y:340, w:920, h:120, text:'"Enter your inspiring quote here"',    ff:'Playfair Display', fs:56, fw:'bold',   fi:'italic', ta:'center', col:'#ffffff', lh:1.4, ls:0, td:'none', op:100, rot:0 },
+          { id:'b', type:'text', x:80,  y:680, w:920, h:60,  text:'— Your Name',                         ff:'Lato',            fs:30, fw:'normal', fi:'normal', ta:'center', col:'#e94560', lh:1.3, ls:3, td:'none', op:100, rot:0 },
+          { id:'c', type:'shape', x:440, y:650, w:200, h:3, st:'rect', fill:'#e94560', stroke:'', sw:0, br:0, op:80, rot:0 } ] },
+  { id:'scripture',     label:"Scripture Story",    fmt:'ig-story',
+    bg:{ type:'gradient', color:'#0f3460', gradient:{ type:'linear', colors:['#1a1a4e','#0f3460','#e94560'], angle:160 }, image:null },
+    els:[ { id:'a', type:'text', x:60, y:680, w:960, h:300, text:'"For I know the plans I have for you, declares the LORD"', ff:'Playfair Display', fs:64, fw:'bold', fi:'italic', ta:'center', col:'#ffffff', lh:1.5, ls:0, td:'none', op:100, rot:0 },
+          { id:'b', type:'text', x:60, y:1080, w:960, h:80, text:'Jeremiah 29:11', ff:'Lato', fs:40, fw:'bold', fi:'normal', ta:'center', col:'#ffd32a', lh:1.3, ls:3, td:'none', op:100, rot:0 } ] },
+  { id:'yt-bold',       label:"Bold YT Thumb",      fmt:'yt-thumb',
+    bg:{ type:'gradient', color:'#1a1a2e', gradient:{ type:'linear', colors:['#1a1a2e','#533483'], angle:135 }, image:null },
+    els:[ { id:'a', type:'text', x:80,  y:180, w:800, h:220, text:'YOUR TITLE HERE',    ff:'Montserrat', fs:110, fw:'bold', fi:'normal', ta:'left', col:'#ffffff', lh:1.1, ls:-2, td:'none', op:100, rot:0 },
+          { id:'b', type:'text', x:80,  y:420, w:700, h:80,  text:'Watch until the end', ff:'Inter',     fs:44,  fw:'normal', fi:'normal', ta:'left', col:'#ffd32a', lh:1.3, ls:0, td:'none', op:100, rot:0 } ] },
+  { id:'announcement',  label:"Event Flyer",        fmt:'ig-post',
+    bg:{ type:'gradient', color:'#f7b731', gradient:{ type:'linear', colors:['#f7b731','#e94560'], angle:45 }, image:null },
+    els:[ { id:'a', type:'shape', x:50, y:50, w:980, h:980, st:'rect', fill:'#000000', stroke:'', sw:0, br:20, op:55, rot:0 },
+          { id:'b', type:'text', x:100, y:200, w:880, h:140, text:'JOIN US THIS\nSUNDAY',  ff:'Montserrat', fs:100, fw:'bold', fi:'normal', ta:'center', col:'#ffffff', lh:1.1, ls:4, td:'none', op:100, rot:0 },
+          { id:'c', type:'text', x:100, y:540, w:880, h:80,  text:'10:00 AM · Main Hall',  ff:'Lato',       fs:38,  fw:'bold', fi:'normal', ta:'center', col:'#ffd32a', lh:1.3, ls:2, td:'none', op:100, rot:0 },
+          { id:'d', type:'text', x:100, y:700, w:880, h:60,  text:'Church Name · City, ST', ff:'Lato',       fs:28,  fw:'normal', fi:'normal', ta:'center', col:'#ffffff', lh:1.3, ls:1, td:'none', op:80, rot:0 } ] },
+  { id:'faith-post',    label:"Faith Post",         fmt:'ig-post',
+    bg:{ type:'solid', color:'#1a1a2e', gradient:{ type:'linear', colors:['#1a1a2e','#e94560'], angle:135 }, image:null },
+    els:[ { id:'a', type:'shape', x:390, y:90, w:300, h:300, st:'circle', fill:'#e94560', stroke:'', sw:0, br:0, op:18, rot:0 },
+          { id:'b', type:'text', x:80, y:400, w:920, h:200, text:'✝  God Is Good\nAll The Time  ✝', ff:'Playfair Display', fs:72, fw:'bold', fi:'normal', ta:'center', col:'#ffffff', lh:1.4, ls:0, td:'none', op:100, rot:0 },
+          { id:'c', type:'text', x:80, y:700, w:920, h:60,  text:'Sarah Speaks Faith',               ff:'Lato',            fs:30, fw:'bold', fi:'normal', ta:'center', col:'#e94560', lh:1.3, ls:3, td:'none', op:100, rot:0 } ] },
+];
+
+const mkDesignEl = (type, extra = {}) => ({ id: Math.random().toString(36).slice(2,10), type, x:100, y:100, w:200, h:200, rot:0, op:100, locked:false, ...extra });
+
+const DesignStudio = () => {
+  const [fmt, setFmt] = useState(DESIGN_FORMATS[0]);
+  const [showFmtPicker, setShowFmtPicker] = useState(false);
+  const [els, setEls] = useState([]);
+  const [selId, setSelId] = useState(null);
+  const [editId, setEditId] = useState(null);
+  const [bg, setBg] = useState({ type:'gradient', color:'#1a1a2e', gradient:{ type:'linear', colors:['#1a1a2e','#533483'], angle:135 }, image:null });
+  const [leftTab, setLeftTab] = useState('add');
+  const [hist, setHist] = useState([{ els:[], bg:{ type:'gradient', color:'#1a1a2e', gradient:{ type:'linear', colors:['#1a1a2e','#533483'], angle:135 }, image:null } }]);
+  const [histIdx, setHistIdx] = useState(0);
+  const canvasRef = useRef(null);
+  const exportRef = useRef(null);
+  const imgRef = useRef(null);
+  const dragRef = useRef(null);
+
+  const PMAX = 480;
+  const scale = Math.min(PMAX / fmt.w, PMAX / fmt.h);
+  const pW = Math.round(fmt.w * scale);
+  const pH = Math.round(fmt.h * scale);
+  const sel = els.find(e => e.id === selId);
+
+  const push = useCallback((newEls, newBg) => {
+    const snap = { els: JSON.parse(JSON.stringify(newEls ?? els)), bg: newBg ?? bg };
+    setHist(h => { const n = h.slice(0, histIdx + 1); n.push(snap); return n; });
+    setHistIdx(i => i + 1);
+  }, [els, bg, histIdx]);
+
+  const undo = () => { if (histIdx > 0) { const s = hist[histIdx-1]; setEls(s.els); setBg(s.bg); setHistIdx(i=>i-1); setSelId(null); } };
+  const redo = () => { if (histIdx < hist.length-1) { const s = hist[histIdx+1]; setEls(s.els); setBg(s.bg); setHistIdx(i=>i+1); setSelId(null); } };
+
+  const updEl = (id, upd) => { const n = els.map(e => e.id===id ? {...e,...upd} : e); setEls(n); return n; };
+  const updElPush = (id, upd) => { const n = updEl(id, upd); push(n); };
+
+  const addText = (preset = {}) => {
+    const e = mkDesignEl('text', { x: Math.round(fmt.w/2-200), y: Math.round(fmt.h/2-40), w:400, h:80,
+      text:'Double-click to edit', ff:'Poppins', fs:48, fw:'bold', fi:'normal', ta:'center', col:'#ffffff', lh:1.3, ls:0, td:'none', ...preset });
+    const n = [...els, e]; setEls(n); setSelId(e.id); push(n);
+  };
+  const addShape = (st) => {
+    const e = mkDesignEl('shape', { x:Math.round(fmt.w/2-100), y:Math.round(fmt.h/2-100), w:200, h:200, st, fill:'#e94560', stroke:'', sw:0, br:0 });
+    const n = [...els, e]; setEls(n); setSelId(e.id); push(n);
+  };
+  const addImg = (src) => {
+    const e = mkDesignEl('image', { x:Math.round(fmt.w/2-150), y:Math.round(fmt.h/2-150), w:300, h:300, src, fit:'cover', br:0 });
+    const n = [...els, e]; setEls(n); setSelId(e.id); push(n);
+  };
+  const delSel = () => { if (!selId) return; const n = els.filter(e=>e.id!==selId); setEls(n); setSelId(null); push(n); };
+  const dupSel = () => { if (!sel) return; const e = {...JSON.parse(JSON.stringify(sel)), id:Math.random().toString(36).slice(2,10), x:sel.x+20, y:sel.y+20}; const n=[...els,e]; setEls(n); setSelId(e.id); push(n); };
+  const fwd = () => { const i=els.findIndex(e=>e.id===selId); if(i<els.length-1){const n=[...els];[n[i],n[i+1]]=[n[i+1],n[i]];setEls(n);push(n);} };
+  const bwd = () => { const i=els.findIndex(e=>e.id===selId); if(i>0){const n=[...els];[n[i],n[i-1]]=[n[i-1],n[i]];setEls(n);push(n);} };
+
+  const loadTemplate = (t) => {
+    const f = DESIGN_FORMATS.find(f=>f.id===t.fmt)||DESIGN_FORMATS[0];
+    setFmt(f); setBg({...t.bg}); setSelId(null);
+    const newEls = t.els.map(e => ({ ...e, id: Math.random().toString(36).slice(2,10) }));
+    setEls(newEls); push(newEls, t.bg);
+  };
+
+  const onElMouseDown = (e, el) => {
+    if (editId === el.id) return;
+    e.stopPropagation(); e.preventDefault();
+    setSelId(el.id);
+    const startX=e.clientX, startY=e.clientY, ox=el.x, oy=el.y;
+    dragRef.current = { id:el.id, moved:false };
+    const onMv = (me) => {
+      const dx=(me.clientX-startX)/scale, dy=(me.clientY-startY)/scale;
+      if(Math.abs(dx)>2||Math.abs(dy)>2) dragRef.current.moved=true;
+      setEls(prev=>prev.map(e2=>e2.id===el.id?{...e2,x:Math.max(0,Math.min(fmt.w-el.w,ox+dx)),y:Math.max(0,Math.min(fmt.h-el.h,oy+dy))}:e2));
+    };
+    const onUp = () => { if(dragRef.current?.moved) setEls(prev=>{push(prev);return prev;}); dragRef.current=null; window.removeEventListener('mousemove',onMv); window.removeEventListener('mouseup',onUp); };
+    window.addEventListener('mousemove',onMv); window.addEventListener('mouseup',onUp);
+  };
+
+  const onResizeDown = (e, el, handle) => {
+    e.stopPropagation(); e.preventDefault();
+    const startX=e.clientX, startY=e.clientY, oe={...el};
+    const onMv = (me) => {
+      const dx=(me.clientX-startX)/scale, dy=(me.clientY-startY)/scale;
+      let {x,y,w,h} = oe;
+      if(handle.includes('e')) w=Math.max(30,oe.w+dx);
+      if(handle.includes('w')) {x=oe.x+dx; w=Math.max(30,oe.w-dx);}
+      if(handle.includes('s')) h=Math.max(30,oe.h+dy);
+      if(handle.includes('n')) {y=oe.y+dy; h=Math.max(30,oe.h-dy);}
+      setEls(prev=>prev.map(e2=>e2.id===el.id?{...e2,x,y,w,h}:e2));
+    };
+    const onUp = () => { setEls(prev=>{push(prev);return prev;}); window.removeEventListener('mousemove',onMv); window.removeEventListener('mouseup',onUp); };
+    window.addEventListener('mousemove',onMv); window.addEventListener('mouseup',onUp);
+  };
+
+  useEffect(() => {
+    const onKey = (e) => {
+      if (editId) return;
+      if ((e.metaKey||e.ctrlKey)&&e.key==='z') { e.preventDefault(); undo(); }
+      if ((e.metaKey||e.ctrlKey)&&e.key==='y') { e.preventDefault(); redo(); }
+      if ((e.key==='Delete'||e.key==='Backspace')&&selId) { e.preventDefault(); delSel(); }
+      if ((e.metaKey||e.ctrlKey)&&e.key==='d') { e.preventDefault(); dupSel(); }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [selId, editId, histIdx, els]);
+
+  const getBgStyle = () => {
+    if (bg.type==='gradient'&&bg.gradient) {
+      const {type:gt,colors,angle} = bg.gradient;
+      return { background: gt==='radial' ? `radial-gradient(circle, ${colors.join(',')})` : `linear-gradient(${angle}deg, ${colors.join(',')})` };
+    }
+    if (bg.type==='image'&&bg.image) return { backgroundImage:`url(${bg.image})`, backgroundSize:'cover', backgroundPosition:'center' };
+    return { background: bg.color||'#1a1a2e' };
+  };
+
+  const exportPNG = async () => {
+    const canvas = exportRef.current;
+    canvas.width = fmt.w; canvas.height = fmt.h;
+    const ctx = canvas.getContext('2d');
+    // BG
+    if (bg.type==='gradient'&&bg.gradient) {
+      const {type:gt,colors,angle} = bg.gradient;
+      let g;
+      if(gt==='linear'){const r=(angle*Math.PI)/180; g=ctx.createLinearGradient(fmt.w/2-Math.cos(r)*fmt.w/2,fmt.h/2-Math.sin(r)*fmt.h/2,fmt.w/2+Math.cos(r)*fmt.w/2,fmt.h/2+Math.sin(r)*fmt.h/2);}
+      else g=ctx.createRadialGradient(fmt.w/2,fmt.h/2,0,fmt.w/2,fmt.h/2,Math.max(fmt.w,fmt.h)/2);
+      colors.forEach((c,i)=>g.addColorStop(i/(colors.length-1),c));
+      ctx.fillStyle=g; ctx.fillRect(0,0,fmt.w,fmt.h);
+    } else if(bg.type==='image'&&bg.image) {
+      const img=new Image(); await new Promise(r=>{img.onload=r;img.src=bg.image;}); ctx.drawImage(img,0,0,fmt.w,fmt.h);
+    } else { ctx.fillStyle=bg.color||'#1a1a2e'; ctx.fillRect(0,0,fmt.w,fmt.h); }
+    // Elements
+    for(const el of els){
+      ctx.save(); ctx.globalAlpha=(el.op??100)/100;
+      ctx.translate(el.x+el.w/2,el.y+el.h/2);
+      if(el.rot) ctx.rotate((el.rot*Math.PI)/180);
+      ctx.translate(-el.w/2,-el.h/2);
+      if(el.type==='shape'){
+        ctx.fillStyle=el.fill||'#e94560';
+        if(el.st==='circle'){ctx.beginPath();ctx.ellipse(el.w/2,el.h/2,el.w/2,el.h/2,0,0,Math.PI*2);ctx.fill();}
+        else if(el.st==='triangle'){ctx.beginPath();ctx.moveTo(el.w/2,0);ctx.lineTo(el.w,el.h);ctx.lineTo(0,el.h);ctx.closePath();ctx.fill();}
+        else if(el.br>0){ctx.beginPath();ctx.roundRect(0,0,el.w,el.h,el.br);ctx.fill();}
+        else ctx.fillRect(0,0,el.w,el.h);
+        if(el.sw>0){ctx.strokeStyle=el.stroke||'#fff';ctx.lineWidth=el.sw;ctx.stroke();}
+      } else if(el.type==='text'){
+        const fw=el.fw==='bold'?'bold':'normal', fi=el.fi==='italic'?'italic':'normal';
+        ctx.font=`${fi} ${fw} ${el.fs}px "${el.ff||'Inter'}", sans-serif`;
+        ctx.fillStyle=el.col||'#fff';
+        ctx.textAlign=el.ta||'center';
+        ctx.textBaseline='top';
+        const words=(el.text||'').split(' '), lineH=el.fs*(el.lh||1.3);
+        let lines=[],line='';
+        for(const w of words){const t=line?line+' '+w:w;if(ctx.measureText(t).width>el.w&&line){lines.push(line);line=w;}else line=t;}
+        if(line)lines.push(line);
+        const tx=el.ta==='center'?el.w/2:el.ta==='right'?el.w:0;
+        lines.forEach((ln,i)=>ctx.fillText(ln,tx,i*lineH));
+      } else if(el.type==='image'&&el.src){
+        const img=new Image(); await new Promise(r=>{img.onload=r;img.onerror=r;img.crossOrigin='anonymous';img.src=el.src;}); ctx.drawImage(img,0,0,el.w,el.h);
+      }
+      ctx.restore();
+    }
+    const a=document.createElement('a'); a.download=`design-${fmt.id}.png`; a.href=canvas.toDataURL('image/png'); a.click();
+  };
+
+  // Resize handles
+  const handles = [
+    {id:'nw',top:-4,left:-4,cursor:'nw-resize'},{id:'n',top:-4,left:'50%',cursor:'n-resize'},
+    {id:'ne',top:-4,right:-4,cursor:'ne-resize'},{id:'e',top:'50%',right:-4,cursor:'e-resize'},
+    {id:'se',bottom:-4,right:-4,cursor:'se-resize'},{id:'s',bottom:-4,left:'50%',cursor:'s-resize'},
+    {id:'sw',bottom:-4,left:-4,cursor:'sw-resize'},{id:'w',top:'50%',left:-4,cursor:'w-resize'},
+  ];
+
+  const renderEl = (el, idx) => {
+    const isSel = selId===el.id;
+    const isEdit = editId===el.id;
+    const baseStyle = {
+      position:'absolute', left:el.x*scale, top:el.y*scale,
+      width: el.type!=='text' ? el.w*scale : el.w*scale,
+      height: el.type==='shape'||el.type==='image' ? el.h*scale : undefined,
+      opacity:(el.op??100)/100,
+      transform:el.rot?`rotate(${el.rot}deg)`:undefined,
+      cursor:isEdit?'text':'move', userSelect:isEdit?'text':'none',
+      outline:isSel?'2px solid #e94560':'none', outlineOffset:2,
+      zIndex:idx+1,
+    };
+    return (
+      <div key={el.id} style={baseStyle} onMouseDown={e=>onElMouseDown(e,el)}
+        onDoubleClick={el.type==='text'?()=>setEditId(el.id):undefined}>
+        {el.type==='text' && (isEdit ? (
+          <div contentEditable suppressContentEditableWarning
+            style={{ fontFamily:`"${el.ff||'Inter'}",sans-serif`, fontSize:el.fs*scale, fontWeight:el.fw||'bold', fontStyle:el.fi||'normal', color:el.col||'#fff', textAlign:el.ta||'center', lineHeight:el.lh||1.3, letterSpacing:el.ls||0, textDecoration:el.td||'none', width:el.w*scale, minWidth:40, outline:'none', cursor:'text', whiteSpace:'pre-wrap', wordBreak:'break-word' }}
+            onBlur={e=>{ updElPush(el.id,{text:e.target.innerText}); setEditId(null); }}
+            dangerouslySetInnerHTML={{__html:el.text}} />
+        ) : (
+          <div style={{ fontFamily:`"${el.ff||'Inter'}",sans-serif`, fontSize:el.fs*scale, fontWeight:el.fw||'bold', fontStyle:el.fi||'normal', color:el.col||'#fff', textAlign:el.ta||'center', lineHeight:el.lh||1.3, letterSpacing:el.ls||0, textDecoration:el.td||'none', whiteSpace:'pre-wrap', wordBreak:'break-word', minWidth:40 }}>
+            {el.text||'Double-click to edit'}
+          </div>
+        ))}
+        {el.type==='shape' && (
+          <div style={{ width:'100%', height:'100%',
+            background:el.fill||'#e94560',
+            borderRadius:el.st==='circle'?'50%':el.br||0,
+            clipPath:el.st==='triangle'?'polygon(50% 0%,100% 100%,0% 100%)':undefined,
+            border:el.sw>0?`${el.sw}px solid ${el.stroke||'#fff'}`:undefined,
+          }} />
+        )}
+        {el.type==='image' && el.src && (
+          <div style={{ width:'100%', height:'100%', overflow:'hidden', borderRadius:el.br||0 }}>
+            <img src={el.src} alt="" style={{ width:'100%', height:'100%', objectFit:el.fit||'cover', display:'block' }} />
+          </div>
+        )}
+        {isSel && handles.map(h=>(
+          <div key={h.id} style={{ position:'absolute', width:8, height:8, background:'white', border:'2px solid #e94560', borderRadius:2, cursor:h.cursor, zIndex:1000,
+            transform:(h.id==='n'||h.id==='s')?'translateX(-50%)':(h.id==='e'||h.id==='w')?'translateY(-50%)':undefined,
+            ...Object.fromEntries(Object.entries(h).filter(([k])=>['top','bottom','left','right'].includes(k)))
+          }} onMouseDown={e=>onResizeDown(e,el,h.id)} />
+        ))}
+      </div>
+    );
+  };
+
+  const ColorSwatches = ({ val, onChange }) => (
+    <div className="space-y-1">
+      <div className="grid grid-cols-10 gap-0.5">
+        {DESIGN_COLORS_PALETTE.map(c=>(
+          <button key={c} onClick={()=>onChange(c)} style={{background:c}}
+            className={`h-5 rounded border-2 transition-all ${val===c?'border-white scale-110':'border-transparent'}`} />
+        ))}
+      </div>
+      <div className="flex items-center gap-2">
+        <span className="text-[10px] text-stone-500">Custom:</span>
+        <input type="color" value={val||'#ffffff'} onChange={e=>onChange(e.target.value)} className="h-5 w-14 rounded cursor-pointer border-0 bg-transparent" />
+      </div>
+    </div>
+  );
+
+  const PropSlider = ({ label, val, min, max, unit='', onChange }) => (
+    <div>
+      <div className="flex justify-between mb-0.5">
+        <span className="text-[10px] text-stone-400">{label}</span>
+        <span className="text-[10px] font-mono text-stone-500">{Math.round(val)}{unit}</span>
+      </div>
+      <input type="range" min={min} max={max} value={val} onChange={e=>onChange(Number(e.target.value))} className="w-full h-1 accent-rose-500 cursor-pointer" />
     </div>
   );
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6">
-      <canvas ref={canvasRef} className="hidden" />
+    <div className="flex gap-3 h-[calc(100vh-120px)]">
+      <canvas ref={exportRef} className="hidden" />
+      <input ref={imgRef} type="file" accept="image/*" className="hidden"
+        onChange={e=>{const f=e.target.files?.[0];if(f){addImg(URL.createObjectURL(f));e.target.value='';}}} />
 
-      {!imgSrc ? (
-        <div onClick={() => fileRef.current?.click()} className="border-2 border-dashed border-rose-200 dark:border-stone-600 rounded-3xl p-16 text-center cursor-pointer hover:border-rose-400 dark:hover:border-rose-600 hover:bg-rose-50/30 dark:hover:bg-stone-800/50 transition-all">
-          <ImageIcon className="mx-auto text-rose-300 dark:text-rose-600/50 mb-4" size={48} />
-          <p className="text-lg font-semibold text-stone-700 dark:text-stone-300">Upload a photo to edit</p>
-          <p className="text-sm text-stone-400 mt-1">JPG, PNG, HEIC, WebP</p>
-          <input ref={fileRef} type="file" accept="image/*" onChange={handleFile} className="hidden" />
+      {/* ── Left Panel ── */}
+      <div className="w-[180px] flex-shrink-0 flex flex-col gap-2">
+        <div className="flex gap-0.5 bg-stone-800 rounded-lg p-0.5 border border-stone-700">
+          {[['add','Add'],['templates','Templates'],['bg','BG']].map(([id,lbl])=>(
+            <button key={id} onClick={()=>setLeftTab(id)}
+              className={`flex-1 py-1 rounded text-[10px] font-bold transition-colors ${leftTab===id?'bg-rose-600 text-white':'text-stone-400 hover:text-stone-200'}`}>{lbl}</button>
+          ))}
         </div>
-      ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6">
-          {/* Canvas preview */}
-          <div className="bg-stone-900 rounded-3xl overflow-hidden flex items-center justify-center min-h-64 relative">
-            <img
-              ref={imgRef}
-              src={imgSrc}
-              alt="editing"
-              crossOrigin="anonymous"
-              style={{ filter: cssFilter, transform: `rotate(${rotation}deg)`, maxWidth: '100%', maxHeight: '70vh', display: 'block', transition: 'filter 0.15s, transform 0.2s' }}
-              className="object-contain"
-            />
-            <button onClick={() => { setImgSrc(null); setRotation(0); setAdj({ brightness: 100, contrast: 100, saturation: 100, warmth: 0, sharpness: 0 }); setActivePreset('natural'); }} className="absolute top-3 right-3 p-2 bg-black/60 hover:bg-black/80 rounded-full text-white">
-              <X size={16} />
-            </button>
-          </div>
+        <div className="flex-1 overflow-y-auto space-y-2">
+          {leftTab==='add' && (
+            <>
+              <div>
+                <p className="text-[10px] font-bold text-stone-500 uppercase px-1 mb-1">Text</p>
+                <div className="space-y-0.5">
+                  {[{label:'Heading',fs:72,fw:'bold'},{label:'Subheading',fs:40,fw:'bold'},{label:'Body',fs:24,fw:'normal'},{label:'Scripture',fs:28,fw:'bold',fi:'italic',ff:'Playfair Display'},{label:'Label / Tag',fs:18,fw:'bold',ls:3}].map(p=>(
+                    <button key={p.label} onClick={()=>addText({text:p.label,...p})}
+                      className="w-full text-left px-3 py-1.5 rounded border border-stone-700/40 text-stone-400 text-[11px] hover:bg-stone-700/50 hover:text-stone-200 transition-colors">
+                      {p.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <p className="text-[10px] font-bold text-stone-500 uppercase px-1 mb-1">Shapes</p>
+                <div className="grid grid-cols-3 gap-1">
+                  {[{st:'rect',icon:'▭'},{st:'circle',icon:'●'},{st:'triangle',icon:'▲'}].map(s=>(
+                    <button key={s.st} onClick={()=>addShape(s.st)}
+                      className="aspect-square rounded-lg border border-stone-700 text-stone-400 text-xl hover:bg-stone-700 hover:border-rose-600/50 transition-colors flex items-center justify-center">{s.icon}</button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <p className="text-[10px] font-bold text-stone-500 uppercase px-1 mb-1">Image</p>
+                <button onClick={()=>imgRef.current?.click()}
+                  className="w-full py-2 px-3 rounded-lg border border-stone-700 text-stone-300 text-xs font-bold hover:bg-stone-700 hover:border-rose-600/50 transition-colors flex items-center gap-2">
+                  <Upload size={12} /> Upload Image
+                </button>
+              </div>
+            </>
+          )}
+          {leftTab==='templates' && (
+            <div className="space-y-1">
+              {DESIGN_TEMPLATES.map(t=>{
+                const tbg = t.bg.type==='gradient'&&t.bg.gradient ? `linear-gradient(${t.bg.gradient.angle||135}deg,${t.bg.gradient.colors.join(',')})` : t.bg.color;
+                return (
+                  <button key={t.id} onClick={()=>loadTemplate(t)}
+                    className="w-full flex items-center gap-2 p-2 rounded-lg border border-stone-700 hover:border-rose-600/50 hover:bg-stone-700/50 transition-colors text-left">
+                    <div className="w-10 h-10 rounded flex-shrink-0" style={{background:tbg}} />
+                    <div>
+                      <p className="text-[11px] font-bold text-stone-300">{t.label}</p>
+                      <p className="text-[9px] text-stone-500">{DESIGN_FORMATS.find(f=>f.id===t.fmt)?.label}</p>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+          {leftTab==='bg' && (
+            <div className="space-y-3 px-1">
+              <div className="grid grid-cols-3 gap-1">
+                {[['solid','Solid'],['gradient','Gradient'],['image','Image']].map(([id,lbl])=>(
+                  <button key={id} onClick={()=>setBg(b=>({...b,type:id}))}
+                    className={`py-1.5 rounded text-[10px] font-bold border transition-colors ${bg.type===id?'bg-rose-600 border-rose-600 text-white':'border-stone-700 text-stone-400 hover:border-rose-600'}`}>{lbl}</button>
+                ))}
+              </div>
+              {bg.type==='solid' && (
+                <>
+                  <ColorSwatches val={bg.color} onChange={c=>setBg(b=>({...b,color:c}))} />
+                </>
+              )}
+              {bg.type==='gradient' && (
+                <div className="space-y-2">
+                  <div className="h-10 rounded-lg" style={getBgStyle()} />
+                  <div className="grid grid-cols-2 gap-1">
+                    {[{c:['#1a1a2e','#533483'],a:135,lbl:'Midnight'},{c:['#0f3460','#e94560'],a:135,lbl:'Crimson'},{c:['#f7b731','#e17055'],a:90,lbl:'Golden'},{c:['#0f3460','#05c46b'],a:135,lbl:'Ocean'},{c:['#000000','#434343'],a:180,lbl:'Minimal'},{c:['#e94560','#f7b731'],a:90,lbl:'Fire'},{c:['#1a1a4e','#e94560'],a:160,lbl:'Faith'},{c:['#533483','#a78bfa'],a:135,lbl:'Purple'}].map(g=>(
+                      <button key={g.lbl} onClick={()=>setBg(b=>({...b,type:'gradient',gradient:{type:'linear',colors:g.c,angle:g.a}}))}
+                        className="h-7 rounded border border-stone-700 text-[9px] text-white font-bold"
+                        style={{background:`linear-gradient(${g.a}deg,${g.c.join(',')})`}}>{g.lbl}</button>
+                    ))}
+                  </div>
+                  <PropSlider label="Angle" val={bg.gradient?.angle||135} min={0} max={360} unit="°" onChange={v=>setBg(b=>({...b,gradient:{...b.gradient,angle:v}}))} />
+                </div>
+              )}
+              {bg.type==='image' && (
+                <button onClick={()=>{const i=document.createElement('input');i.type='file';i.accept='image/*';i.onchange=e=>{const f=e.target.files?.[0];if(f)setBg(b=>({...b,type:'image',image:URL.createObjectURL(f)}));};i.click();}}
+                  className="w-full py-2 rounded border border-dashed border-stone-600 text-stone-400 text-xs text-center hover:border-rose-600 transition-colors">
+                  Upload BG Image
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
 
-          {/* Controls panel */}
-          <div className="space-y-5">
-            {/* Presets */}
-            <div>
-              <p className="text-xs font-bold text-stone-500 dark:text-stone-400 uppercase tracking-wider mb-2">Presets</p>
-              <div className="grid grid-cols-3 gap-1.5">
-                {PHOTO_PRESETS.map(p => (
-                  <button key={p.id} onClick={() => applyPreset(p)} className={`py-2 rounded-xl text-[11px] font-bold border transition-colors ${activePreset === p.id ? 'bg-rose-500 border-rose-500 text-white' : 'bg-stone-100 dark:bg-stone-800 border-stone-200 dark:border-stone-700 text-stone-600 dark:text-stone-300 hover:border-rose-300 dark:hover:border-rose-700'}`}>
-                    {p.label}
+      {/* ── Center Canvas ── */}
+      <div className="flex-1 flex flex-col gap-2 min-w-0">
+        {/* Top toolbar */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <div className="relative">
+            <button onClick={()=>setShowFmtPicker(v=>!v)}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 bg-stone-800 border border-stone-700 rounded text-xs font-bold text-stone-300 hover:border-rose-600/50 transition-colors">
+              <span>{fmt.emoji}</span><span>{fmt.label}</span><span className="text-stone-500 text-[10px]">{fmt.w}×{fmt.h}</span><span className="text-stone-500">▾</span>
+            </button>
+            {showFmtPicker && (
+              <div className="absolute top-full left-0 mt-1 bg-stone-800 border border-stone-700 rounded-xl shadow-xl z-50 w-52 p-1 max-h-64 overflow-y-auto">
+                {DESIGN_FORMATS.map(f=>(
+                  <button key={f.id} onClick={()=>{setFmt(f);setShowFmtPicker(false);}}
+                    className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs transition-colors ${fmt.id===f.id?'bg-rose-600/30 text-rose-300':'text-stone-300 hover:bg-stone-700'}`}>
+                    <span>{f.emoji}</span><span className="flex-1">{f.label}</span><span className="text-stone-500">{f.w}×{f.h}</span>
                   </button>
                 ))}
               </div>
-            </div>
-
-            {/* Adjustments */}
-            <div className="space-y-3">
-              <p className="text-xs font-bold text-stone-500 dark:text-stone-400 uppercase tracking-wider">Adjustments</p>
-              <Slider label="Brightness" k="brightness" min={50} max={150} unit="%" />
-              <Slider label="Contrast" k="contrast" min={50} max={200} unit="%" />
-              <Slider label="Saturation" k="saturation" min={0} max={200} unit="%" />
-              <Slider label="Warmth" k="warmth" min={-50} max={50} unit="" />
-            </div>
-
-            {/* Rotate */}
-            <div>
-              <p className="text-xs font-bold text-stone-500 dark:text-stone-400 uppercase tracking-wider mb-2">Rotate</p>
-              <div className="flex gap-2">
-                <button onClick={() => setRotation(r => r - 90)} className="flex-1 py-2 rounded-xl text-sm font-bold bg-stone-100 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 text-stone-600 dark:text-stone-300 hover:bg-rose-50 dark:hover:bg-stone-700 transition-colors">
-                  ↺ Left
-                </button>
-                <button onClick={() => setRotation(r => r + 90)} className="flex-1 py-2 rounded-xl text-sm font-bold bg-stone-100 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 text-stone-600 dark:text-stone-300 hover:bg-rose-50 dark:hover:bg-stone-700 transition-colors">
-                  ↻ Right
-                </button>
-              </div>
-            </div>
-
-            {/* Actions */}
-            <div className="flex gap-2 pt-2">
-              <button onClick={() => fileRef.current?.click()} className="flex-1 py-3 rounded-2xl text-sm font-bold bg-stone-100 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 text-stone-700 dark:text-stone-300 hover:bg-stone-200 dark:hover:bg-stone-700 transition-colors">
-                Change photo
-              </button>
-              <button onClick={downloadPhoto} className="flex-1 py-3 rounded-2xl text-sm font-bold bg-rose-500 hover:bg-rose-600 text-white transition-colors flex items-center justify-center gap-2">
-                <Download size={16} /> Save
-              </button>
-            </div>
-            <input ref={fileRef} type="file" accept="image/*" onChange={handleFile} className="hidden" />
+            )}
+          </div>
+          <div className="flex items-center gap-1">
+            <button onClick={undo} disabled={histIdx===0} className="p-1.5 rounded bg-stone-800 border border-stone-700 text-stone-400 hover:text-white disabled:opacity-30 transition-colors"><RotateCcw size={13}/></button>
+            <button onClick={redo} disabled={histIdx>=hist.length-1} className="p-1.5 rounded bg-stone-800 border border-stone-700 text-stone-400 hover:text-white disabled:opacity-30 transition-colors"><RotateCcw size={13} className="scale-x-[-1]"/></button>
+          </div>
+          <button onClick={()=>{setEls([]);setSelId(null);push([]);}} className="px-2.5 py-1.5 rounded bg-stone-800 border border-stone-700 text-xs font-bold text-stone-400 hover:text-rose-400 transition-colors">Clear</button>
+          <div className="flex items-center gap-1 px-2 py-1.5 bg-stone-800 rounded border border-stone-700 text-xs text-stone-400">
+            <Layers size={11}/><span>{els.length} layers</span>
+          </div>
+          <button onClick={exportPNG} className="ml-auto flex items-center gap-1.5 px-3 py-1.5 rounded bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold transition-colors">
+            <Download size={12}/> Export PNG
+          </button>
+        </div>
+        {/* Canvas */}
+        <div className="flex-1 bg-stone-950 rounded-2xl border border-stone-800 flex items-center justify-center overflow-hidden">
+          <div ref={canvasRef} style={{width:pW,height:pH,position:'relative',overflow:'hidden',flexShrink:0}}
+            onClick={e=>{if(e.target===canvasRef.current||(e.target.dataset&&e.target.dataset.bg)){setSelId(null);setEditId(null);}}}>
+            <div style={{position:'absolute',inset:0,...getBgStyle()}} data-bg="1"
+              onClick={()=>{setSelId(null);setEditId(null);}} />
+            {els.map((el,i)=>renderEl(el,i))}
           </div>
         </div>
-      )}
+      </div>
+
+      {/* ── Right Properties ── */}
+      <div className="w-[220px] flex-shrink-0 bg-stone-800/60 border border-stone-700 rounded-xl overflow-y-auto">
+        {!sel ? (
+          <div className="flex flex-col items-center justify-center h-full gap-3 p-4 text-stone-600">
+            <Palette size={32}/>
+            <p className="text-xs text-center text-stone-500">Select an element<br/>to edit its properties</p>
+            <p className="text-[10px] text-stone-600 text-center">Double-click text to edit<br/>Del key to delete</p>
+          </div>
+        ) : (
+          <div className="p-3 space-y-3">
+            {/* Position & Size */}
+            <div>
+              <p className="text-[10px] font-bold text-stone-500 uppercase tracking-wider mb-2">Position & Size</p>
+              <div className="grid grid-cols-2 gap-1.5">
+                {[['X','x'],['Y','y'],['W','w'],['H','h']].map(([lbl,k])=>(
+                  <div key={k} className="flex items-center gap-1">
+                    <span className="text-[10px] text-stone-500 w-3">{lbl}</span>
+                    <input type="number" value={Math.round(sel[k])} onChange={e=>updElPush(sel.id,{[k]:Number(e.target.value)})}
+                      className="flex-1 bg-stone-700 border border-stone-600 rounded text-xs text-stone-200 px-1.5 py-1 w-0 min-w-0" />
+                  </div>
+                ))}
+              </div>
+            </div>
+            <PropSlider label="Rotation" val={sel.rot||0} min={-180} max={180} unit="°" onChange={v=>updEl(sel.id,{rot:v})} />
+            <PropSlider label="Opacity" val={sel.op??100} min={0} max={100} unit="%" onChange={v=>updEl(sel.id,{op:v})} />
+
+            {/* TEXT props */}
+            {sel.type==='text' && (<>
+              <div className="border-t border-stone-700 pt-3">
+                <p className="text-[10px] font-bold text-stone-500 uppercase tracking-wider mb-2">Text</p>
+                <textarea value={sel.text||''} rows={3}
+                  onChange={e=>updEl(sel.id,{text:e.target.value})}
+                  onBlur={()=>push(els)}
+                  className="w-full bg-stone-700 border border-stone-600 rounded text-xs text-stone-200 p-2 resize-none focus:outline-none focus:border-rose-500" />
+              </div>
+              <div>
+                <p className="text-[10px] text-stone-500 mb-1">Font Family</p>
+                <select value={sel.ff||'Inter'} onChange={e=>updElPush(sel.id,{ff:e.target.value})}
+                  className="w-full bg-stone-700 border border-stone-600 rounded text-xs text-stone-200 px-2 py-1">
+                  {DESIGN_FONTS.map(f=><option key={f} value={f}>{f}</option>)}
+                </select>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <p className="text-[10px] text-stone-500 mb-0.5">Size</p>
+                  <input type="number" value={sel.fs||48} onChange={e=>updElPush(sel.id,{fs:Number(e.target.value)})}
+                    className="w-full bg-stone-700 border border-stone-600 rounded text-xs text-stone-200 px-2 py-1" />
+                </div>
+                <div>
+                  <p className="text-[10px] text-stone-500 mb-0.5">Align</p>
+                  <div className="flex gap-0.5">
+                    {['left','center','right'].map(a=>(
+                      <button key={a} onClick={()=>updElPush(sel.id,{ta:a})}
+                        className={`flex-1 py-1 rounded border text-xs transition-colors ${sel.ta===a?'bg-rose-600 border-rose-600 text-white':'border-stone-700 text-stone-400 hover:bg-stone-700'}`}>
+                        {a==='left'?'⟵':a==='center'?'↔':'⟶'}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              <div className="flex gap-1">
+                <button onClick={()=>updElPush(sel.id,{fw:sel.fw==='bold'?'normal':'bold'})}
+                  className={`flex-1 py-1.5 rounded border text-xs font-bold transition-colors ${sel.fw==='bold'?'bg-rose-600 border-rose-600 text-white':'border-stone-700 text-stone-300 hover:bg-stone-700'}`}>B</button>
+                <button onClick={()=>updElPush(sel.id,{fi:sel.fi==='italic'?'normal':'italic'})}
+                  className={`flex-1 py-1.5 rounded border text-xs italic transition-colors ${sel.fi==='italic'?'bg-rose-600 border-rose-600 text-white':'border-stone-700 text-stone-300 hover:bg-stone-700'}`}>I</button>
+                <button onClick={()=>updElPush(sel.id,{td:sel.td==='underline'?'none':'underline'})}
+                  className={`flex-1 py-1.5 rounded border text-xs underline transition-colors ${sel.td==='underline'?'bg-rose-600 border-rose-600 text-white':'border-stone-700 text-stone-300 hover:bg-stone-700'}`}>U</button>
+              </div>
+              <div>
+                <p className="text-[10px] text-stone-500 mb-1">Text Color</p>
+                <ColorSwatches val={sel.col||'#ffffff'} onChange={c=>updElPush(sel.id,{col:c})} />
+              </div>
+              <PropSlider label="Line Height" val={sel.lh||1.3} min={0.8} max={3} unit="" onChange={v=>updEl(sel.id,{lh:Math.round(v*10)/10})} />
+              <PropSlider label="Letter Spacing" val={sel.ls||0} min={-5} max={20} unit="px" onChange={v=>updEl(sel.id,{ls:v})} />
+            </>)}
+
+            {/* SHAPE props */}
+            {sel.type==='shape' && (<>
+              <div className="border-t border-stone-700 pt-3">
+                <p className="text-[10px] font-bold text-stone-500 uppercase tracking-wider mb-2">Shape Style</p>
+                <div>
+                  <p className="text-[10px] text-stone-500 mb-1">Fill</p>
+                  <ColorSwatches val={sel.fill||'#e94560'} onChange={c=>updElPush(sel.id,{fill:c})} />
+                </div>
+              </div>
+              {sel.st==='rect' && <PropSlider label="Corner Radius" val={sel.br||0} min={0} max={300} onChange={v=>updEl(sel.id,{br:v})} />}
+              <PropSlider label="Stroke Width" val={sel.sw||0} min={0} max={30} unit="px" onChange={v=>updEl(sel.id,{sw:v})} />
+              {sel.sw>0 && (
+                <div>
+                  <p className="text-[10px] text-stone-500 mb-1">Stroke Color</p>
+                  <ColorSwatches val={sel.stroke||'#ffffff'} onChange={c=>updElPush(sel.id,{stroke:c})} />
+                </div>
+              )}
+            </>)}
+
+            {/* IMAGE props */}
+            {sel.type==='image' && (<>
+              <div className="border-t border-stone-700 pt-3">
+                <p className="text-[10px] font-bold text-stone-500 uppercase tracking-wider mb-2">Image</p>
+                <div className="flex gap-1">
+                  {['cover','contain','fill'].map(f=>(
+                    <button key={f} onClick={()=>updElPush(sel.id,{fit:f})}
+                      className={`flex-1 py-1 rounded text-[10px] border capitalize transition-colors ${sel.fit===f?'bg-rose-600 border-rose-600 text-white':'border-stone-700 text-stone-400 hover:bg-stone-700'}`}>{f}</button>
+                  ))}
+                </div>
+                <PropSlider label="Corner Radius" val={sel.br||0} min={0} max={300} onChange={v=>updEl(sel.id,{br:v})} />
+              </div>
+            </>)}
+
+            {/* Actions */}
+            <div className="border-t border-stone-700 pt-3 grid grid-cols-2 gap-1.5">
+              <button onClick={dupSel} className="py-1.5 rounded border border-stone-700 text-[11px] text-stone-300 hover:bg-stone-700 transition-colors">⎘ Duplicate</button>
+              <button onClick={fwd} className="py-1.5 rounded border border-stone-700 text-[11px] text-stone-300 hover:bg-stone-700 transition-colors">↑ Forward</button>
+              <button onClick={bwd} className="py-1.5 rounded border border-stone-700 text-[11px] text-stone-300 hover:bg-stone-700 transition-colors">↓ Backward</button>
+              <button onClick={delSel} className="py-1.5 rounded border border-red-800/50 text-[11px] text-red-400 hover:bg-red-900/30 transition-colors">🗑 Delete</button>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 };
