@@ -3822,7 +3822,7 @@ const ClassicEditor = () => {
                   </div>
                   <label className="cursor-pointer flex items-center gap-2 text-xs text-rose-400 font-bold hover:text-rose-300 transition-colors">
                     <Plus size={14} /> Add more clips
-                    <input type="file" accept="video/*" multiple className="hidden" onChange={e => { Array.from(e.target.files || []).forEach(f => addAsset(f, 'video')); e.target.value = ''; }} />
+                    <input type="file" accept="video/*" multiple className="hidden" onChange={e => { Array.from(e.target.files || []).forEach(f => { const id = addAsset(f, 'video'); if (id) setTimeout(() => insertClipAtPlayhead(0, id), 80); }); e.target.value = ''; }} />
                   </label>
                 </>
               ) : (
@@ -3845,7 +3845,7 @@ const ClassicEditor = () => {
                       <span key={f} className="text-[10px] font-bold text-stone-600 bg-stone-800 border border-stone-700 rounded-md px-2 py-0.5">{f}</span>
                     ))}
                   </div>
-                  <input type="file" accept="video/*" multiple className="hidden" onChange={e => { Array.from(e.target.files || []).forEach(f => { const id = addAsset(f, 'video'); if (id && !selectedVideo) setSelectedVideoId(id); }); e.target.value = ''; }} />
+                  <input type="file" accept="video/*" multiple className="hidden" onChange={e => { Array.from(e.target.files || []).forEach(f => { const id = addAsset(f, 'video'); if (id) { if (!selectedVideo) setSelectedVideoId(id); setTimeout(() => insertClipAtPlayhead(0, id), 80); } }); e.target.value = ''; }} />
                 </label>
               )}
             </div>
