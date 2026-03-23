@@ -2693,12 +2693,20 @@ const ClassicEditor = () => {
     const d = e.target.duration;
     if (isFinite(d) && d > 0) {
       setDuration(d);
-      if (!hasLayeredClips) {
+      const state = useEditorStore.getState();
+      const hasLayered = state.timelineTracks?.some(t => (t.clips || []).length > 0);
+      if (hasLayered) {
+        // Seek video to correct position within the newly loaded NLE clip
+        const mainTrack = state.timelineTracks?.find(tr => tr.label === 'Main');
+        const ph = playheadRef.current;
+        const clip = (mainTrack?.clips || []).find(c => ph >= c.startOffset && ph < c.startOffset + (c.duration || 0));
+        e.target.currentTime = clip ? Math.max(0, (clip.trimStart ?? 0) + (ph - clip.startOffset)) : 0;
+      } else {
         setMainSegments([{ id: 'seg0', start: 0, end: d, transition: 'cut' }]);
         setAudioSegments([{ id: 'a0', start: 0, end: d }]);
         setPlayhead(0);
+        e.target.currentTime = 0;
       }
-      e.target.currentTime = 0;
     }
   };
   // Sequential (ripple) timeline: segments placed one after another, no gaps. Delete = auto-close.
@@ -2833,42 +2841,57 @@ const ClassicEditor = () => {
 
   const onVideoTimeUpdate = (e) => {
     try {
-      // While user is scrubbing, don't let the video's lagging currentTime snap the playhead back
       if (draggingPlayheadRef.current) return;
-
       const v = e.target;
       const sourceT = v.currentTime;
+
+      // NLE mode: map source time back to timeline position via active clip
+      const state = useEditorStore.getState();
+      const hasLayered = state.timelineTracks?.some(t => (t.clips || []).length > 0);
+      if (hasLayered) {
+        const mainTrack = state.timelineTracks?.find(tr => tr.label === 'Main');
+        const clips = (mainTrack?.clips || []).sort((a, b) => a.startOffset - b.startOffset);
+        const clip = clips.find(c => {
+          const rel = sourceT - (c.trimStart ?? 0);
+          return rel >= 0 && rel < (c.duration || 0);
+        });
+        if (clip) {
+          const tl = clip.startOffset + (sourceT - (clip.trimStart ?? 0));
+          setPlayhead(tl);
+          // If we've reached the end of this clip, jump to next
+          if (sourceT >= (clip.trimStart ?? 0) + (clip.duration || 0) - 0.08) {
+            const nextClip = clips.find(c2 => c2.startOffset > clip.startOffset);
+            if (nextClip) {
+              v.currentTime = nextClip.trimStart ?? 0;
+            } else {
+              v.pause();
+            }
+          }
+        } else {
+          v.pause();
+        }
+        return;
+      }
+
+      // Legacy mode
       const segs = mainSegmentsRef.current || [];
       const ranges = getMainTimelineRanges(segs);
       const tlDuration = segs.reduce((s, seg) => s + (seg && typeof seg?.end === 'number' && typeof seg?.start === 'number' ? seg.end - seg.start : 0), 0);
-
       const eps = 0.001;
       const inSeg = ranges.find(r => r?.seg && sourceT >= r.seg.start - eps && sourceT < r.seg.end + eps);
-    if (inSeg) {
-      const ph = inSeg.tlStart + (sourceT - inSeg.seg.start);
-      setPlayhead(ph);
-      const audioRanges = getAudioTimelineRanges(audioSegmentsRef.current);
-      const inAudioGap = audioRanges.length > 0 && !audioRanges.find(r => ph >= r.tlStart && ph < r.tlEnd);
-      const shouldMute = userMuted || inAudioGap;
-      if (v.muted !== shouldMute) v.muted = shouldMute;
-      return;
-    }
-
-    // Past end of timeline — pause
-    if (sourceT >= tlDuration || ranges.length === 0) {
-      v.pause();
-      setPlayhead(tlDuration);
-      return;
-    }
-
-    // In a "gap" (e.g. between segments) — seek to next segment
-    const next = ranges.find(r => r?.seg && r.seg.start > sourceT);
-    if (next?.seg) {
-      v.currentTime = next.seg.start;
-    }
-    } catch (_) {
-      // Avoid crashing on malformed segment data
-    }
+      if (inSeg) {
+        const ph = inSeg.tlStart + (sourceT - inSeg.seg.start);
+        setPlayhead(ph);
+        const audioRanges = getAudioTimelineRanges(audioSegmentsRef.current);
+        const inAudioGap = audioRanges.length > 0 && !audioRanges.find(r => ph >= r.tlStart && ph < r.tlEnd);
+        const shouldMute = userMuted || inAudioGap;
+        if (v.muted !== shouldMute) v.muted = shouldMute;
+        return;
+      }
+      if (sourceT >= tlDuration || ranges.length === 0) { v.pause(); setPlayhead(tlDuration); return; }
+      const next = ranges.find(r => r?.seg && r.seg.start > sourceT);
+      if (next?.seg) v.currentTime = next.seg.start;
+    } catch (_) {}
   };
 
   const seekTo = (timelineT) => {
@@ -2876,6 +2899,19 @@ const ClassicEditor = () => {
     if (!v) return;
     const t = Math.max(0, Math.min(effectiveDuration, timelineT));
     setPlayhead(t);
+    // NLE mode: convert timeline position to clip source time
+    const state = useEditorStore.getState();
+    const hasLayered = state.timelineTracks?.some(tr => (tr.clips || []).length > 0);
+    if (hasLayered) {
+      const mainTrack = state.timelineTracks?.find(tr => tr.label === 'Main');
+      const clip = (mainTrack?.clips || []).find(c => t >= c.startOffset && t < c.startOffset + (c.duration || 0));
+      if (clip) {
+        const sourceTime = (clip.trimStart ?? 0) + (t - clip.startOffset);
+        if (Math.abs(v.currentTime - sourceTime) > 0.05) v.currentTime = Math.max(0, sourceTime);
+      }
+      return;
+    }
+    // Legacy mode
     const sourceTime = timelineToSource(t);
     const t0 = clipIn ?? 0;
     const t1 = clipOut ?? duration;
