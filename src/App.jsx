@@ -157,8 +157,24 @@ const App = () => {
 
   const cycleTheme = () => setTheme(t => t === 'light' ? 'dark' : t === 'dark' ? 'system' : 'light');
 
-  // Restore uploaded videos/audio/images from IndexedDB on every page load
-  useEffect(() => { initAssetsFromIDB?.(); }, []);
+  // Restore uploaded videos/audio/images from IndexedDB on every page load,
+  // then auto-place any videos on the NLE timeline if it's empty
+  useEffect(() => {
+    if (!initAssetsFromIDB) return;
+    initAssetsFromIDB().then?.(() => {
+      // After IDB restore, if timeline is empty but we have videos, place them
+      setTimeout(() => {
+        const state = useEditorStore.getState();
+        const hasClips = state.timelineTracks?.some(t => (t.clips || []).length > 0);
+        if (!hasClips && state.assets?.length > 0) {
+          const vids = state.assets.filter(a => a.type === 'video');
+          vids.forEach((v, i) => {
+            state.insertClipAtPlayhead(0, v.id);
+          });
+        }
+      }, 200);
+    });
+  }, []);
 
   const [activeTab, setActiveTab] = useState('start');
   const assets = useEditorStore(s => Array.isArray(s?.assets) ? s.assets : []);
@@ -3804,26 +3820,26 @@ const ClassicEditor = () => {
               })}
             </>
           ) : (
-            <div className="flex-1 flex flex-col items-center justify-center p-4 gap-4 overflow-y-auto">
+            <div className="flex-1 flex flex-col items-center justify-center p-3 gap-3 overflow-y-auto">
               {videos.length > 0 ? (
                 <>
-                  <p className="text-xs font-bold text-stone-400 uppercase tracking-widest">Pick a clip to edit</p>
-                  <div className="grid grid-cols-2 gap-2 w-full max-w-xs">
+                  <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Tap a clip to start editing</p>
+                  <div className="flex flex-row gap-2 flex-wrap justify-center w-full max-w-sm">
                     {videos.map(v => (
-                      <button key={v.id} onClick={() => setSelectedVideoId(v.id)}
-                        className="group relative rounded-xl overflow-hidden border-2 border-stone-700 hover:border-rose-500 transition-all aspect-video bg-stone-800 flex flex-col items-center justify-center gap-1">
-                        <video src={v.url} className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:opacity-80 transition-opacity" muted playsInline preload="metadata" />
-                        <div className="relative z-10 bg-black/60 rounded-lg px-2 py-0.5 max-w-[90%]">
-                          <span className="text-[10px] text-white font-bold truncate block">{v.name?.replace(/\.[^.]+$/, '') || 'Clip'}</span>
+                      <button key={v.id} onClick={() => { setSelectedVideoId(v.id); setTimeout(() => insertClipAtPlayhead(0, v.id), 80); }}
+                        className="group relative rounded-lg overflow-hidden border-2 border-stone-700 hover:border-rose-500 transition-all bg-stone-800 flex items-center gap-2 px-2 py-1.5">
+                        <div className="relative w-14 h-9 rounded overflow-hidden shrink-0">
+                          <video src={v.url} className="absolute inset-0 w-full h-full object-cover" muted playsInline preload="metadata" />
+                          <Play size={14} className="absolute inset-0 m-auto text-white/90 group-hover:text-rose-400 transition-colors" />
                         </div>
-                        <Play size={20} className="relative z-10 text-white/80 group-hover:text-rose-400 transition-colors" />
+                        <span className="text-[10px] text-white font-bold truncate max-w-[80px]">{v.name?.replace(/\.[^.]+$/, '') || 'Clip'}</span>
                       </button>
                     ))}
+                    <label className="cursor-pointer flex items-center gap-1 text-xs text-rose-400 font-bold hover:text-rose-300 transition-colors px-2 py-1.5 border-2 border-dashed border-rose-900 hover:border-rose-500 rounded-lg">
+                      <Plus size={13} /> Add clip
+                      <input type="file" accept="video/*" multiple className="hidden" onChange={e => { Array.from(e.target.files || []).forEach(f => { const id = addAsset(f, 'video'); if (id) setTimeout(() => insertClipAtPlayhead(0, id), 80); }); e.target.value = ''; }} />
+                    </label>
                   </div>
-                  <label className="cursor-pointer flex items-center gap-2 text-xs text-rose-400 font-bold hover:text-rose-300 transition-colors">
-                    <Plus size={14} /> Add more clips
-                    <input type="file" accept="video/*" multiple className="hidden" onChange={e => { Array.from(e.target.files || []).forEach(f => { const id = addAsset(f, 'video'); if (id) setTimeout(() => insertClipAtPlayhead(0, id), 80); }); e.target.value = ''; }} />
-                  </label>
                 </>
               ) : (
                 <label className="cursor-pointer flex flex-col items-center gap-4 text-center group w-full max-w-xs">
