@@ -168,29 +168,40 @@ const App = () => {
         const state = useEditorStore.getState();
         const mainTrack = state.timelineTracks?.find(t => t.label === 'Main');
         const hasClips = (mainTrack?.clips || []).length > 0;
+
         if (!hasClips && state.assets?.length > 0) {
+          // Place videos sequentially from 0 using explicit positions (not playhead-based)
           const vids = state.assets.filter(a => a.type === 'video');
-          // Reset playhead to 0 so clips are placed from the beginning
-          useEditorStore.setState({ playhead: 0 });
-          vids.forEach(() => {}); // clear iteration
-          vids.forEach((v) => {
-            useEditorStore.getState().insertClipAtPlayhead(0, v.id);
-          });
-          useEditorStore.setState({ playhead: 0 });
-        } else if (hasClips) {
-          // If clips exist but start too far from 0, shift them all to start at 0
-          const clips = mainTrack?.clips || [];
-          const firstStart = Math.min(...clips.map(c => c.startOffset || 0));
-          if (firstStart > 1) {
-            useEditorStore.setState({
-              timelineTracks: state.timelineTracks.map(t => ({
-                ...t,
-                clips: (t.clips || []).map(c => ({ ...c, startOffset: Math.max(0, (c.startOffset || 0) - firstStart) }))
-              }))
+          const trackId = mainTrack?.id;
+          if (trackId) {
+            let cursor = 0;
+            vids.forEach((v) => {
+              const asset = useEditorStore.getState().assets.find(a => a.id === v.id);
+              const dur = asset?.duration || 60;
+              useEditorStore.getState().addClipToTrack(trackId, v.id, cursor, dur);
+              cursor += dur;
             });
           }
-          useEditorStore.setState({ playhead: 0 });
+        } else if (hasClips) {
+          // Fix overlapping clips: sort by startOffset, reposition each clip right after the previous
+          const clips = [...(mainTrack.clips || [])].sort((a, b) => a.startOffset - b.startOffset);
+          let cursor = 0;
+          let needsFix = false;
+          const fixed = clips.map(c => {
+            const pos = cursor;
+            if (Math.abs(c.startOffset - pos) > 0.5) needsFix = true;
+            cursor = pos + (c.duration || 0);
+            return { ...c, startOffset: pos };
+          });
+          if (needsFix) {
+            useEditorStore.setState({
+              timelineTracks: state.timelineTracks.map(t =>
+                t.id === mainTrack.id ? { ...t, clips: fixed } : t
+              )
+            });
+          }
         }
+        useEditorStore.setState({ playhead: 0 });
       }, 200);
     });
   }, []);
