@@ -166,12 +166,30 @@ const App = () => {
       // After IDB restore, if timeline is empty but we have videos, place them
       setTimeout(() => {
         const state = useEditorStore.getState();
-        const hasClips = state.timelineTracks?.some(t => (t.clips || []).length > 0);
+        const mainTrack = state.timelineTracks?.find(t => t.label === 'Main');
+        const hasClips = (mainTrack?.clips || []).length > 0;
         if (!hasClips && state.assets?.length > 0) {
           const vids = state.assets.filter(a => a.type === 'video');
-          vids.forEach((v, i) => {
-            state.insertClipAtPlayhead(0, v.id);
+          // Reset playhead to 0 so clips are placed from the beginning
+          useEditorStore.setState({ playhead: 0 });
+          vids.forEach(() => {}); // clear iteration
+          vids.forEach((v) => {
+            useEditorStore.getState().insertClipAtPlayhead(0, v.id);
           });
+          useEditorStore.setState({ playhead: 0 });
+        } else if (hasClips) {
+          // If clips exist but start too far from 0, shift them all to start at 0
+          const clips = mainTrack?.clips || [];
+          const firstStart = Math.min(...clips.map(c => c.startOffset || 0));
+          if (firstStart > 1) {
+            useEditorStore.setState({
+              timelineTracks: state.timelineTracks.map(t => ({
+                ...t,
+                clips: (t.clips || []).map(c => ({ ...c, startOffset: Math.max(0, (c.startOffset || 0) - firstStart) }))
+              }))
+            });
+          }
+          useEditorStore.setState({ playhead: 0 });
         }
       }, 200);
     });
@@ -3820,6 +3838,11 @@ const ClassicEditor = () => {
                 );
               })}
             </>
+          ) : hasLayeredClips ? (
+            // NLE clips exist but playhead is in a gap — show black screen, not the picker
+            <div className="flex-1 flex items-center justify-center bg-black">
+              <span className="text-stone-600 text-xs">Click a clip on the timeline to preview</span>
+            </div>
           ) : (
             <div className="flex-1 flex flex-col items-center justify-center p-3 gap-3 overflow-y-auto">
               {videos.length > 0 ? (
