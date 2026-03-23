@@ -81,7 +81,8 @@ import {
   Circle,
   Triangle,
   Minus,
-  Star
+  Star,
+  Undo2
 } from 'lucide-react';
 
 // --- App Context ---
@@ -5098,19 +5099,23 @@ const ClassicEditor = () => {
       )}
       </div>
       {/* Timeline area — zoom + tracks, grid-area for layout */}
-      <div className="flex flex-col min-h-0" style={{ gridArea: 'timeline' }}>
-      <div className="shrink-0 flex items-center gap-2 py-1.5 px-3 bg-stone-800/80 border-t border-stone-700">
-        <span className="text-[10px] font-bold text-stone-400 uppercase">Zoom</span>
-        <span className="text-[10px] text-stone-500 hidden sm:inline">Click ruler to move playhead · Drop media here</span>
-        <button onClick={() => setTimelineZoom(z => Math.max(0.5, Math.min(4, z / 1.5)))} className="px-2 py-1 rounded bg-stone-700 hover:bg-stone-600 text-white text-xs font-medium" title="Zoom out"><ZoomOut size={14} /> Out</button>
-        <input type="range" min="0.5" max="4" step="0.1" value={timelineZoom} onChange={(e) => setTimelineZoom(Number(e.target.value))} className="w-24 h-2 bg-stone-600 rounded-lg appearance-none cursor-pointer accent-rose-500" title="Zoom timeline" />
-        <span className="text-xs font-mono font-bold text-white min-w-[2.5rem] text-center">{timelineZoom.toFixed(1)}×</span>
-        <button onClick={() => setTimelineZoom(z => Math.max(0.5, Math.min(4, z * 1.5)))} className="px-2 py-1 rounded bg-stone-700 hover:bg-stone-600 text-white text-xs font-medium" title="Zoom in"><ZoomIn size={14} /> In</button>
-        <button onClick={zoomToFit} className="px-2 py-1 rounded bg-stone-700 hover:bg-stone-600 text-stone-300 text-xs">Fit</button>
-        <button onClick={zoomToSelection} disabled={!selectedSegmentId && !selectedAudioSegmentId && !selectedClipId} className="px-2 py-1 rounded bg-stone-700 hover:bg-stone-600 text-stone-300 text-xs disabled:opacity-50">To selection</button>
+      <div className="flex flex-col min-h-0 bg-stone-900" style={{ gridArea: 'timeline' }}>
+      {/* Primary editing toolbar — Split, Delete, Undo, Redo front and center */}
+      <div className="shrink-0 flex items-center gap-1 px-3 py-2 bg-stone-800 border-t border-stone-700">
+        <button onClick={splitAtPlayhead} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold shadow" title="Split clip at playhead (S)"><Scissors size={13} /> Split</button>
+        <button onClick={deleteSelectedSegment} disabled={!selectedSegmentId && !selectedAudioSegmentId && !selectedClipId} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-stone-700 hover:bg-red-700 text-white text-xs font-bold disabled:opacity-40" title="Delete selected clip (Del)"><Trash2 size={13} /> Delete</button>
+        <button onClick={undoAll} disabled={history.length === 0} className="px-2.5 py-1.5 rounded-lg bg-stone-700 hover:bg-stone-600 text-stone-300 text-xs font-bold disabled:opacity-40" title="Undo (Ctrl+Z)"><Undo2 size={13} /></button>
+        <div className="w-px h-5 bg-stone-600 mx-1" />
+        <span className="text-[10px] font-mono text-amber-400 font-bold">{secToTimecode(playhead)}</span>
+        <div className="flex-1" />
+        <button onClick={() => setTimelineZoom(z => Math.max(0.5, Math.min(4, z / 1.4)))} className="px-2 py-1.5 rounded bg-stone-700 hover:bg-stone-600 text-stone-300 text-xs" title="Zoom out">−</button>
+        <span className="text-xs font-mono text-stone-400 min-w-[2.5rem] text-center">{timelineZoom.toFixed(1)}×</span>
+        <button onClick={() => setTimelineZoom(z => Math.max(0.5, Math.min(4, z * 1.4)))} className="px-2 py-1.5 rounded bg-stone-700 hover:bg-stone-600 text-stone-300 text-xs" title="Zoom in">+</button>
+        <button onClick={zoomToFit} className="px-2 py-1.5 rounded bg-stone-700 hover:bg-stone-600 text-stone-300 text-xs">Fit</button>
+        {splitFeedback && <span className="text-[10px] text-rose-400 font-bold ml-2">{splitFeedback}</span>}
       </div>
       <div
-        className={`timeline-track flex flex-col flex-shrink-0 border-t border-stone-700 bg-stone-900 overflow-auto transition-all touch-pan-y ${!selectedVideo ? 'opacity-60' : ''}`}
+        className={`timeline-track flex flex-col flex-shrink-0 border-t border-stone-700 bg-stone-900 overflow-auto transition-all touch-pan-y ${!selectedVideo && !hasLayeredClips ? 'opacity-60' : ''}`}
         ref={el => { timelineScrollRef.current = el; }}
         onWheel={e => { e.preventDefault(); const el = timelineScrollRef.current; if (!el) return; if (e.shiftKey) el.scrollLeft += e.deltaY; else el.scrollTop += e.deltaY; }}
         onDragOver={e => { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; e.currentTarget.classList.add('ring-2', 'ring-rose-500'); }}

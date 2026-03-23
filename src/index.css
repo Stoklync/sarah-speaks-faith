@@ -13,8 +13,8 @@
     "stage"
     "controls"
     "timeline";
-  /* Mobile: stage compact 22vh, controls auto, timeline gets good chunk */
-  grid-template-rows: minmax(120px, 22vh) minmax(220px, auto) minmax(200px, 1fr);
+  /* Mobile: stage 35vh, controls auto, timeline minimum 220px */
+  grid-template-rows: minmax(160px, 35vh) minmax(180px, auto) minmax(220px, 1fr);
   height: 100dvh;
   overflow: hidden;
 }
@@ -24,14 +24,14 @@
     grid-template-areas:
       "stage controls"
       "timeline timeline";
-    grid-template-columns: 1fr 360px;
-    /* Stage shrinks to ~220px max, timeline gets all the rest */
-    grid-template-rows: minmax(160px, 26vh) 1fr;
+    grid-template-columns: 1fr 380px;
+    /* Stage 45vh so video preview is big enough; timeline gets the rest */
+    grid-template-rows: minmax(220px, 45vh) minmax(260px, 1fr);
   }
 }
 @media (min-width: 1280px) {
   .editor-layout {
-    grid-template-columns: 1fr 400px;
+    grid-template-columns: 1fr 420px;
   }
 }
 
