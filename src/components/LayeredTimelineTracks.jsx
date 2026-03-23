@@ -261,6 +261,8 @@ export function LayeredTimelineTracks({
     if (track.locked) return;
     const mode = edge || 'move';
     const x = e.clientX ?? e.touches?.[0]?.clientX ?? 0;
+    const laneEl = e.currentTarget?.closest?.('[data-timeline-lane]') ?? e.currentTarget?.parentElement;
+    const laneWidth = laneEl?.getBoundingClientRect?.()?.width || (500 * 1);
     dragRef.current = {
       mode,
       clipId: clip.id,
@@ -270,6 +272,7 @@ export function LayeredTimelineTracks({
       startOffset: clip.startOffset,
       startDuration: clip.duration,
       assetDuration: assets?.find(a => a.id === clip.assetId)?.duration,
+      laneWidth,
       didPush: false,
     };
   }, [assets]);
@@ -282,7 +285,7 @@ export function LayeredTimelineTracks({
       const x = e.clientX ?? e.touches?.[0]?.clientX ?? 0;
       const deltaPx = x - dr.lastX;
       dr.lastX = x;
-      const laneWidth = 500 * (typeof timelineZoom === 'number' ? timelineZoom : 1);
+      const laneWidth = dr.laneWidth || 500 * (typeof timelineZoom === 'number' ? timelineZoom : 1);
       const deltaTime = laneWidth > 0 ? (deltaPx / laneWidth) * timelineDuration : 0;
 
       if (dr.mode === 'move') {
@@ -345,8 +348,8 @@ export function LayeredTimelineTracks({
           </div>
           <div
             data-timeline-lane
-            onMouseDown={(e) => { e.preventDefault(); handlePlayheadDrag?.(e); setDraggingPlayhead?.(true); }}
-            onTouchStart={(e) => { handlePlayheadDrag?.(e); setDraggingPlayhead?.(true); }}
+            onMouseDown={(e) => { /* playhead drag handled by ruler only */ }}
+            onTouchStart={(e) => { /* playhead drag handled by ruler only */ }}
             className={`flex-1 h-full relative overflow-hidden cursor-grab active:cursor-grabbing rounded touch-none ${TRACK_ACCENT[track.label] || ''} border-l-2 bg-stone-700/70`}
             style={{ userSelect: 'none', minWidth: `${500 * timelineZoom}px` }}
             onPointerUp={handleTrackPointerUp(trackIndex)}
