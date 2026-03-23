@@ -9,7 +9,7 @@ import { probeAsset } from '../services/assetProbe';
 import { idbSaveAsset, idbDeleteAsset, idbLoadAllAssets } from '../services/idbAssets';
 
 const genId = () => `c${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
-const genTrackId = () => `t${Date.now()}`;
+const genTrackId = () => `t${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
 
 export const useEditorStore = create(persist((set, get) => ({
   // expose on window so we can live-test in browser console
@@ -360,8 +360,7 @@ export const useEditorStore = create(persist((set, get) => ({
   setPlaying: (v) => set({ playing: v }),
 }), {
   name: 'faith-studio-editor',
-  // Only persist timeline/project data — NOT assets (they have blob URLs that die on refresh)
-  // Assets are restored separately from IndexedDB
+  version: 2, // bumped to clear any corrupted stored state
   partialize: (s) => ({
     timelineTracks: s.timelineTracks,
     textClips: s.textClips,
