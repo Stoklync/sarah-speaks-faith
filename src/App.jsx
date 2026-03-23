@@ -4065,43 +4065,6 @@ const ClassicEditor = () => {
           {/* ── EDIT TAB ─────────────────────────────── */}
           {inspectorTab === 'edit' && (
             <div className="p-3 space-y-3">
-              {/* Video source — thumbnail picker */}
-              <div>
-                <div className="flex items-center justify-between mb-1.5">
-                  <span className="text-[10px] font-bold text-stone-500 uppercase tracking-wider">Clips</span>
-                  <div className="flex items-center gap-1">
-                    <input ref={clipUploadRef} type="file" multiple accept="video/*,image/*" onChange={(e) => handleInlineUpload(e)} className="hidden" />
-                    <button onClick={() => clipUploadRef.current?.click()} className="px-2 py-1 bg-rose-600 hover:bg-rose-500 rounded-md text-[10px] text-white font-bold">+ Add</button>
-                  </div>
-                </div>
-                {videos.length === 0 ? (
-                  <button onClick={() => clipUploadRef.current?.click()} className="w-full py-4 rounded-xl border-2 border-dashed border-stone-700 text-stone-500 text-xs hover:border-rose-600 hover:text-rose-400 transition-all">
-                    Upload a video to get started
-                  </button>
-                ) : (
-                  <div className="grid grid-cols-3 gap-1.5">
-                    {videos.map(v => (
-                      <button key={v.id} onClick={() => setSelectedVideoId(v.id)}
-                        className={`relative rounded-lg overflow-hidden aspect-video border-2 transition-all group ${selectedVideo?.id === v.id ? 'border-rose-500 ring-1 ring-rose-500' : 'border-stone-700 hover:border-stone-500'}`}
-                        title={v.name}>
-                        <video src={v.url} muted playsInline preload="metadata" className="w-full h-full object-cover"
-                          onLoadedMetadata={e => { e.target.currentTime = 0.5; }} />
-                        {selectedVideo?.id === v.id && (
-                          <div className="absolute inset-0 bg-rose-500/20 flex items-center justify-center">
-                            <div className="w-4 h-4 rounded-full bg-rose-500 flex items-center justify-center">
-                              <div className="w-1.5 h-1.5 rounded-full bg-white" />
-                            </div>
-                          </div>
-                        )}
-                        <div className="absolute bottom-0 left-0 right-0 px-1 py-0.5 bg-black/70 text-[9px] text-stone-300 truncate opacity-0 group-hover:opacity-100 transition-opacity">
-                          {v.name?.replace(/\.[^.]+$/, '').slice(0, 18) || 'Clip'}
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-
               {/* Selection status */}
               {(selectedSegmentId || selectedAudioSegmentId) ? (
                 <div className="flex items-center gap-2 px-3 py-2 bg-rose-950/40 border border-rose-700/50 rounded-xl text-[11px] text-rose-300 font-bold">

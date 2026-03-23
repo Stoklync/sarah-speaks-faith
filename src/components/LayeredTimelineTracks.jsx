@@ -348,8 +348,19 @@ export function LayeredTimelineTracks({
           </div>
           <div
             data-timeline-lane
-            onMouseDown={(e) => { /* playhead drag handled by ruler only */ }}
-            onTouchStart={(e) => { /* playhead drag handled by ruler only */ }}
+            onMouseDown={(e) => {
+              // Move playhead when clicking empty track space (not on a clip or resize handle)
+              if (!e.target.closest('[data-clip]') && !e.target.closest('.resize-handle')) {
+                e.preventDefault();
+                handlePlayheadDrag?.(e);
+              }
+            }}
+            onTouchStart={(e) => {
+              if (!e.target.closest('[data-clip]') && !e.target.closest('.resize-handle')) {
+                e.preventDefault();
+                handlePlayheadDrag?.(e);
+              }
+            }}
             className={`flex-1 h-full relative overflow-hidden cursor-grab active:cursor-grabbing rounded touch-none ${TRACK_ACCENT[track.label] || ''} border-l-2 bg-stone-700/70`}
             style={{ userSelect: 'none', minWidth: `${500 * timelineZoom}px` }}
             onPointerUp={handleTrackPointerUp(trackIndex)}
@@ -368,6 +379,7 @@ export function LayeredTimelineTracks({
               return (
                 <div
                   key={clip.id}
+                  data-clip
                   className={`absolute h-[calc(100%-4px)] top-0.5 flex items-stretch group rounded overflow-hidden cursor-move select-none ${isSelected ? 'ring-2 ring-rose-400 ring-offset-1' : ''} ${isDragging ? 'opacity-80 z-20 ring-2 ring-white' : ''} ${isDragActive ? 'z-30' : ''}`}
                   style={{ left: `${left}%`, width: `${w}%` }}
                   onClick={(e) => { e.stopPropagation(); if (draggingClip || dragRef.current.mode) return; onClipClick?.(clip, track); setSelectedClipId?.(clip.id); seekTo?.(clip.startOffset); }}
