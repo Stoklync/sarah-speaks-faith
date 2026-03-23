@@ -22,21 +22,21 @@
 @media (min-width: 1024px) {
   .editor-layout {
     grid-template-areas:
-      "stage controls"
-      "timeline timeline";
-    grid-template-columns: 1fr 420px;
-    /* Stage 45vh so video preview is big enough; timeline gets the rest */
-    grid-template-rows: minmax(220px, 45vh) minmax(260px, 1fr);
+      "media stage controls"
+      "media timeline timeline";
+    grid-template-columns: 210px 1fr 380px;
+    /* Stage 55vh for big preview like CapCut; timeline gets the rest */
+    grid-template-rows: minmax(280px, 55vh) minmax(220px, 1fr);
   }
 }
 @media (min-width: 1280px) {
   .editor-layout {
-    grid-template-columns: 1fr 460px;
+    grid-template-columns: 230px 1fr 400px;
   }
 }
 @media (min-width: 1440px) {
   .editor-layout {
-    grid-template-columns: 1fr 500px;
+    grid-template-columns: 260px 1fr 440px;
   }
 }
 

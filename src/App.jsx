@@ -3759,6 +3759,84 @@ const ClassicEditor = () => {
 
   return (
     <div className="editor-layout bg-stone-900">
+      {/* ── Left Media Panel — CapCut-style, desktop only ── */}
+      <div className="hidden lg:flex flex-col min-h-0 bg-stone-950 border-r border-stone-700/50 overflow-hidden" style={{ gridArea: 'media' }}>
+        {/* Header */}
+        <div className="shrink-0 flex items-center justify-between px-3 py-2.5 border-b border-stone-700/50 bg-stone-900">
+          <span className="text-[11px] font-bold text-stone-400 uppercase tracking-widest">Media</span>
+          <label className="cursor-pointer flex items-center gap-1 px-2.5 py-1 rounded-lg bg-rose-600 hover:bg-rose-500 text-white text-[10px] font-bold transition-colors">
+            <Plus size={11} /> Import
+            <input type="file" accept="video/*,audio/*,image/*" multiple className="hidden" onChange={(e) => handleInlineUpload(e)} />
+          </label>
+        </div>
+        {/* Clip grid */}
+        <div className="flex-1 overflow-y-auto p-2 space-y-3">
+          {videos.length === 0 ? (
+            <label className="cursor-pointer flex flex-col items-center gap-3 p-5 rounded-xl border-2 border-dashed border-stone-700 hover:border-rose-600 hover:bg-rose-950/20 transition-all text-center mt-2">
+              <div className="w-12 h-12 rounded-2xl bg-stone-800 flex items-center justify-center">
+                <Upload size={22} className="text-stone-500" />
+              </div>
+              <div>
+                <p className="text-xs font-bold text-stone-400">Import video</p>
+                <p className="text-[10px] text-stone-600 mt-0.5">MP4, MOV, WebM</p>
+              </div>
+              <input type="file" accept="video/*" multiple className="hidden" onChange={(e) => handleInlineUpload(e)} />
+            </label>
+          ) : (
+            <>
+              <div>
+                <p className="text-[9px] font-bold text-stone-600 uppercase tracking-widest mb-1.5 px-0.5">Videos</p>
+                <div className="grid grid-cols-2 gap-1.5">
+                  {videos.map(v => (
+                    <button key={v.id}
+                      draggable
+                      onDragStart={e => { e.dataTransfer.setData('assetId', v.id); e.dataTransfer.setData('assetType', 'video'); }}
+                      onClick={() => { insertClipAtPlayhead(0, v.id); setSelectedVideoId(v.id); }}
+                      className={`relative rounded-lg overflow-hidden aspect-video border-2 transition-all group ${selectedVideo?.id === v.id ? 'border-rose-500 ring-1 ring-rose-500/50' : 'border-stone-700 hover:border-stone-500'}`}
+                      title={`Add "${v.name?.replace(/\.[^.]+$/, '') || 'Clip'}" to timeline`}>
+                      <video src={v.url} muted playsInline preload="metadata" className="w-full h-full object-cover"
+                        onLoadedMetadata={e => { e.target.currentTime = 0.5; }} />
+                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors" />
+                      <div className="absolute bottom-0 left-0 right-0 px-1 py-0.5 bg-gradient-to-t from-black/80 to-transparent">
+                        <span className="text-[8px] text-stone-300 truncate block leading-tight">
+                          {v.name?.replace(/\.[^.]+$/, '').slice(0, 16) || 'Clip'}
+                        </span>
+                      </div>
+                      <div className="absolute top-1 right-1 w-5 h-5 rounded-full bg-rose-600/90 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow">
+                        <Plus size={10} className="text-white" />
+                      </div>
+                    </button>
+                  ))}
+                  <label className="cursor-pointer aspect-video rounded-lg border-2 border-dashed border-stone-700 hover:border-rose-600 flex items-center justify-center bg-stone-900/50 hover:bg-rose-950/20 transition-all">
+                    <Plus size={16} className="text-stone-600 hover:text-rose-400" />
+                    <input type="file" accept="video/*" multiple className="hidden" onChange={(e) => handleInlineUpload(e)} />
+                  </label>
+                </div>
+              </div>
+              {/* Audio assets */}
+              {audioFiles.length > 0 && (
+                <div>
+                  <p className="text-[9px] font-bold text-stone-600 uppercase tracking-widest mb-1.5 px-0.5">Audio</p>
+                  <div className="space-y-1">
+                    {audioFiles.map(a => (
+                      <button key={a.id}
+                        onClick={() => { insertClipAtPlayhead(3, a.id); setSelectedAudioId(a.id); }}
+                        className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg border border-stone-700 bg-stone-900 hover:border-emerald-600 hover:bg-emerald-950/20 transition-all text-left group">
+                        <div className="w-7 h-7 rounded-md bg-emerald-900/40 flex items-center justify-center shrink-0">
+                          <Music size={12} className="text-emerald-400" />
+                        </div>
+                        <span className="text-[10px] text-stone-300 truncate flex-1">{a.name?.replace(/\.[^.]+$/, '').slice(0, 18) || 'Audio'}</span>
+                        <Plus size={10} className="text-stone-600 group-hover:text-emerald-400 shrink-0 opacity-0 group-hover:opacity-100 transition-all" />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      </div>
+
       {/* Stage — 40vh mobile, object-contain, no crop on phone */}
       <div className="min-h-0 overflow-hidden flex flex-col" style={{ gridArea: 'stage' }}>
         <div ref={canvasRef} onClick={videoForPreview ? togglePlayPause : undefined} className={`flex-1 min-h-0 flex flex-col ${videoForPreview ? 'cursor-pointer' : ''}`}>
