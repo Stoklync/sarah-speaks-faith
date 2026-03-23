@@ -353,12 +353,14 @@ export function LayeredTimelineTracks({
               if (!e.target.closest('[data-clip]') && !e.target.closest('.resize-handle')) {
                 e.preventDefault();
                 handlePlayheadDrag?.(e);
+                setDraggingPlayhead?.(true);
               }
             }}
             onTouchStart={(e) => {
               if (!e.target.closest('[data-clip]') && !e.target.closest('.resize-handle')) {
                 e.preventDefault();
                 handlePlayheadDrag?.(e);
+                setDraggingPlayhead?.(true);
               }
             }}
             className={`flex-1 h-full relative overflow-hidden cursor-grab active:cursor-grabbing rounded touch-none ${TRACK_ACCENT[track.label] || ''} border-l-2 bg-stone-700/70`}
