@@ -24,14 +24,19 @@
     grid-template-areas:
       "stage controls"
       "timeline timeline";
-    grid-template-columns: 1fr 380px;
+    grid-template-columns: 1fr 420px;
     /* Stage 45vh so video preview is big enough; timeline gets the rest */
     grid-template-rows: minmax(220px, 45vh) minmax(260px, 1fr);
   }
 }
 @media (min-width: 1280px) {
   .editor-layout {
-    grid-template-columns: 1fr 420px;
+    grid-template-columns: 1fr 460px;
+  }
+}
+@media (min-width: 1440px) {
+  .editor-layout {
+    grid-template-columns: 1fr 500px;
   }
 }
 
