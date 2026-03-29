@@ -2457,7 +2457,18 @@ const ClassicEditor = () => {
     );
     return clip ? { clip, asset: assets?.find(a => a.id === clip.assetId) } : null;
   }, [hasLayeredClips, timelineTracks, playhead, assets]);
-  const videoForPreview = activeMainClipAtPlayhead?.asset || selectedVideo;
+  const nearestMainClip = useMemo(() => {
+    if (!hasLayeredClips) return null;
+    const mainTrack = timelineTracks?.find(t => t.label === 'Main');
+    const clips = (mainTrack?.clips || []).sort((a, b) => a.startOffset - b.startOffset);
+    if (!clips.length) return null;
+    return clips.reduce((nearest, c) => {
+      const dist = Math.min(Math.abs(c.startOffset - playhead), Math.abs(c.startOffset + c.duration - playhead));
+      const nearestDist = nearest ? Math.min(Math.abs(nearest.startOffset - playhead), Math.abs(nearest.startOffset + nearest.duration - playhead)) : Infinity;
+      return dist < nearestDist ? c : nearest;
+    }, null);
+  }, [hasLayeredClips, timelineTracks, playhead]);
+  const videoForPreview = activeMainClipAtPlayhead?.asset || (nearestMainClip ? assets?.find(a => a.id === nearestMainClip.assetId) : null) || selectedVideo;
 
   const storePlaying = useEditorStore(s => s.playing);
   const setStorePlaying = useEditorStore(s => s.setPlaying);
@@ -2936,14 +2947,21 @@ const ClassicEditor = () => {
     if (!v) return;
     const t = Math.max(0, Math.min(effectiveDuration, timelineT));
     setPlayhead(t);
-    // NLE mode: convert timeline position to clip source time
     const state = useEditorStore.getState();
     const hasLayered = state.timelineTracks?.some(tr => (tr.clips || []).length > 0);
     if (hasLayered) {
       const mainTrack = state.timelineTracks?.find(tr => tr.label === 'Main');
-      const clip = (mainTrack?.clips || []).find(c => t >= c.startOffset && t < c.startOffset + (c.duration || 0));
+      const clips = (mainTrack?.clips || []).sort((a, b) => a.startOffset - b.startOffset);
+      // Find clip at t, or nearest clip if in a gap
+      let clip = clips.find(c => t >= c.startOffset && t < c.startOffset + (c.duration || 0));
+      if (!clip) clip = clips.reduce((nearest, c) => {
+        const dist = Math.min(Math.abs(c.startOffset - t), Math.abs(c.startOffset + c.duration - t));
+        const nearestDist = nearest ? Math.min(Math.abs(nearest.startOffset - t), Math.abs(nearest.startOffset + nearest.duration - t)) : Infinity;
+        return dist < nearestDist ? c : nearest;
+      }, null);
       if (clip) {
-        const sourceTime = (clip.trimStart ?? 0) + (t - clip.startOffset);
+        const inClip = t >= clip.startOffset && t < clip.startOffset + clip.duration;
+        const sourceTime = inClip ? (clip.trimStart ?? 0) + (t - clip.startOffset) : (clip.trimStart ?? 0);
         if (Math.abs(v.currentTime - sourceTime) > 0.05) v.currentTime = Math.max(0, sourceTime);
       }
       return;
@@ -3495,13 +3513,14 @@ const ClassicEditor = () => {
   const dragTargetRef = useRef(null);
 
   const handlePlayheadDrag = (e) => {
-    const ruler = timelineRulerRef.current;
-    if (!ruler || effectiveDuration <= 0) return;
-    const rect = ruler.getBoundingClientRect();
+    if (effectiveDuration <= 0) return;
+    // Use the lane element if available (more accurate), otherwise fall back to ruler
+    const lane = e.target?.closest?.('[data-timeline-lane]');
+    const el = lane || timelineRulerRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
     const x = getEventX(e) - rect.left;
-    // Use actual rendered width — must match handleRulerClick
     const pct = Math.max(0, Math.min(1, rect.width > 0 ? x / rect.width : 0));
-    // Never snap the playhead — free scrubbing so you can cut at any frame
     const t = Math.max(0, Math.min(effectiveDuration, pct * effectiveDuration));
     dragTargetRef.current = t;
     if (rafRef.current) cancelAnimationFrame(rafRef.current);
