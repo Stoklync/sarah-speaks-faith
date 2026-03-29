@@ -205,25 +205,26 @@ export const useEditorStore = create(persist((set, get) => ({
     )
   })),
 
-  /** Split a clip at the playhead on Main or Audio track. Returns true if split succeeded. */
+  /** Split a clip at the playhead on Main or Audio track. Returns the new second clip id if split succeeded, null otherwise. */
   splitClipAtPlayhead: (trackLabel = 'Main') => {
     const state = get();
     const playhead = state.playhead;
     const track = state.timelineTracks?.find(t => t.label === trackLabel);
-    if (!track?.clips?.length) return false;
+    if (!track?.clips?.length) return null;
     const clip = track.clips.find(c =>
       playhead >= c.startOffset && playhead < c.startOffset + (c.duration || 0)
     );
-    if (!clip) return false;
+    if (!clip) return null;
     const clipEnd = clip.startOffset + (clip.duration || 0);
     const splitAt = playhead;
     const minSegment = 0.5;
-    if (splitAt - clip.startOffset < minSegment || clipEnd - splitAt < minSegment) return false;
+    if (splitAt - clip.startOffset < minSegment || clipEnd - splitAt < minSegment) return null;
     const trimAmt = splitAt - clip.startOffset;
     const first = { ...clip, duration: trimAmt };
+    const secondId = genId();
     const second = {
       ...clip,
-      id: genId(),
+      id: secondId,
       startOffset: splitAt,
       duration: clipEnd - splitAt,
       trimStart: (clip.trimStart ?? 0) + trimAmt,
@@ -235,7 +236,7 @@ export const useEditorStore = create(persist((set, get) => ({
           : t
       )
     }));
-    return true;
+    return secondId;
   },
   updateClip: (trackId, clipId, updates) => set(s => ({
     timelineTracks: s.timelineTracks.map(t =>

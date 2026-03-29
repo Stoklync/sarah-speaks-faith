@@ -382,8 +382,8 @@ export function LayeredTimelineTracks({
                 <div
                   key={clip.id}
                   data-clip
-                  className={`absolute h-[calc(100%-4px)] top-0.5 flex items-stretch group rounded overflow-hidden cursor-move select-none ${isSelected ? 'ring-2 ring-rose-400 ring-offset-1' : ''} ${isDragging ? 'opacity-80 z-20 ring-2 ring-white' : ''} ${isDragActive ? 'z-30' : ''}`}
-                  style={{ left: `${left}%`, width: `${w}%` }}
+                  className={`absolute h-[calc(100%-4px)] top-0.5 flex items-stretch group rounded overflow-hidden cursor-move select-none ${isSelected ? 'ring-2 ring-rose-400 ring-offset-2 z-20' : ''} ${isDragging ? 'opacity-80 z-20 ring-2 ring-white' : ''} ${isDragActive ? 'z-30' : ''}`}
+                  style={{ left: `${left}%`, width: `${w}%`, marginRight: '2px' }}
                   onClick={(e) => { e.stopPropagation(); if (draggingClip || dragRef.current.mode) return; onClipClick?.(clip, track); setSelectedClipId?.(clip.id); seekTo?.(clip.startOffset); }}
                   onPointerDown={(e) => handlePointerDown(e, clip.id, track.id)}
                   onMouseDown={(e) => { if (e.target.closest('.resize-handle')) return; e.stopPropagation(); handleClipPointerDown(e, clip, track, 'move'); }}
@@ -391,7 +391,7 @@ export function LayeredTimelineTracks({
                   onDoubleClick={(e) => { e.stopPropagation(); onClipClick?.(clip, track); }}
                 >
                   <div onMouseDown={(e) => { e.stopPropagation(); handleClipPointerDown(e, clip, track, 'start'); }} onTouchStart={(e) => { e.stopPropagation(); handleClipPointerDown(e, clip, track, 'start'); }} className="resize-handle w-1.5 flex-shrink-0 h-full cursor-ew-resize bg-stone-500/50 hover:bg-rose-500/70 z-10" title="Drag to trim start" />
-                  <div className="flex-1 min-w-0 h-full flex relative overflow-hidden rounded border border-stone-500/50 hover:border-stone-400/60 bg-stone-600/90">
+                  <div className={`flex-1 min-w-0 h-full flex relative overflow-hidden rounded border hover:border-stone-400/60 ${isSelected ? 'border-rose-400 bg-rose-950/40' : 'border-stone-500/50 bg-stone-600/90'}`}>
                     {showThumb ? (
                       <ClipThumbnail asset={asset} clip={clip} trackLabel={track.label} minWidth={28} />
                     ) : (

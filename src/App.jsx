@@ -3005,11 +3005,16 @@ const ClassicEditor = () => {
   const splitClipAtPlayheadStore = useEditorStore(s => s.splitClipAtPlayhead);
   const splitAtPlayhead = () => {
     if (hasLayeredClips) {
-      const okMain = splitClipAtPlayheadStore('Main');
-      const okAudio = !okMain && splitClipAtPlayheadStore('Audio');
-      if (!okMain && !okAudio) {
+      pushHistory();
+      const newClipId = splitClipAtPlayheadStore('Main') || splitClipAtPlayheadStore('Audio');
+      if (newClipId) {
+        // Auto-select the second clip so Delete is immediately available
+        setSelectedClipId(newClipId);
+        setSplitFeedback('✂ Split! Select a piece and press Delete');
+        setTimeout(() => setSplitFeedback(null), 3000);
+      } else {
         setSplitFeedback('Move playhead into a clip (at least 0.5s from start or end)');
-        setTimeout(() => setSplitFeedback(null), 4000);
+        setTimeout(() => setSplitFeedback(null), 3000);
       }
       return;
     }
@@ -5374,7 +5379,12 @@ const ClassicEditor = () => {
       {/* Primary editing toolbar — Split, Delete, Undo, Redo front and center */}
       <div className="shrink-0 flex items-center gap-1 px-3 py-2 bg-stone-800 border-t border-stone-700">
         <button onClick={splitAtPlayhead} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold shadow" title="Split clip at playhead (S)"><Scissors size={13} /> Split</button>
-        <button onClick={deleteSelectedSegment} disabled={!selectedSegmentId && !selectedAudioSegmentId && !selectedClipId} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-stone-700 hover:bg-red-700 text-white text-xs font-bold disabled:opacity-40" title="Delete selected clip (Del)"><Trash2 size={13} /> Delete</button>
+        <button
+          onClick={deleteSelectedSegment}
+          disabled={!selectedSegmentId && !selectedAudioSegmentId && !selectedClipId}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-white text-xs font-bold disabled:opacity-40 transition-colors ${selectedClipId || selectedSegmentId || selectedAudioSegmentId ? 'bg-red-600 hover:bg-red-500 shadow' : 'bg-stone-700'}`}
+          title="Delete selected clip (Del)"
+        ><Trash2 size={13} /> Delete{selectedClipId ? ' ✓' : ''}</button>
         <button onClick={undoAll} disabled={history.length === 0} className="px-2.5 py-1.5 rounded-lg bg-stone-700 hover:bg-stone-600 text-stone-300 text-xs font-bold disabled:opacity-40" title="Undo (Ctrl+Z)"><Undo2 size={13} /></button>
         <div className="w-px h-5 bg-stone-600 mx-1" />
         <span className="text-[10px] font-mono text-amber-400 font-bold">{secToTimecode(playhead)}</span>
