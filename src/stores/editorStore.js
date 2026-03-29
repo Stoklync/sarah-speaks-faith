@@ -205,6 +205,25 @@ export const useEditorStore = create(persist((set, get) => ({
     )
   })),
 
+  /** Delete clip and ripple: shift all clips after it left to close the gap */
+  rippleDeleteClip: (trackId, clipId) => set(s => {
+    const track = s.timelineTracks.find(t => t.id === trackId);
+    if (!track) return s;
+    const clip = track.clips.find(c => c.id === clipId);
+    if (!clip) return s;
+    const gapStart = clip.startOffset;
+    const gapSize = clip.duration || 0;
+    const newClips = track.clips
+      .filter(c => c.id !== clipId)
+      .map(c => c.startOffset >= gapStart ? { ...c, startOffset: Math.max(0, c.startOffset - gapSize) } : c)
+      .sort((a, b) => a.startOffset - b.startOffset);
+    return {
+      timelineTracks: s.timelineTracks.map(t =>
+        t.id === trackId ? { ...t, clips: newClips } : t
+      )
+    };
+  }),
+
   /** Split a clip at the playhead on Main or Audio track. Returns the new second clip id if split succeeded, null otherwise. */
   splitClipAtPlayhead: (trackLabel = 'Main') => {
     const state = get();

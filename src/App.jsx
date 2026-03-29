@@ -2437,7 +2437,9 @@ const ClassicEditor = () => {
   const timelineTracks = useEditorStore(s => s.timelineTracks);
   const insertClipAtPlayhead = useEditorStore(s => s.insertClipAtPlayhead);
   const removeClip = useEditorStore(s => s.removeClip);
+  const rippleDeleteClip = useEditorStore(s => s.rippleDeleteClip);
   const updateClip = useEditorStore(s => s.updateClip);
+  const addClipToTrack = useEditorStore(s => s.addClipToTrack);
   const moveClipToTrack = useEditorStore(s => s.moveClipToTrack);
   const setClipTransition = useEditorStore(s => s.setClipTransition);
   const moveClip = useEditorStore(s => s.moveClip);
@@ -2965,7 +2967,7 @@ const ClassicEditor = () => {
     const x = getEventX(e) - rect.left;
     // Use actual rendered width — NOT a hardcoded value — so clicks map 1:1 to the ruler
     const pct = Math.max(0, Math.min(1, rect.width > 0 ? x / rect.width : 0));
-    const t = snapToNearest(pct * effectiveDuration);
+    const t = Math.max(0, Math.min(effectiveDuration, pct * effectiveDuration));
     draggingPlayheadRef.current = true;
     dragTargetRef.current = t;
     setPlayhead(t);
@@ -3047,7 +3049,7 @@ const ClassicEditor = () => {
     if (hasLayeredClips && selectedClipId) {
       for (const t of timelineTracks || []) {
         const clip = (t.clips || []).find(c => c.id === selectedClipId);
-        if (clip) { pushHistory(); removeClip(t.id, clip.id); setSelectedClipId(null); return; }
+        if (clip) { pushHistory(); rippleDeleteClip(t.id, clip.id); setSelectedClipId(null); return; }
       }
     }
     if (selectedSegmentId) {
@@ -3499,7 +3501,8 @@ const ClassicEditor = () => {
     const x = getEventX(e) - rect.left;
     // Use actual rendered width — must match handleRulerClick
     const pct = Math.max(0, Math.min(1, rect.width > 0 ? x / rect.width : 0));
-    const t = snapToNearest(pct * effectiveDuration);
+    // Never snap the playhead — free scrubbing so you can cut at any frame
+    const t = Math.max(0, Math.min(effectiveDuration, pct * effectiveDuration));
     dragTargetRef.current = t;
     if (rafRef.current) cancelAnimationFrame(rafRef.current);
     rafRef.current = requestAnimationFrame(() => {
@@ -5522,6 +5525,7 @@ const ClassicEditor = () => {
               onSeek={seekTo}
               removeClip={removeClip}
               updateClip={updateClip}
+              addClipToTrack={addClipToTrack}
               moveClip={moveClip}
               resizeClip={resizeClip}
               moveClipToTrack={moveClipToTrack}

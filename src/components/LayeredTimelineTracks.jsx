@@ -181,6 +181,7 @@ export function LayeredTimelineTracks({
   moveClip,
   resizeClip,
   moveClipToTrack,
+  addClipToTrack,
   setClipTransition,
   insertClipAtPlayhead,
   handlePlayheadDrag,
@@ -236,6 +237,24 @@ export function LayeredTimelineTracks({
 
   const handleTrackDrop = useCallback((e, toTrackIndex) => {
     e.preventDefault();
+
+    // --- Drop from media panel: place asset at exact time position ---
+    const assetId = e.dataTransfer.getData('assetId');
+    if (assetId && addClipToTrack) {
+      const toTrack = timelineTracks?.[toTrackIndex];
+      if (!toTrack) return;
+      const laneEl = e.currentTarget?.querySelector('[data-timeline-lane]') || e.currentTarget;
+      const rect = laneEl.getBoundingClientRect();
+      const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+      const dropTime = pct * (timelineDuration || 60);
+      const asset = assets?.find(a => a.id === assetId);
+      const dur = asset?.duration || 30;
+      onPushHistory?.();
+      addClipToTrack(toTrack.id, assetId, dropTime, dur);
+      return;
+    }
+
+    // --- Move existing clip between tracks ---
     const { clipId, trackId } = draggingClip || longPressRef.current;
     if (!clipId || !trackId || !moveClipToTrack) return;
     const fromTrack = timelineTracks?.find(t => t.id === trackId);
@@ -243,7 +262,7 @@ export function LayeredTimelineTracks({
     if (!fromTrack || !toTrack || fromTrack.id === toTrack.id) return;
     moveClipToTrack(trackId, clipId, toTrackIndex);
     setDraggingClip(null);
-  }, [draggingClip, timelineTracks, moveClipToTrack]);
+  }, [draggingClip, timelineTracks, moveClipToTrack, addClipToTrack, assets, timelineDuration, onPushHistory]);
 
   const seekTo = useCallback((t) => {
     if (typeof onSeek === 'function') onSeek(t);
