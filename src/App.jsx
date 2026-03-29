@@ -82,7 +82,14 @@ import {
   Triangle,
   Minus,
   Star,
-  Undo2
+  Undo2,
+  Bot,
+  Loader2,
+  CheckCircle,
+  Lightbulb,
+  Hash as HashIcon,
+  Clock as ClockIcon,
+  Flame
 } from 'lucide-react';
 
 // --- App Context ---
@@ -2272,6 +2279,34 @@ const ClassicEditor = () => {
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [showAIHelper, setShowAIHelper] = useState(false);
   const [inspectorTab, setInspectorTab] = useState('edit');
+  // AI Content Generator state
+  const [aiTopic, setAiTopic] = useState('');
+  const [aiDescription, setAiDescription] = useState('');
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiResult, setAiResult] = useState(null);
+  const [aiError, setAiError] = useState('');
+  const [aiCopied, setAiCopied] = useState('');
+  const generateAIContent = async () => {
+    if (!aiTopic.trim()) return;
+    setAiLoading(true); setAiError(''); setAiResult(null);
+    try {
+      const res = await fetch('/api/ai/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ topic: aiTopic.trim(), description: aiDescription.trim(), niche: 'faith/lifestyle', format: '9:16 Reel' }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Generation failed');
+      setAiResult(data);
+    } catch (err) {
+      setAiError(err.message || 'Something went wrong');
+    } finally {
+      setAiLoading(false);
+    }
+  };
+  const copyAI = (text, key) => {
+    navigator.clipboard.writeText(text).then(() => { setAiCopied(key); setTimeout(() => setAiCopied(''), 2000); });
+  };
   // ── Camera recording state ─────────────────────────────────────────────────
   const [recordTimer, setRecordTimer] = useState(0);
   const recordTimerRef = useRef(null);
@@ -4028,6 +4063,7 @@ const ClassicEditor = () => {
             { id: 'audio',   icon: <Music size={13} />,    label: 'Audio' },
             { id: 'animate', icon: <Sparkles size={13} />, label: 'Animate' },
             { id: 'enhance', icon: <Wand2 size={13} />,    label: 'Enhance' },
+            { id: 'ai',      icon: <Bot size={13} />,      label: 'AI' },
             { id: 'camera',  icon: <Camera size={13} />,   label: 'Camera' },
             { id: 'export',  icon: <Download size={13} />, label: 'Export' },
           ].map(tab => (
@@ -5054,6 +5090,130 @@ const ClassicEditor = () => {
                   </label>
                 ))}
               </div>
+            </div>
+          )}
+
+          {/* ── AI CONTENT TAB ─────────────────────────────── */}
+          {inspectorTab === 'ai' && (
+            <div className="p-3 space-y-3">
+              {/* Header */}
+              <div className="flex items-center gap-2 pb-1">
+                <div className="w-7 h-7 rounded-xl bg-gradient-to-br from-rose-500 to-purple-600 flex items-center justify-center shrink-0">
+                  <Bot size={14} className="text-white" />
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-white leading-tight">Instagram AI</p>
+                  <p className="text-[10px] text-stone-500 leading-tight">Hooks · Captions · Hashtags</p>
+                </div>
+              </div>
+
+              {/* Algorithm tips banner */}
+              <div className="bg-gradient-to-r from-rose-950/60 to-purple-950/60 border border-rose-800/40 rounded-xl p-3">
+                <p className="text-[10px] font-bold text-rose-300 uppercase tracking-wider mb-1.5 flex items-center gap-1"><Flame size={11} /> What the Algorithm rewards</p>
+                <div className="space-y-1 text-[10px] text-stone-400">
+                  <p>• <strong className="text-stone-300">Hook</strong> — first 1–3 seconds must stop the scroll</p>
+                  <p>• <strong className="text-stone-300">Watch time</strong> — loops = more reach, keep it tight</p>
+                  <p>• <strong className="text-stone-300">Comments</strong> — end with a question, saves share</p>
+                  <p>• <strong className="text-stone-300">9:16 full screen</strong> — fills screen = more engagement</p>
+                  <p>• <strong className="text-stone-300">Post 3–5×/week</strong> — consistency beats perfection</p>
+                </div>
+              </div>
+
+              {/* Input */}
+              <div className="space-y-2">
+                <div>
+                  <label className="text-[10px] font-bold text-stone-400 uppercase tracking-wider block mb-1">What's your video about?</label>
+                  <input
+                    type="text"
+                    value={aiTopic}
+                    onChange={e => setAiTopic(e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter') generateAIContent(); }}
+                    placeholder="e.g. morning prayer routine, faith over fear, 5am wake up"
+                    className="w-full px-3 py-2 rounded-xl bg-stone-800 border border-stone-700 text-stone-100 text-xs placeholder-stone-600 focus:border-rose-500 focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold text-stone-400 uppercase tracking-wider block mb-1">Extra context (optional)</label>
+                  <textarea
+                    value={aiDescription}
+                    onChange={e => setAiDescription(e.target.value)}
+                    placeholder="e.g. sharing my personal struggle with doubt and how God answered"
+                    rows={2}
+                    className="w-full px-3 py-2 rounded-xl bg-stone-800 border border-stone-700 text-stone-100 text-xs placeholder-stone-600 focus:border-rose-500 focus:outline-none resize-none"
+                  />
+                </div>
+                <button
+                  onClick={generateAIContent}
+                  disabled={!aiTopic.trim() || aiLoading}
+                  className="w-full py-2.5 rounded-xl bg-gradient-to-r from-rose-600 to-purple-600 hover:from-rose-500 hover:to-purple-500 text-white text-xs font-bold disabled:opacity-50 transition-all flex items-center justify-center gap-2 active:scale-95"
+                >
+                  {aiLoading ? <><Loader2 size={13} className="animate-spin" /> Generating…</> : <><Sparkles size={13} /> Generate Content</>}
+                </button>
+                {aiError && <p className="text-[11px] text-red-400 bg-red-950/40 border border-red-800/40 rounded-lg px-3 py-2">{aiError}</p>}
+              </div>
+
+              {/* Results */}
+              {aiResult && (
+                <div className="space-y-3">
+                  {/* Hooks */}
+                  <div className="bg-stone-800 border border-stone-700 rounded-xl p-3 space-y-2">
+                    <p className="text-[10px] font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1"><Flame size={11} /> Opening Hooks (first 3 seconds)</p>
+                    {(aiResult.hooks || []).map((hook, i) => (
+                      <div key={i} className="flex items-start gap-2 bg-stone-900/60 rounded-lg px-2.5 py-2">
+                        <span className="text-[10px] font-bold text-rose-400 shrink-0 mt-0.5">{i + 1}</span>
+                        <p className="text-xs text-stone-200 flex-1 leading-tight">{hook}</p>
+                        <button onClick={() => copyAI(hook, `hook${i}`)} className="shrink-0 text-stone-600 hover:text-rose-400 transition-colors" title="Copy">
+                          {aiCopied === `hook${i}` ? <CheckCircle size={12} className="text-green-400" /> : <Copy size={12} />}
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Caption */}
+                  {aiResult.caption && (
+                    <div className="bg-stone-800 border border-stone-700 rounded-xl p-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <p className="text-[10px] font-bold text-stone-400 uppercase tracking-wider flex items-center gap-1"><AlignLeft size={11} /> Caption</p>
+                        <button onClick={() => copyAI(aiResult.caption + (aiResult.cta ? '\n\n' + aiResult.cta : '') + '\n\n' + (aiResult.hashtags || []).map(h => `#${h.replace(/^#/, '')}`).join(' '), 'caption')} className="text-[10px] text-stone-500 hover:text-rose-400 flex items-center gap-1 transition-colors">
+                          {aiCopied === 'caption' ? <><CheckCircle size={11} className="text-green-400" /> Copied!</> : <><Copy size={11} /> Copy all</>}
+                        </button>
+                      </div>
+                      <p className="text-xs text-stone-300 leading-relaxed whitespace-pre-wrap">{aiResult.caption}</p>
+                      {aiResult.cta && <p className="text-xs text-rose-400 font-bold mt-2 leading-tight">{aiResult.cta}</p>}
+                    </div>
+                  )}
+
+                  {/* Hashtags */}
+                  {aiResult.hashtags?.length > 0 && (
+                    <div className="bg-stone-800 border border-stone-700 rounded-xl p-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <p className="text-[10px] font-bold text-stone-400 uppercase tracking-wider flex items-center gap-1"><HashIcon size={11} /> Hashtags</p>
+                        <button onClick={() => copyAI((aiResult.hashtags || []).map(h => `#${h.replace(/^#/, '')}`).join(' '), 'hashtags')} className="text-[10px] text-stone-500 hover:text-rose-400 flex items-center gap-1 transition-colors">
+                          {aiCopied === 'hashtags' ? <><CheckCircle size={11} className="text-green-400" /> Copied!</> : <><Copy size={11} /> Copy</>}
+                        </button>
+                      </div>
+                      <div className="flex flex-wrap gap-1">
+                        {(aiResult.hashtags || []).map((tag, i) => (
+                          <span key={i} onClick={() => copyAI(`#${tag.replace(/^#/, '')}`, `tag${i}`)} className="text-[10px] bg-stone-700 hover:bg-rose-900/40 text-rose-300 rounded-md px-2 py-0.5 cursor-pointer transition-colors">#{tag.replace(/^#/, '')}</span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Posting tip */}
+                  {aiResult.postingTip && (
+                    <div className="bg-amber-950/30 border border-amber-800/40 rounded-xl p-3 flex items-start gap-2">
+                      <Lightbulb size={13} className="text-amber-400 shrink-0 mt-0.5" />
+                      <p className="text-[11px] text-amber-200 leading-snug">{aiResult.postingTip}</p>
+                    </div>
+                  )}
+
+                  {/* Regenerate */}
+                  <button onClick={generateAIContent} disabled={aiLoading} className="w-full py-2 rounded-xl bg-stone-800 border border-stone-700 text-stone-400 text-xs font-bold hover:text-white hover:border-stone-500 transition-all flex items-center justify-center gap-2">
+                    <RotateCcw size={12} /> Regenerate
+                  </button>
+                </div>
+              )}
             </div>
           )}
 
