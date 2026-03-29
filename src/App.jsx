@@ -2231,6 +2231,7 @@ const ClassicEditor = () => {
   const videos = filteredAssets.filter(a => a.type === 'video');
   const audioFiles = filteredAssets.filter(a => a.type === 'audio');
   const videoRef = useRef(null);
+  const nextVideoRef = useRef(null);
   const clipUploadRef = useRef(null);
   const audioUploadRef = useRef(null);
   const handleInlineUpload = (e, typeFilter) => {
@@ -2469,6 +2470,18 @@ const ClassicEditor = () => {
     }, null);
   }, [hasLayeredClips, timelineTracks, playhead]);
   const videoForPreview = activeMainClipAtPlayhead?.asset || (nearestMainClip ? assets?.find(a => a.id === nearestMainClip.assetId) : null) || selectedVideo;
+
+  // Pre-load the next clip's video asset so clip transitions are instant
+  const nextClipAsset = useMemo(() => {
+    if (!hasLayeredClips) return null;
+    const mainTrack = timelineTracks?.find(t => t.label === 'Main');
+    const clips = (mainTrack?.clips || []).sort((a, b) => a.startOffset - b.startOffset);
+    const nextClip = clips.find(c => c.startOffset > playhead);
+    if (!nextClip) return null;
+    const asset = assets?.find(a => a.id === nextClip.assetId);
+    // Only preload if it's a different file than what's currently playing
+    return (asset && asset.url !== videoForPreview?.url) ? asset : null;
+  }, [hasLayeredClips, timelineTracks, playhead, assets, videoForPreview?.url]);
 
   const storePlaying = useEditorStore(s => s.playing);
   const setStorePlaying = useEditorStore(s => s.setPlaying);
@@ -2911,12 +2924,23 @@ const ClassicEditor = () => {
             const nextClip = clips.find(c2 => c2.startOffset > clip.startOffset);
             if (nextClip) {
               v.currentTime = nextClip.trimStart ?? 0;
+              setPlayhead(nextClip.startOffset);
             } else {
               v.pause();
+              setStorePlaying(false);
             }
           }
         } else {
-          v.pause();
+          // Playhead is in a gap — auto-jump to the next clip instead of freezing
+          const ph = playheadRef.current;
+          const nextClip = clips.find(c => c.startOffset > ph);
+          if (nextClip) {
+            v.currentTime = nextClip.trimStart ?? 0;
+            setPlayhead(nextClip.startOffset);
+          } else {
+            v.pause();
+            setStorePlaying(false);
+          }
         }
         return;
       }
@@ -2942,17 +2966,16 @@ const ClassicEditor = () => {
     } catch (_) {}
   };
 
-  const seekTo = (timelineT) => {
+  // Seeks only the video element — no state update. Used for throttled seeking during drag.
+  const seekVideoOnly = (timelineT) => {
     const v = videoRef.current;
     if (!v) return;
     const t = Math.max(0, Math.min(effectiveDuration, timelineT));
-    setPlayhead(t);
     const state = useEditorStore.getState();
     const hasLayered = state.timelineTracks?.some(tr => (tr.clips || []).length > 0);
     if (hasLayered) {
       const mainTrack = state.timelineTracks?.find(tr => tr.label === 'Main');
       const clips = (mainTrack?.clips || []).sort((a, b) => a.startOffset - b.startOffset);
-      // Find clip at t, or nearest clip if in a gap
       let clip = clips.find(c => t >= c.startOffset && t < c.startOffset + (c.duration || 0));
       if (!clip) clip = clips.reduce((nearest, c) => {
         const dist = Math.min(Math.abs(c.startOffset - t), Math.abs(c.startOffset + c.duration - t));
@@ -2966,15 +2989,20 @@ const ClassicEditor = () => {
       }
       return;
     }
-    // Legacy mode
     const sourceTime = timelineToSource(t);
     const t0 = clipIn ?? 0;
     const t1 = clipOut ?? duration;
     v.currentTime = Math.max(t0, Math.min(t1, sourceTime));
     const ranges = getAudioTimelineRanges(audioSegmentsRef.current);
-    const inAudioGap = ranges.length > 0 && !ranges.find(r => t >= r.tlStart && t < r.tlEnd);
+    const inAudioGap = ranges.length > 0 && !ranges.find(r => t >= r.tlStart && r.tlEnd > t);
     const shouldMute = userMuted || inAudioGap;
     if (v.muted !== shouldMute) v.muted = shouldMute;
+  };
+
+  const seekTo = (timelineT) => {
+    const t = Math.max(0, Math.min(effectiveDuration, timelineT));
+    setPlayhead(t);
+    seekVideoOnly(t);
   };
 
   const getEventX = (e) => e.clientX ?? e.touches?.[0]?.clientX ?? e.changedTouches?.[0]?.clientX ?? 0;
@@ -3511,6 +3539,8 @@ const ClassicEditor = () => {
   const rafRef = useRef(null);
   // Cache of the intended playhead time while dragging — prevents timeupdate from snapping back
   const dragTargetRef = useRef(null);
+  // Throttle video .currentTime updates to ~30fps so the decoder doesn't lock up during fast drags
+  const lastSeekTimeRef = useRef(0);
 
   const handlePlayheadDrag = (e) => {
     if (effectiveDuration <= 0) return;
@@ -3521,12 +3551,30 @@ const ClassicEditor = () => {
     const rect = el.getBoundingClientRect();
     const x = getEventX(e) - rect.left;
     const pct = Math.max(0, Math.min(1, rect.width > 0 ? x / rect.width : 0));
-    const t = Math.max(0, Math.min(effectiveDuration, pct * effectiveDuration));
+    let t = Math.max(0, Math.min(effectiveDuration, pct * effectiveDuration));
+
+    // Snap playhead to clip edges when within 0.15s (CapCut-style precision)
+    if (hasLayeredClips) {
+      const state = useEditorStore.getState();
+      const clips = state.timelineTracks?.flatMap(tr => tr.clips || []) || [];
+      const snapPoints = clips.flatMap(c => [c.startOffset, c.startOffset + (c.duration || 0)]);
+      if (snapPoints.length) {
+        const closest = snapPoints.reduce((prev, curr) => Math.abs(curr - t) < Math.abs(prev - t) ? curr : prev);
+        if (isFinite(closest) && Math.abs(closest - t) < 0.15) t = closest;
+      }
+    }
+
     dragTargetRef.current = t;
     if (rafRef.current) cancelAnimationFrame(rafRef.current);
     rafRef.current = requestAnimationFrame(() => {
+      // UI playhead moves every frame — smooth at 120fps
       setPlayhead(t);
-      seekTo(t);
+      // Video decoder only seeks every ~32ms (30fps) to prevent lockup during fast drags
+      const now = performance.now();
+      if (now - lastSeekTimeRef.current > 32) {
+        seekVideoOnly(t);
+        lastSeekTimeRef.current = now;
+      }
       rafRef.current = null;
     });
   };
@@ -3906,6 +3954,7 @@ const ClassicEditor = () => {
             <>
               <div className="relative flex-1 min-h-0 flex items-center justify-center overflow-hidden" style={{ filter: vidFilterCSS || undefined }}>
                 <video
+                  key={videoForPreview.id}
                   ref={videoRef}
                   src={videoForPreview.url}
                   className="absolute inset-0 w-full h-full object-contain opacity-0 pointer-events-none"
@@ -3916,6 +3965,18 @@ const ClassicEditor = () => {
                   onPlay={() => setPlaying(true)}
                   onPause={() => setPlaying(false)}
                 />
+                {/* Hidden preloader: buffers next clip so clip transitions are instant */}
+                {nextClipAsset && (
+                  <video
+                    key={`preload-${nextClipAsset.id}`}
+                    ref={nextVideoRef}
+                    src={nextClipAsset.url}
+                    preload="auto"
+                    muted
+                    playsInline
+                    style={{ position: 'absolute', opacity: 0, width: 1, height: 1, pointerEvents: 'none' }}
+                  />
+                )}
                 <div style={{ transform: stageTransformCSS !== 'scaleX(1) scaleY(1)' ? stageTransformCSS : undefined, transformOrigin: 'center center', width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <Stage
                     aspectPreset={exportFormat}
