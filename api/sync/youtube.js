@@ -21,7 +21,7 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'Supabase not configured. Add SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY.' });
   }
 
-  const supabase = createClient(supabaseUrl, supabaseKey);
+  const supabase = createClient(supabaseUrl, supabaseKey.trim(), { auth: { autoRefreshToken: false, persistSession: false } });
   const { data: row, error } = await supabase.from('social_tokens').select('access_token').eq('user_key', userKey).eq('platform', 'youtube').single();
 
   if (error || !row?.access_token) {

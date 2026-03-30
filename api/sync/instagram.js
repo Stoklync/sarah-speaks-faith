@@ -24,7 +24,7 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'Supabase not configured.' });
   }
 
-  const supabase = createClient(supabaseUrl, supabaseKey);
+  const supabase = createClient(supabaseUrl, supabaseKey.trim(), { auth: { autoRefreshToken: false, persistSession: false } });
   const { data: row, error } = await supabase.from('social_tokens').select('access_token').eq('user_key', userKey).eq('platform', 'instagram').single();
 
   if (error || !row?.access_token) {
