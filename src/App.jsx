@@ -1134,7 +1134,7 @@ const ProContentToolkit = () => {
 
       {/* Mode tabs */}
       <div className="flex gap-2 flex-wrap">
-        {[['roadmap','🗺️ Roadmap'],['ideas','💡 Ideas'],['script','🎬 Script'],['caption','✍️ Caption'],['calendar','📅 Weekly Plan'],['review','🔍 Review Before Post'],['chat','💬 Ask AI'],['notes','📌 Notes & Journal']].map(([mode, label]) => (
+        {[['roadmap','🗺️ Roadmap'],['ideas','💡 Ideas'],['script','🎬 Script'],['caption','✍️ Caption'],['calendar','📅 Weekly Plan'],['review','🔍 Review Before Post'],['chat','💬 Ask AI'],['notes','📌 Notes & Journal'],['guides','🎓 App Guides']].map(([mode, label]) => (
           <button key={mode} onClick={() => { setAiMode(mode); setAiResult(null); setAiError(''); }} className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${aiMode === mode ? 'bg-rose-500 text-white shadow' : 'bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 text-stone-600 dark:text-stone-300 hover:border-rose-300'}`}>{label}</button>
         ))}
       </div>
@@ -1539,7 +1539,103 @@ const ProContentToolkit = () => {
         </div>
       )}
 
-      {aiMode !== 'chat' && aiMode !== 'notes' && (
+      {/* App Guides */}
+      {aiMode === 'guides' && (
+        <div className="space-y-4">
+          <div className="bg-gradient-to-br from-indigo-50 to-violet-50 dark:from-stone-800 dark:to-stone-800 border-2 border-indigo-200 dark:border-indigo-800 rounded-3xl p-6">
+            <h3 className="text-xl font-bold text-stone-800 dark:text-stone-100 mb-1">🎓 Creator Tools Quick Guide</h3>
+            <p className="text-sm text-stone-500">Your cheat sheet for DaVinci Resolve, Lightroom & Canva. Ask the AI coach anything more specific.</p>
+          </div>
+
+          {/* DaVinci Resolve */}
+          <div className="bg-white dark:bg-stone-800 border border-stone-100 dark:border-stone-700 rounded-2xl p-5 space-y-4">
+            <h4 className="font-bold text-stone-800 dark:text-stone-100 flex items-center gap-2">🎬 DaVinci Resolve — Reels Workflow</h4>
+            <div className="space-y-3">
+              {[
+                { step: '1. Set up your project', detail: 'Open DaVinci → New Project → name it → go to File > Project Settings → set Timeline Resolution to 1080x1920 (vertical 9:16) → Frame Rate: 30fps → OK' },
+                { step: '2. Import your video', detail: 'Drag your video file into the Media Pool (top left). Then drag it from Media Pool onto the timeline at the bottom.' },
+                { step: '3. Trim & cut', detail: 'Press B for Blade tool → click on the clip where you want to cut → press A to go back to Select tool → click the unwanted piece → Delete key.' },
+                { step: '4. Add text/captions', detail: 'Go to Edit page → Effects Library → Titles → drag "Text+" onto timeline above your video → double-click it → type your text in Inspector panel on the right.' },
+                { step: '5. Color grade', detail: 'Click Color page (bottom bar) → use the Color Wheels to adjust: Lift (shadows), Gamma (midtones), Gain (highlights). For a clean faith creator look: slightly warm highlights, lifted blacks, high clarity.' },
+                { step: '6. Add music', detail: 'Drag your audio file into Media Pool → drag it to the timeline below your video. Click the audio clip → use Inspector to adjust volume.' },
+                { step: '7. Export for Instagram', detail: 'Go to Deliver page → Quick Export → Format: H.264 → Resolution: 1080x1920 → Frame Rate: 30 → Quality: Restrict to 50,000 Kbps → Export.' },
+              ].map((item, i) => (
+                <div key={i} className="flex gap-3 p-3 rounded-xl bg-stone-50 dark:bg-stone-700/40">
+                  <span className="text-xs font-bold text-indigo-500 shrink-0 pt-0.5 w-4">{i+1}</span>
+                  <div>
+                    <p className="font-semibold text-stone-800 dark:text-stone-100 text-sm">{item.step}</p>
+                    <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5">{item.detail}</p>
+                  </div>
+                </div>
+              ))}
+              <div className="p-3 rounded-xl bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800">
+                <p className="text-xs font-bold text-indigo-600 mb-2">⌨️ Key Shortcuts</p>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  {[['Space','Play/Pause'],['B','Blade (cut) tool'],['A','Select tool'],['Cmd+Z','Undo'],['I / O','Mark in/out point'],['Cmd+D','Deliver (export)']].map(([k,v]) => (
+                    <div key={k} className="flex items-center gap-2"><code className="text-xs bg-stone-200 dark:bg-stone-600 px-2 py-0.5 rounded font-mono">{k}</code><span className="text-xs text-stone-500">{v}</span></div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Lightroom */}
+          <div className="bg-white dark:bg-stone-800 border border-stone-100 dark:border-stone-700 rounded-2xl p-5 space-y-4">
+            <h4 className="font-bold text-stone-800 dark:text-stone-100 flex items-center gap-2">📷 Adobe Lightroom — Photo Editing Workflow</h4>
+            <div className="space-y-3">
+              {[
+                { step: '1. Import your photo', detail: 'Mobile: tap the + button → choose photo from camera roll. Desktop: File → Import Photos → select your files → Import.' },
+                { step: '2. Start with Light (Basic panel)', detail: 'Exposure: overall brightness. Contrast: punch/flatness. Highlights: pull down to recover blown-out sky/skin. Shadows: push up to lift dark areas. Whites & Blacks: set the range. Start here before anything else.' },
+                { step: '3. Color & Tone', detail: 'Temp/Tint: warm up (drag right) or cool down (drag left). Vibrance: boosts muted colors without overdoing skin. Saturation: boosts all colors — use carefully.' },
+                { step: '4. HSL / Color Mix', detail: 'Fine-tune individual colors. For faith/lifestyle: boost Orange (warm skin), reduce Aqua/Blue (clean background), lift Yellow for a warm glow.' },
+                { step: '5. Tone Curve', detail: 'Create an S-curve: pull highlights up slightly, pull shadows up slightly (creates that lifted matte look popular on Instagram).' },
+                { step: '6. Sharpening & Noise', detail: 'Detail panel → Sharpening: Amount 40-60. Noise Reduction: push Luminance to 20-40 if photo looks grainy.' },
+                { step: '7. Apply a Preset', detail: 'Tap Presets → browse → tap to preview → tap again to apply. You can adjust after. Save your own: tap 3 dots → Create Preset.' },
+                { step: '8. Export for Instagram', detail: 'Tap Share → Export as JPEG → Quality 100% → Color Space sRGB → Long Edge 1080px (portrait: 1080x1350). This is the perfect Instagram size.' },
+              ].map((item, i) => (
+                <div key={i} className="flex gap-3 p-3 rounded-xl bg-stone-50 dark:bg-stone-700/40">
+                  <span className="text-xs font-bold text-rose-400 shrink-0 pt-0.5 w-4">{i+1}</span>
+                  <div>
+                    <p className="font-semibold text-stone-800 dark:text-stone-100 text-sm">{item.step}</p>
+                    <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5">{item.detail}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Canva */}
+          <div className="bg-white dark:bg-stone-800 border border-stone-100 dark:border-stone-700 rounded-2xl p-5 space-y-4">
+            <h4 className="font-bold text-stone-800 dark:text-stone-100 flex items-center gap-2">🎨 Canva — Graphics & Reels Covers</h4>
+            <div className="space-y-3">
+              {[
+                { step: '1. Set up the right size', detail: 'New Design → Custom size → 1080x1920px for Reels cover/story. 1080x1080px for feed post. 1080x1350px for portrait feed. Always start with the right canvas.' },
+                { step: '2. Find your brand template', detail: 'Search for "Instagram Reel Cover" or "Faith" in templates. Pick one close to your vibe → customize. Never post a default template — change colors and fonts to match your brand.' },
+                { step: '3. Brand your colors', detail: 'Click any element → change color → add your brand hex codes. Save them in Brand Kit (Canva Pro) so they\'re always one click away.' },
+                { step: '4. Typography for Reels covers', detail: 'Use max 2 fonts. One bold for the hook/headline (big, readable on mobile). One clean font for subtitle. Test: zoom out to thumbnail size — if you can\'t read it, neither can your audience.' },
+                { step: '5. Add your photo', detail: 'Uploads → drag your photo in → right click → Set as background (or place it and resize). Use the background remover (Pro) to cut yourself out and layer over designs.' },
+                { step: '6. Reel cover best practices', detail: 'Put the hook text in the center-top third. Keep the bottom third clear (Instagram overlays buttons there). Use high contrast — light text on dark background or vice versa.' },
+                { step: '7. Export', detail: 'Download → PNG (for covers/graphics) or MP4 (if you made an animated Reel cover). PNG at default quality is perfect for Instagram.' },
+              ].map((item, i) => (
+                <div key={i} className="flex gap-3 p-3 rounded-xl bg-stone-50 dark:bg-stone-700/40">
+                  <span className="text-xs font-bold text-emerald-500 shrink-0 pt-0.5 w-4">{i+1}</span>
+                  <div>
+                    <p className="font-semibold text-stone-800 dark:text-stone-100 text-sm">{item.step}</p>
+                    <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5">{item.detail}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800 rounded-2xl p-4">
+            <p className="text-sm font-bold text-rose-600 dark:text-rose-400 mb-1">💬 Ask the AI anything more specific</p>
+            <p className="text-xs text-stone-500">Go to Ask AI tab and say things like: "How do I add subtitles in DaVinci?", "How do I make my skin look natural in Lightroom?", "How do I create a Reel cover template in Canva?" — it will walk you through it step by step.</p>
+          </div>
+        </div>
+      )}
+
+      {aiMode !== 'chat' && aiMode !== 'notes' && aiMode !== 'roadmap' && aiMode !== 'guides' && (
         <div className="bg-white dark:bg-stone-800 border border-rose-100 dark:border-stone-700 rounded-3xl p-6 space-y-4">
           {aiMode === 'ideas' && <>
             <h3 className="font-bold text-stone-800 dark:text-stone-100">💡 Content Ideas Generator</h3>
