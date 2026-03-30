@@ -6741,9 +6741,12 @@ const PostAnalytics = ({ onOpenSettings }) => {
   const [syncMsg, setSyncMsg] = useState('');
 
   // Ads state
-  const [igProfile, setIgProfile] = useState(() => { try { return JSON.parse(localStorage.getItem('faith-studio-ig-profile') || 'null'); } catch { return null; } });
-  const [igGrowth, setIgGrowth] = useState(() => { try { return JSON.parse(localStorage.getItem('faith-studio-ig-growth') || 'null'); } catch { return null; } });
-  const [igInsights, setIgInsights] = useState(() => { try { return JSON.parse(localStorage.getItem('faith-studio-ig-insights') || 'null'); } catch { return null; } });
+  const [igProfileMap, setIgProfileMap] = useState(() => { try { return JSON.parse(localStorage.getItem('faith-studio-ig-profile-map') || '{}'); } catch { return {}; } });
+  const [igGrowthMap, setIgGrowthMap] = useState(() => { try { return JSON.parse(localStorage.getItem('faith-studio-ig-growth-map') || '{}'); } catch { return {}; } });
+  const [igInsightsMap, setIgInsightsMap] = useState(() => { try { return JSON.parse(localStorage.getItem('faith-studio-ig-insights-map') || '{}'); } catch { return {}; } });
+  const igProfile = igProfileMap[brandKey] || null;
+  const igGrowth = igGrowthMap[brandKey] || null;
+  const igInsights = igInsightsMap[brandKey] || null;
   const [adsTab, setAdsTab] = useState(false);
   const [adAccountId, setAdAccountId] = useState(() => localStorage.getItem('faith-studio-ad-account') || '');
   const [adAccounts, setAdAccounts] = useState([]);
@@ -6785,9 +6788,9 @@ const PostAnalytics = ({ onOpenSettings }) => {
       try {
         const r = await fetch('/api/sync/instagram', { headers: { 'X-User-Key': brandKey } });
         const data = await r.json();
-        if (data.account) { setIgProfile(data.account); localStorage.setItem('faith-studio-ig-profile', JSON.stringify(data.account)); }
-        if (data.growth) { setIgGrowth(data.growth); localStorage.setItem('faith-studio-ig-growth', JSON.stringify(data.growth)); }
-        if (data.insights) { setIgInsights(data.insights); localStorage.setItem('faith-studio-ig-insights', JSON.stringify(data.insights)); }
+        if (data.account) { setIgProfileMap(p => { const n = { ...p, [brandKey]: data.account }; localStorage.setItem('faith-studio-ig-profile-map', JSON.stringify(n)); return n; }); }
+        if (data.growth) { setIgGrowthMap(p => { const n = { ...p, [brandKey]: data.growth }; localStorage.setItem('faith-studio-ig-growth-map', JSON.stringify(n)); return n; }); }
+        if (data.insights) { setIgInsightsMap(p => { const n = { ...p, [brandKey]: data.insights }; localStorage.setItem('faith-studio-ig-insights-map', JSON.stringify(n)); return n; }); }
         if (data.posts?.length) {
           const existing = new Set(posts.map(p => p.id));
           const newPosts = data.posts.filter(p => !existing.has(p.id)).map(p => ({ ...p, businessId: activeBusinessId }));
