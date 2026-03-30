@@ -1044,6 +1044,13 @@ const ProContentToolkit = () => {
   const [newNoteVideo, setNewNoteVideo] = useState('');
   const [editingNoteId, setEditingNoteId] = useState(null);
 
+  // Roadmap state
+  const [roadmapResult, setRoadmapResult] = useState(() => {
+    try { return JSON.parse(localStorage.getItem(`faith-roadmap-${activeBusinessId}`) || 'null'); } catch { return null; }
+  });
+  const [roadmapLoading, setRoadmapLoading] = useState(false);
+  const [roadmapError, setRoadmapError] = useState('');
+
   const copyText = (text, id) => { navigator.clipboard.writeText(text); setCopiedId(id); setTimeout(() => setCopiedId(null), 2000); };
 
   const callAI = async (promptTopic, promptDesc, format = '9:16 Reel') => {
@@ -1127,7 +1134,7 @@ const ProContentToolkit = () => {
 
       {/* Mode tabs */}
       <div className="flex gap-2 flex-wrap">
-        {[['ideas','💡 Ideas'],['script','🎬 Script'],['caption','✍️ Caption'],['calendar','📅 Weekly Plan'],['review','🔍 Review Before Post'],['chat','💬 Ask AI'],['notes','📌 Notes & Journal']].map(([mode, label]) => (
+        {[['roadmap','🗺️ Roadmap'],['ideas','💡 Ideas'],['script','🎬 Script'],['caption','✍️ Caption'],['calendar','📅 Weekly Plan'],['review','🔍 Review Before Post'],['chat','💬 Ask AI'],['notes','📌 Notes & Journal']].map(([mode, label]) => (
           <button key={mode} onClick={() => { setAiMode(mode); setAiResult(null); setAiError(''); }} className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${aiMode === mode ? 'bg-rose-500 text-white shadow' : 'bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 text-stone-600 dark:text-stone-300 hover:border-rose-300'}`}>{label}</button>
         ))}
       </div>
@@ -1321,6 +1328,154 @@ const ProContentToolkit = () => {
       )}
 
       {/* Ideas, Script, Caption, Calendar modes */}
+      {/* Roadmap */}
+      {aiMode === 'roadmap' && (
+        <div className="space-y-4">
+          <div className="bg-gradient-to-br from-violet-50 to-rose-50 dark:from-stone-800 dark:to-stone-800 border-2 border-violet-200 dark:border-violet-800 rounded-3xl p-6 space-y-3">
+            <h3 className="text-xl font-bold text-stone-800 dark:text-stone-100">🗺️ Audience-First Content Roadmap</h3>
+            <p className="text-sm text-stone-500 dark:text-stone-400">The AI studies your audience data — who they are, what they want, what makes them stop scrolling — then builds a 30-day roadmap around <em>them</em>, not your mood.</p>
+            <button onClick={async () => {
+              setRoadmapLoading(true); setRoadmapError('');
+              try {
+                const brandKey = `brand-${activeBusinessId}`;
+                const igProfileMap = JSON.parse(localStorage.getItem('faith-studio-ig-profile-map') || '{}');
+                const igGrowthMap = JSON.parse(localStorage.getItem('faith-studio-ig-growth-map') || '{}');
+                const igAudienceMap = JSON.parse(localStorage.getItem('faith-studio-ig-audience-map') || '{}');
+                const allPosts = JSON.parse(localStorage.getItem('faith-studio-posts') || '[]');
+                const bizPosts = allPosts.filter(p => p.businessId === activeBusinessId || p.source === 'instagram_api');
+                const r = await fetch('/api/ai/generate', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    mode: 'roadmap',
+                    topic: `Roadmap for ${bizName}`,
+                    analyticsData: {
+                      brandName: bizName,
+                      posts: bizPosts,
+                      account: igProfileMap[brandKey] || null,
+                      growth: igGrowthMap[brandKey] || null,
+                      audience: igAudienceMap[brandKey] || null,
+                    }
+                  })
+                });
+                const data = await r.json();
+                if (data.error) throw new Error(data.error);
+                setRoadmapResult(data);
+                try { localStorage.setItem(`faith-roadmap-${activeBusinessId}`, JSON.stringify(data)); } catch (_) {}
+              } catch (e) { setRoadmapError(e.message || 'Failed to generate roadmap'); }
+              finally { setRoadmapLoading(false); }
+            }} disabled={roadmapLoading} className="px-6 py-3 bg-gradient-to-r from-violet-500 to-rose-500 text-white rounded-2xl font-bold text-sm hover:opacity-90 disabled:opacity-50 flex items-center gap-2">
+              {roadmapLoading ? <><Loader2 size={16} className="animate-spin" /> Building your roadmap…</> : '✨ Build My 30-Day Roadmap'}
+            </button>
+            {roadmapError && <p className="text-sm text-red-500">{roadmapError}</p>}
+            {!roadmapResult && !roadmapLoading && <p className="text-xs text-stone-400">Tip: Connect Instagram in Analytics first for the most personalised roadmap. Works without it too.</p>}
+          </div>
+
+          {roadmapResult && (
+            <div className="space-y-5">
+              {/* Audience Insight */}
+              {roadmapResult.audienceInsight && (
+                <div className="bg-white dark:bg-stone-800 border-2 border-violet-200 dark:border-violet-800 rounded-2xl p-5">
+                  <p className="text-xs font-bold text-violet-500 uppercase mb-2">👥 Who is watching you</p>
+                  <p className="text-stone-700 dark:text-stone-200 text-sm leading-relaxed">{roadmapResult.audienceInsight}</p>
+                </div>
+              )}
+
+              {/* Audience Persona */}
+              {roadmapResult.audiencePersona && (
+                <div className="bg-white dark:bg-stone-800 border border-stone-100 dark:border-stone-700 rounded-2xl p-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-xs font-bold text-rose-500 uppercase mb-1">Who they are</p>
+                    <p className="text-xs text-stone-600 dark:text-stone-300">{roadmapResult.audiencePersona.who}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold text-amber-500 uppercase mb-1">What they want</p>
+                    <p className="text-xs text-stone-600 dark:text-stone-300">{roadmapResult.audiencePersona.whatTheyWant}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold text-emerald-500 uppercase mb-1">What stops the scroll</p>
+                    <p className="text-xs text-stone-600 dark:text-stone-300">{roadmapResult.audiencePersona.whatStopsThemScrolling}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold text-violet-500 uppercase mb-1">Best emotional trigger</p>
+                    <p className="text-xs text-stone-600 dark:text-stone-300">{roadmapResult.audiencePersona.bestEmotionalTrigger}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Content Pillars */}
+              {roadmapResult.contentPillars?.length > 0 && (
+                <div className="bg-white dark:bg-stone-800 border border-stone-100 dark:border-stone-700 rounded-2xl p-5">
+                  <p className="text-xs font-bold text-stone-500 uppercase mb-3">📊 Your Content Pillars</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {roadmapResult.contentPillars.map((p, i) => (
+                      <div key={i} className="p-3 rounded-xl bg-stone-50 dark:bg-stone-700/40 border border-stone-200 dark:border-stone-600">
+                        <div className="flex items-center justify-between mb-1">
+                          <p className="font-bold text-stone-800 dark:text-stone-100 text-sm">{p.pillar}</p>
+                          <span className="text-xs font-bold text-violet-500">{p.percentage}</span>
+                        </div>
+                        <p className="text-xs text-stone-500 dark:text-stone-400 mb-2">{p.why}</p>
+                        <div className="flex flex-wrap gap-1">{(p.exampleTopics||[]).map((t,j) => <span key={j} className="text-xs px-2 py-0.5 bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400 rounded-lg">{t}</span>)}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* 30-Day Roadmap */}
+              {roadmapResult.roadmap?.length > 0 && (
+                <div className="space-y-3">
+                  <p className="text-xs font-bold text-stone-500 uppercase">🗓️ 30-Day Post Plan</p>
+                  {roadmapResult.roadmap.map((week, wi) => (
+                    <div key={wi} className="bg-white dark:bg-stone-800 border border-stone-100 dark:border-stone-700 rounded-2xl p-5">
+                      <div className="flex items-center justify-between mb-3">
+                        <p className="font-bold text-stone-800 dark:text-stone-100">Week {week.week} — {week.theme}</p>
+                        <span className="text-xs text-violet-500 font-semibold">{week.goal}</span>
+                      </div>
+                      <div className="space-y-2">
+                        {(week.posts||[]).map((post, pi) => (
+                          <div key={pi} className="flex gap-3 p-3 rounded-xl bg-stone-50 dark:bg-stone-700/40">
+                            <span className="text-xs font-bold text-rose-500 w-8 shrink-0 pt-0.5">{post.day}</span>
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-0.5">
+                                <span className="text-xs font-bold text-stone-700 dark:text-stone-200">{post.topic}</span>
+                                <span className="text-xs text-stone-400 bg-stone-100 dark:bg-stone-600 px-2 py-0.5 rounded-full">{post.type}</span>
+                              </div>
+                              <p className="text-xs text-amber-600 dark:text-amber-400 mb-0.5">Hook: "{post.hook}"</p>
+                              <p className="text-xs text-stone-500 dark:text-stone-400">Why it works: {post.audienceWhy}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Series + Viral */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {roadmapResult.seriesIdea && (
+                  <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-2xl p-4">
+                    <p className="text-xs font-bold text-amber-600 uppercase mb-1">🔁 Recurring Series Idea</p>
+                    <p className="font-bold text-stone-800 dark:text-stone-100 text-sm mb-1">"{roadmapResult.seriesIdea.name}"</p>
+                    <p className="text-xs text-stone-600 dark:text-stone-300 mb-1">{roadmapResult.seriesIdea.concept}</p>
+                    <p className="text-xs text-stone-500">{roadmapResult.seriesIdea.why}</p>
+                  </div>
+                )}
+                {roadmapResult.viralOpportunity && (
+                  <div className="bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800 rounded-2xl p-4">
+                    <p className="text-xs font-bold text-rose-600 uppercase mb-1">🔥 Highest Viral Opportunity Now</p>
+                    <p className="text-sm text-stone-700 dark:text-stone-200">{roadmapResult.viralOpportunity}</p>
+                  </div>
+                )}
+              </div>
+
+              <button onClick={() => { setRoadmapResult(null); localStorage.removeItem(`faith-roadmap-${activeBusinessId}`); }} className="text-xs text-stone-400 hover:text-red-400">Clear roadmap</button>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Notes & Journal */}
       {aiMode === 'notes' && (
         <div className="space-y-4">

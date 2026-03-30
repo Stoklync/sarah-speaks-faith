@@ -106,6 +106,73 @@ Analyze this data deeply and respond in this EXACT JSON format:
 
 Return ONLY valid JSON. Be specific, data-driven, and brutally helpful. Reference their actual numbers.`;
 
+  } else if (mode === 'roadmap') {
+    const { posts, account, growth, audience, brandName: rBrand } = analyticsData || {};
+    const sortedByViews = [...(posts||[])].sort((a,b) => (b.views||0)-(a.views||0));
+    const top5 = sortedByViews.slice(0,5).map(p => `"${p.title?.slice(0,60)}" — ${p.views||0} views, ${p.engagement||0} engagement, type: ${p.mediaType}`).join('\n');
+    const topCountries = (audience?.topCountries||[]).map(c=>`${c.name} (${c.count})`).join(', ');
+    const topCities = (audience?.topCities||[]).map(c=>`${c.name} (${c.count})`).join(', ');
+    const genderAge = JSON.stringify(audience?.genderAge || {});
+
+    prompt = `You are a world-class content strategist and audience growth expert. Build a data-driven content roadmap that tells the creator exactly what their audience wants — not what they feel like posting.
+
+BRAND: ${rBrand || 'Sarah Speaks Faith'}
+NICHE: Christian faith creator — discipleship, gospel, saving souls, spiritual growth, prayer, faith lifestyle for women
+FOLLOWERS: ${account?.followers||0} | POSTS ANALYZED: ${posts?.length||0}
+NEW FOLLOWERS (30d): ${growth?.newFollowers30d||0} | REACH (30d): ${growth?.reach30d||0}
+
+TOP PERFORMING CONTENT:
+${top5 || 'no data yet'}
+
+AUDIENCE LOCATION: ${topCountries || 'unknown'}
+AUDIENCE CITIES: ${topCities || 'unknown'}
+GENDER/AGE BREAKDOWN: ${genderAge}
+
+Build a strategic 30-day content roadmap based on what the DATA says this audience craves. Think like a strategist, not a creator.
+
+Respond in this EXACT JSON:
+{
+  "audienceInsight": "2-3 sentences: who exactly is watching, what do they want, what emotional state are they in when they find this creator",
+  "audiencePersona": {
+    "who": "Specific description of the core audience (age range, life stage, struggles, desires)",
+    "whatTheyWant": "The 3 core things this audience is searching for",
+    "whatStopsThemScrolling": "What visual or verbal trigger makes them stop and watch",
+    "bestEmotionalTrigger": "The single most powerful emotion to target with every post"
+  },
+  "contentPillars": [
+    {"pillar": "Pillar name", "why": "Why this works for THIS audience based on data", "percentage": "% of content", "exampleTopics": ["topic 1", "topic 2", "topic 3"]},
+    {"pillar": "Pillar name", "why": "Why", "percentage": "% of content", "exampleTopics": ["topic 1", "topic 2", "topic 3"]},
+    {"pillar": "Pillar name", "why": "Why", "percentage": "% of content", "exampleTopics": ["topic 1", "topic 2", "topic 3"]},
+    {"pillar": "Pillar name", "why": "Why", "percentage": "% of content", "exampleTopics": ["topic 1", "topic 2", "topic 3"]}
+  ],
+  "roadmap": [
+    {"week": 1, "theme": "Week theme", "goal": "Specific measurable goal", "posts": [
+      {"day": "Mon", "type": "Reel/Carousel/Single", "topic": "Exact topic", "hook": "Opening hook", "audienceWhy": "Why THIS audience will engage"},
+      {"day": "Wed", "type": "Reel/Carousel/Single", "topic": "Exact topic", "hook": "Opening hook", "audienceWhy": "Why THIS audience will engage"},
+      {"day": "Fri", "type": "Reel/Carousel/Single", "topic": "Exact topic", "hook": "Opening hook", "audienceWhy": "Why THIS audience will engage"}
+    ]},
+    {"week": 2, "theme": "Week theme", "goal": "Specific measurable goal", "posts": [
+      {"day": "Mon", "type": "Reel/Carousel/Single", "topic": "Exact topic", "hook": "Opening hook", "audienceWhy": "Why THIS audience will engage"},
+      {"day": "Wed", "type": "Reel/Carousel/Single", "topic": "Exact topic", "hook": "Opening hook", "audienceWhy": "Why THIS audience will engage"},
+      {"day": "Fri", "type": "Reel/Carousel/Single", "topic": "Exact topic", "hook": "Opening hook", "audienceWhy": "Why THIS audience will engage"}
+    ]},
+    {"week": 3, "theme": "Week theme", "goal": "Specific measurable goal", "posts": [
+      {"day": "Mon", "type": "Reel/Carousel/Single", "topic": "Exact topic", "hook": "Opening hook", "audienceWhy": "Why THIS audience will engage"},
+      {"day": "Wed", "type": "Reel/Carousel/Single", "topic": "Exact topic", "hook": "Opening hook", "audienceWhy": "Why THIS audience will engage"},
+      {"day": "Fri", "type": "Reel/Carousel/Single", "topic": "Exact topic", "hook": "Opening hook", "audienceWhy": "Why THIS audience will engage"}
+    ]},
+    {"week": 4, "theme": "Week theme", "goal": "Specific measurable goal", "posts": [
+      {"day": "Mon", "type": "Reel/Carousel/Single", "topic": "Exact topic", "hook": "Opening hook", "audienceWhy": "Why THIS audience will engage"},
+      {"day": "Wed", "type": "Reel/Carousel/Single", "topic": "Exact topic", "hook": "Opening hook", "audienceWhy": "Why THIS audience will engage"},
+      {"day": "Fri", "type": "Reel/Carousel/Single", "topic": "Exact topic", "hook": "Opening hook", "audienceWhy": "Why THIS audience will engage"}
+    ]}
+  ],
+  "seriesIdea": {"name": "A recurring series title", "concept": "What this series is about", "why": "Why this will build a loyal returning audience"},
+  "viralOpportunity": "The single highest-probability viral content idea for THIS specific audience right now — be very specific"
+}
+
+Return ONLY valid JSON. Be audience-obsessed. Every decision must be justified by what the audience data tells you.`;
+
   } else {
     // Content generation mode
     prompt = `You are an expert Instagram content strategist and gospel content coach specializing in Christian creators, discipleship content, and faith-based growth. You understand what makes Reels go viral: strong hooks in the first 3 seconds, emotional resonance, spiritual truth, and a compelling CTA.
