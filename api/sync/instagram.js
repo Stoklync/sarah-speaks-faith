@@ -129,7 +129,7 @@ export default async function handler(req, res) {
       mediaType: m.media_type,
       postedAt: (m.timestamp || '').slice(0, 10),
       hour: m.timestamp ? new Date(m.timestamp).getHours() : null,
-      views: impressions || reach || videoViews || 0,
+      views: impressions || reach || videoViews || null,
       reach: reach || impressions || 0,
       likes,
       comments,

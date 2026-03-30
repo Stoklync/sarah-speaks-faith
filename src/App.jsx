@@ -7085,7 +7085,7 @@ const PostAnalytics = ({ onOpenSettings }) => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {(businesses || []).filter(Boolean).map((b) => {
               const bp = posts.filter(p => p.businessId === b.id);
-              const tv = bp.reduce((s, p) => s + p.views, 0);
+              const tv = bp.reduce((s, p) => s + (p.views || 0), 0);
               const te = bp.reduce((s, p) => s + p.likes + p.comments + p.shares + p.saves, 0);
               return (
                 <div key={b.id} className={`relative p-4 rounded-2xl border transition-all ${activeBusinessId === b.id ? 'border-rose-400 bg-rose-50 dark:bg-rose-900/20 dark:border-rose-600' : 'border-stone-200 dark:border-stone-600'}`}>
@@ -7218,7 +7218,7 @@ const PostAnalytics = ({ onOpenSettings }) => {
                 </div>
               ) : (
                 <div className="flex gap-4 mt-2 text-xs text-stone-500 dark:text-stone-400">
-                  <span><strong className="text-stone-700 dark:text-stone-200 font-mono">{p.views.toLocaleString()}</strong> views</span>
+                  <span><strong className="text-stone-700 dark:text-stone-200 font-mono">{p.views != null ? Number(p.views).toLocaleString() : '—'}</strong> views</span>
                   <span><strong className="text-stone-700 dark:text-stone-200 font-mono">{p.likes.toLocaleString()}</strong> likes</span>
                   <span><strong className="text-stone-700 dark:text-stone-200 font-mono">{p.comments.toLocaleString()}</strong> comments</span>
                   <span><strong className="text-stone-700 dark:text-stone-200 font-mono">{p.saves.toLocaleString()}</strong> saves</span>
