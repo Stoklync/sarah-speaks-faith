@@ -57,8 +57,10 @@ export default async function handler(req, res) {
   const profile = await profileRes.json().catch(() => ({}));
 
   // 3. Get account-level insights (reach, impressions, follower growth last 30 days)
+  const since = Math.floor((Date.now() - 30 * 86400000) / 1000);
+  const until = Math.floor(Date.now() / 1000);
   const accountInsightsRes = await fetch(
-    `${FB}/${igUserId}/insights?metric=reach,impressions,follower_count,profile_views,website_clicks&period=day&since=${Math.floor((Date.now() - 30*86400000)/1000)}&until=${Math.floor(Date.now()/1000)}&access_token=${token}`
+    `${FB}/${igUserId}/insights?metric=reach,impressions,profile_views,follower_count&period=day&since=${since}&until=${until}&access_token=${token}`
   );
   const accountInsightsData = await accountInsightsRes.json().catch(() => ({}));
 
@@ -96,21 +98,24 @@ export default async function handler(req, res) {
   // 5. Get insights for each media
   const posts = [];
   for (const m of mediaList) {
-    let engagement = (m.like_count || 0) + (m.comments_count || 0);
+    // likes + comments always available from basic fields — no insights permission needed
+    const likes = m.like_count || 0;
+    const comments = m.comments_count || 0;
     let impressions = 0;
     let reach = 0;
     let saved = 0;
     let videoViews = 0;
 
-    const metrics = m.media_type === 'VIDEO' ? 'engagement,impressions,reach,saved,video_views' : 'engagement,impressions,reach,saved';
+    // Use correct non-deprecated metrics per media type
+    const isVideo = m.media_type === 'VIDEO' || m.media_type === 'REEL';
+    const metrics = isVideo ? 'impressions,reach,saved,video_views' : 'impressions,reach,saved';
     const insightsRes = await fetch(`${FB}/${m.id}/insights?metric=${metrics}&access_token=${token}`);
     const insightsData = await insightsRes.json().catch(() => ({}));
 
     if (insightsData.data) {
       insightsData.data.forEach(metric => {
-        const v = metric.values?.[0]?.value ?? 0;
-        if (metric.name === 'engagement') engagement = Number(v);
-        else if (metric.name === 'impressions') impressions = Number(v);
+        const v = metric.values?.[0]?.value ?? metric.value ?? 0;
+        if (metric.name === 'impressions') impressions = Number(v);
         else if (metric.name === 'reach') reach = Number(v);
         else if (metric.name === 'saved') saved = Number(v);
         else if (metric.name === 'video_views') videoViews = Number(v);
@@ -124,14 +129,14 @@ export default async function handler(req, res) {
       mediaType: m.media_type,
       postedAt: (m.timestamp || '').slice(0, 10),
       hour: m.timestamp ? new Date(m.timestamp).getHours() : null,
-      views: impressions || reach || videoViews || engagement || (m.like_count || 0) + (m.comments_count || 0),
+      views: impressions || reach || videoViews || 0,
       reach: reach || impressions || 0,
-      likes: m.like_count ?? 0,
-      comments: m.comments_count || 0,
+      likes,
+      comments,
       shares: 0,
       saves: saved,
       videoViews,
-      engagement: engagement || (m.like_count || 0) + (m.comments_count || 0),
+      engagement: likes + comments + saved,
       permalink: m.permalink || '',
       notes: m.permalink ? `Link: ${m.permalink}` : '',
       source: 'instagram_api',
