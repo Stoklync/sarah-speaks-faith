@@ -1018,6 +1018,32 @@ const ProContentToolkit = () => {
   const [aiError, setAiError] = useState('');
   const [copiedId, setCopiedId] = useState(null);
 
+  // Notes — saved per brand
+  const [notes, setNotes] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('faith-studio-notes') || '{}'); } catch { return {}; }
+  });
+  const brandNotes = (notes[activeBusinessId] || []).sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0) || b.createdAt - a.createdAt);
+  const saveNotes = (updatedMap) => {
+    setNotes(updatedMap);
+    try { localStorage.setItem('faith-studio-notes', JSON.stringify(updatedMap)); } catch (_) {}
+  };
+  const addNote = (note) => {
+    const list = notes[activeBusinessId] || [];
+    saveNotes({ ...notes, [activeBusinessId]: [note, ...list] });
+  };
+  const updateNote = (id, changes) => {
+    const list = (notes[activeBusinessId] || []).map(n => n.id === id ? { ...n, ...changes } : n);
+    saveNotes({ ...notes, [activeBusinessId]: list });
+  };
+  const deleteNote = (id) => {
+    const list = (notes[activeBusinessId] || []).filter(n => n.id !== id);
+    saveNotes({ ...notes, [activeBusinessId]: list });
+  };
+  const [newNoteTitle, setNewNoteTitle] = useState('');
+  const [newNoteBody, setNewNoteBody] = useState('');
+  const [newNoteVideo, setNewNoteVideo] = useState('');
+  const [editingNoteId, setEditingNoteId] = useState(null);
+
   const copyText = (text, id) => { navigator.clipboard.writeText(text); setCopiedId(id); setTimeout(() => setCopiedId(null), 2000); };
 
   const callAI = async (promptTopic, promptDesc, format = '9:16 Reel') => {
@@ -1101,7 +1127,7 @@ const ProContentToolkit = () => {
 
       {/* Mode tabs */}
       <div className="flex gap-2 flex-wrap">
-        {[['ideas','💡 Ideas'],['script','🎬 Script'],['caption','✍️ Caption'],['calendar','📅 Weekly Plan'],['review','🔍 Review Before Post'],['chat','💬 Ask AI']].map(([mode, label]) => (
+        {[['ideas','💡 Ideas'],['script','🎬 Script'],['caption','✍️ Caption'],['calendar','📅 Weekly Plan'],['review','🔍 Review Before Post'],['chat','💬 Ask AI'],['notes','📌 Notes & Journal']].map(([mode, label]) => (
           <button key={mode} onClick={() => { setAiMode(mode); setAiResult(null); setAiError(''); }} className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${aiMode === mode ? 'bg-rose-500 text-white shadow' : 'bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 text-stone-600 dark:text-stone-300 hover:border-rose-300'}`}>{label}</button>
         ))}
       </div>
@@ -1295,7 +1321,70 @@ const ProContentToolkit = () => {
       )}
 
       {/* Ideas, Script, Caption, Calendar modes */}
-      {aiMode !== 'chat' && (
+      {/* Notes & Journal */}
+      {aiMode === 'notes' && (
+        <div className="space-y-4">
+          {/* New note form */}
+          <div className="bg-white dark:bg-stone-800 border border-rose-100 dark:border-stone-700 rounded-3xl p-6 space-y-3">
+            <h3 className="font-bold text-stone-800 dark:text-stone-100 flex items-center gap-2">📌 New Note — {bizName}</h3>
+            <p className="text-xs text-stone-400">Journal your ideas, track what worked, plan your next video. Pinned notes stay at the top.</p>
+            <input value={newNoteTitle} onChange={e => setNewNoteTitle(e.target.value)} placeholder="Title (e.g. 'Reel idea — faith over fear')" className="w-full bg-stone-50 dark:bg-stone-700 border border-stone-200 dark:border-stone-600 rounded-xl px-4 py-2 text-sm" />
+            <input value={newNoteVideo} onChange={e => setNewNoteVideo(e.target.value)} placeholder="Video/post link or title (optional)" className="w-full bg-stone-50 dark:bg-stone-700 border border-stone-200 dark:border-stone-600 rounded-xl px-4 py-2 text-sm" />
+            <textarea value={newNoteBody} onChange={e => setNewNoteBody(e.target.value)} placeholder="Write your note… What's your idea? What worked? What to improve? What trends did you notice?" rows={4} className="w-full bg-stone-50 dark:bg-stone-700 border border-stone-200 dark:border-stone-600 rounded-xl px-4 py-3 text-sm resize-none" />
+            <button onClick={() => {
+              if (!newNoteBody.trim() && !newNoteTitle.trim()) return;
+              addNote({ id: Date.now().toString(), title: newNoteTitle.trim(), body: newNoteBody.trim(), video: newNoteVideo.trim(), pinned: false, createdAt: Date.now() });
+              setNewNoteTitle(''); setNewNoteBody(''); setNewNoteVideo('');
+            }} className="px-5 py-2 bg-rose-500 text-white rounded-xl font-bold text-sm hover:bg-rose-600">Save Note</button>
+          </div>
+
+          {/* Notes list */}
+          {brandNotes.length === 0 && (
+            <div className="text-center py-10 text-stone-400 text-sm">No notes yet. Start journaling your content journey ✍️</div>
+          )}
+          {brandNotes.map(note => (
+            <div key={note.id} className={`bg-white dark:bg-stone-800 rounded-2xl p-5 border-2 transition-all ${note.pinned ? 'border-amber-400 dark:border-amber-600' : 'border-stone-100 dark:border-stone-700'}`}>
+              {editingNoteId === note.id ? (
+                <div className="space-y-2">
+                  <input defaultValue={note.title} id={`edit-title-${note.id}`} className="w-full bg-stone-50 dark:bg-stone-700 border border-stone-200 dark:border-stone-600 rounded-xl px-4 py-2 text-sm font-bold" />
+                  <input defaultValue={note.video} id={`edit-video-${note.id}`} placeholder="Video/post link (optional)" className="w-full bg-stone-50 dark:bg-stone-700 border border-stone-200 dark:border-stone-600 rounded-xl px-4 py-2 text-sm" />
+                  <textarea defaultValue={note.body} id={`edit-body-${note.id}`} rows={4} className="w-full bg-stone-50 dark:bg-stone-700 border border-stone-200 dark:border-stone-600 rounded-xl px-4 py-3 text-sm resize-none" />
+                  <div className="flex gap-2">
+                    <button onClick={() => {
+                      updateNote(note.id, {
+                        title: document.getElementById(`edit-title-${note.id}`).value,
+                        body: document.getElementById(`edit-body-${note.id}`).value,
+                        video: document.getElementById(`edit-video-${note.id}`).value,
+                      });
+                      setEditingNoteId(null);
+                    }} className="px-4 py-1.5 bg-rose-500 text-white rounded-xl text-xs font-bold hover:bg-rose-600">Save</button>
+                    <button onClick={() => setEditingNoteId(null)} className="px-4 py-1.5 bg-stone-100 dark:bg-stone-700 text-stone-600 dark:text-stone-300 rounded-xl text-xs font-bold">Cancel</button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <div className="flex items-start justify-between gap-2 mb-2">
+                    <div>
+                      {note.pinned && <span className="text-xs text-amber-500 font-bold mr-2">📌 Pinned</span>}
+                      {note.title && <span className="font-bold text-stone-800 dark:text-stone-100">{note.title}</span>}
+                      {note.video && <p className="text-xs text-rose-400 mt-0.5">🎬 {note.video}</p>}
+                    </div>
+                    <p className="text-xs text-stone-400 shrink-0">{new Date(note.createdAt).toLocaleDateString()}</p>
+                  </div>
+                  <p className="text-sm text-stone-600 dark:text-stone-300 whitespace-pre-wrap">{note.body}</p>
+                  <div className="flex gap-3 mt-3 pt-3 border-t border-stone-100 dark:border-stone-700">
+                    <button onClick={() => updateNote(note.id, { pinned: !note.pinned })} className={`text-xs font-bold ${note.pinned ? 'text-amber-500' : 'text-stone-400 hover:text-amber-500'}`}>{note.pinned ? 'Unpin' : '📌 Pin'}</button>
+                    <button onClick={() => setEditingNoteId(note.id)} className="text-xs text-stone-400 hover:text-rose-500 font-bold">Edit</button>
+                    <button onClick={() => { if (confirm('Delete this note?')) deleteNote(note.id); }} className="text-xs text-stone-400 hover:text-red-500 font-bold">Delete</button>
+                  </div>
+                </>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {aiMode !== 'chat' && aiMode !== 'notes' && (
         <div className="bg-white dark:bg-stone-800 border border-rose-100 dark:border-stone-700 rounded-3xl p-6 space-y-4">
           {aiMode === 'ideas' && <>
             <h3 className="font-bold text-stone-800 dark:text-stone-100">💡 Content Ideas Generator</h3>
