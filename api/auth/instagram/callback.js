@@ -2,6 +2,8 @@
  * Instagram OAuth callback — exchange code for token, store in Supabase.
  * Requires: META_APP_ID, META_APP_SECRET, BASE_URL, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
  */
+import { createClient } from '@supabase/supabase-js';
+
 export default async function handler(req, res) {
   let baseUrl = process.env.BASE_URL || 'https://sarah-speaks-faith.vercel.app';
   baseUrl = (baseUrl || '').replace(/\/$/, ''); // no trailing slash
@@ -53,8 +55,9 @@ export default async function handler(req, res) {
     const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
     if (supabaseUrl && supabaseKey) {
-      const { createClient } = await import('@supabase/supabase-js');
-      const supabase = createClient(supabaseUrl, supabaseKey);
+      const supabase = createClient(supabaseUrl, supabaseKey.trim(), {
+        auth: { autoRefreshToken: false, persistSession: false }
+      });
       const expiresAt = tokens.expires_in ? new Date(Date.now() + tokens.expires_in * 1000).toISOString() : null;
       const { error } = await supabase.from('social_tokens').upsert(
         { user_key: userKey, platform: 'instagram', access_token: accessToken, refresh_token: null, expires_at: expiresAt, updated_at: new Date().toISOString() },
