@@ -6742,6 +6742,9 @@ const PostAnalytics = ({ onOpenSettings }) => {
   const [syncMsg, setSyncMsg] = useState('');
 
   // Ads state
+  const [igProfile, setIgProfile] = useState(() => { try { return JSON.parse(localStorage.getItem('faith-studio-ig-profile') || 'null'); } catch { return null; } });
+  const [igGrowth, setIgGrowth] = useState(() => { try { return JSON.parse(localStorage.getItem('faith-studio-ig-growth') || 'null'); } catch { return null; } });
+  const [igInsights, setIgInsights] = useState(() => { try { return JSON.parse(localStorage.getItem('faith-studio-ig-insights') || 'null'); } catch { return null; } });
   const [adsTab, setAdsTab] = useState(false);
   const [adAccountId, setAdAccountId] = useState(() => localStorage.getItem('faith-studio-ad-account') || '');
   const [adAccounts, setAdAccounts] = useState([]);
@@ -6788,12 +6791,15 @@ const PostAnalytics = ({ onOpenSettings }) => {
       try {
         const r = await fetch('/api/sync/instagram', { headers: { 'X-User-Key': userKey } });
         const data = await r.json();
+        if (data.account) { setIgProfile(data.account); localStorage.setItem('faith-studio-ig-profile', JSON.stringify(data.account)); }
+        if (data.growth) { setIgGrowth(data.growth); localStorage.setItem('faith-studio-ig-growth', JSON.stringify(data.growth)); }
+        if (data.insights) { setIgInsights(data.insights); localStorage.setItem('faith-studio-ig-insights', JSON.stringify(data.insights)); }
         if (data.posts?.length) {
           const existing = new Set(posts.map(p => p.id));
           const newPosts = data.posts.filter(p => !existing.has(p.id)).map(p => ({ ...p, businessId: activeBusinessId }));
           const updated = data.posts.filter(p => existing.has(p.id));
           if (newPosts.length) { setPosts(prev => [...prev, ...newPosts]); added.push(`${newPosts.length} new Instagram posts`); }
-          if (updated.length) { setPosts(prev => prev.map(p => { const u = updated.find(x => x.id === p.id); return u ? { ...p, views: u.views, likes: u.likes, comments: u.comments, saves: u.saves } : p; })); added.push(`${updated.length} Instagram posts updated`); }
+          if (updated.length) { setPosts(prev => prev.map(p => { const u = updated.find(x => x.id === p.id); return u ? { ...p, views: u.views, likes: u.likes, comments: u.comments, saves: u.saves, reach: u.reach, engagement: u.engagement } : p; })); added.push(`${updated.length} Instagram posts updated`); }
         } else if (data.error) setSyncMsg('Instagram: ' + data.error);
       } catch (e) { setSyncMsg('Instagram sync failed: ' + e.message); }
     }
@@ -6999,6 +7005,72 @@ const PostAnalytics = ({ onOpenSettings }) => {
       {/* ANALYTICS TAB — hidden when Ads tab active */}
       {!adsTab && <>
 
+      {/* Instagram Growth Dashboard */}
+      {igProfile && (
+        <div className="bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-3xl p-6 shadow-sm space-y-5">
+          {/* Profile header */}
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-rose-400 to-pink-500 flex items-center justify-center text-white font-bold text-lg">
+              {igProfile.username?.[0]?.toUpperCase() || 'I'}
+            </div>
+            <div>
+              <h3 className="font-bold text-stone-800 dark:text-stone-100 flex items-center gap-2">
+                <Instagram size={16} className="text-pink-500" /> @{igProfile.username}
+              </h3>
+              <p className="text-xs text-stone-400">{igProfile.bio?.slice(0, 80) || 'Instagram Business Account'}</p>
+            </div>
+          </div>
+
+          {/* Key numbers */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="bg-pink-50 dark:bg-pink-900/20 rounded-2xl p-4 text-center">
+              <p className="text-2xl font-bold text-pink-600 dark:text-pink-400">{(igProfile.followers || 0).toLocaleString()}</p>
+              <p className="text-xs text-stone-500 mt-1">Followers</p>
+            </div>
+            <div className="bg-rose-50 dark:bg-rose-900/20 rounded-2xl p-4 text-center">
+              <p className="text-2xl font-bold text-rose-600 dark:text-rose-400">{igGrowth?.newFollowers30d != null ? (igGrowth.newFollowers30d >= 0 ? '+' : '') + igGrowth.newFollowers30d : '—'}</p>
+              <p className="text-xs text-stone-500 mt-1">New followers (30d)</p>
+            </div>
+            <div className="bg-amber-50 dark:bg-amber-900/20 rounded-2xl p-4 text-center">
+              <p className="text-2xl font-bold text-amber-600 dark:text-amber-400">{(igGrowth?.reach30d || 0).toLocaleString()}</p>
+              <p className="text-xs text-stone-500 mt-1">Reach (30d)</p>
+            </div>
+            <div className="bg-emerald-50 dark:bg-emerald-900/20 rounded-2xl p-4 text-center">
+              <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{(igGrowth?.profileViews30d || 0).toLocaleString()}</p>
+              <p className="text-xs text-stone-500 mt-1">Profile views (30d)</p>
+            </div>
+          </div>
+
+          {/* What works */}
+          {igInsights && (
+            <div className="bg-stone-50 dark:bg-stone-700/40 rounded-2xl p-4 space-y-2">
+              <h4 className="font-bold text-stone-700 dark:text-stone-200 flex items-center gap-2"><Flame size={14} className="text-rose-400" /> What works for you</h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
+                {igInsights.avgReelEngagement > igInsights.avgImageEngagement ? (
+                  <p className="text-emerald-700 dark:text-emerald-400">✓ <strong>Reels</strong> get {igInsights.avgReelEngagement} avg engagement vs {igInsights.avgImageEngagement} for images — post more Reels</p>
+                ) : igInsights.avgImageEngagement > 0 ? (
+                  <p className="text-emerald-700 dark:text-emerald-400">✓ <strong>Images</strong> get {igInsights.avgImageEngagement} avg engagement vs {igInsights.avgReelEngagement} for Reels</p>
+                ) : null}
+                {igInsights.bestPostingHour && (
+                  <p className="text-blue-700 dark:text-blue-400">✓ Best time to post: <strong>{igInsights.bestPostingHour}</strong> based on your top posts</p>
+                )}
+                {igInsights.topPost && (
+                  <p className="text-stone-600 dark:text-stone-300 sm:col-span-2">🏆 Top post: "<strong>{igInsights.topPost.title?.slice(0,60)}</strong>" — {igInsights.topPost.engagement} engagement
+                    {igInsights.topPost.permalink && <a href={igInsights.topPost.permalink} target="_blank" rel="noopener noreferrer" className="ml-2 text-rose-500 underline">View</a>}
+                  </p>
+                )}
+                {igProfile.followers > 0 && igGrowth?.newFollowers30d != null && (
+                  <p className="text-stone-500 dark:text-stone-400">
+                    Growth rate: <strong>{((igGrowth.newFollowers30d / igProfile.followers) * 100).toFixed(1)}%</strong> this month
+                    {igGrowth.newFollowers30d < 0 ? ' — you lost followers. Try posting more consistently.' : igGrowth.newFollowers30d === 0 ? ' — flat growth. Try a new content format.' : ' — keep it up!'}
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Auto-log notice */}
       <div className="bg-gradient-to-br from-rose-50 to-amber-50 dark:from-stone-800 dark:to-stone-800 border-2 border-rose-200 dark:border-rose-800 rounded-3xl p-6 shadow-lg">
         <h2 className="text-2xl font-bold text-stone-800 dark:text-stone-100 mb-1">Post Analytics</h2>
@@ -7122,8 +7194,12 @@ const PostAnalytics = ({ onOpenSettings }) => {
                   <p className="font-bold text-stone-800 dark:text-stone-100 truncate">{p.title}</p>
                   <p className="text-xs text-stone-400 mt-0.5">{platformLabels[p.platform] || p.platform} · {p.postedAt} {p.source === 'instagram_api' || p.source === 'youtube_api' ? '· synced' : ''}</p>
                 </div>
-                <div className="flex gap-1 shrink-0">
+                <div className="flex gap-1 shrink-0 flex-wrap justify-end">
                   <button onClick={() => editingId === p.id ? saveEdit(p.id) : startEdit(p)} className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${editingId === p.id ? 'bg-rose-500 text-white' : 'bg-stone-100 dark:bg-stone-700 text-stone-600 dark:text-stone-300 hover:bg-rose-50 dark:hover:bg-rose-900/30 hover:text-rose-600'}`}>{editingId === p.id ? 'Save' : 'Update'}</button>
+                  <select onChange={e => { if (e.target.value) { updatePost(p.id, { businessId: e.target.value }); e.target.value = ''; } }} defaultValue="" className="px-2 py-1.5 rounded-lg text-xs bg-stone-100 dark:bg-stone-700 text-stone-600 dark:text-stone-300 border-0 cursor-pointer">
+                    <option value="" disabled>Move to…</option>
+                    {(businesses || []).filter(Boolean).map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+                  </select>
                   <button onClick={() => removePost(p.id)} className="p-1.5 rounded-lg text-stone-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20"><Trash2 size={14} /></button>
                 </div>
               </div>

@@ -50,7 +50,38 @@ export default async function handler(req, res) {
   }
   const igUsername = (typeof igAccount === 'object' && igAccount?.username) || 'Instagram';
 
-  // 2. Get media
+  // 2. Get account profile (followers, following, posts count)
+  const profileRes = await fetch(
+    `${FB}/${igUserId}?fields=followers_count,follows_count,media_count,biography,website,profile_picture_url,name,username&access_token=${token}`
+  );
+  const profile = await profileRes.json().catch(() => ({}));
+
+  // 3. Get account-level insights (reach, impressions, follower growth last 30 days)
+  const accountInsightsRes = await fetch(
+    `${FB}/${igUserId}/insights?metric=reach,impressions,follower_count,profile_views,website_clicks&period=day&since=${Math.floor((Date.now() - 30*86400000)/1000)}&until=${Math.floor(Date.now()/1000)}&access_token=${token}`
+  );
+  const accountInsightsData = await accountInsightsRes.json().catch(() => ({}));
+
+  // Process follower growth over last 30 days
+  let followerGrowth = [];
+  let totalNewFollowers = 0;
+  let totalReach30d = 0;
+  let totalImpressions30d = 0;
+  let profileViews30d = 0;
+
+  if (accountInsightsData.data) {
+    accountInsightsData.data.forEach(metric => {
+      if (metric.name === 'follower_count') {
+        followerGrowth = (metric.values || []).map(v => ({ date: v.end_time?.slice(0,10), value: Number(v.value) }));
+        totalNewFollowers = followerGrowth.reduce((s, v) => s + v.value, 0);
+      }
+      if (metric.name === 'reach') totalReach30d = (metric.values || []).reduce((s, v) => s + Number(v.value), 0);
+      if (metric.name === 'impressions') totalImpressions30d = (metric.values || []).reduce((s, v) => s + Number(v.value), 0);
+      if (metric.name === 'profile_views') profileViews30d = (metric.values || []).reduce((s, v) => s + Number(v.value), 0);
+    });
+  }
+
+  // 4. Get media
   const mediaRes = await fetch(
     `${FB}/${igUserId}/media?fields=id,caption,timestamp,media_type,permalink,like_count,comments_count&limit=25&access_token=${token}`
   );
@@ -62,13 +93,14 @@ export default async function handler(req, res) {
 
   const mediaList = mediaData.data || [];
 
-  // 3. Get insights for each media (engagement, impressions, reach, saved)
+  // 5. Get insights for each media
   const posts = [];
   for (const m of mediaList) {
     let engagement = (m.like_count || 0) + (m.comments_count || 0);
     let impressions = 0;
     let reach = 0;
     let saved = 0;
+    let videoViews = 0;
 
     const metrics = m.media_type === 'VIDEO' ? 'engagement,impressions,reach,saved,video_views' : 'engagement,impressions,reach,saved';
     const insightsRes = await fetch(`${FB}/${m.id}/insights?metric=${metrics}&access_token=${token}`);
@@ -81,6 +113,7 @@ export default async function handler(req, res) {
         else if (metric.name === 'impressions') impressions = Number(v);
         else if (metric.name === 'reach') reach = Number(v);
         else if (metric.name === 'saved') saved = Number(v);
+        else if (metric.name === 'video_views') videoViews = Number(v);
       });
     }
 
@@ -88,19 +121,61 @@ export default async function handler(req, res) {
       id: 'ig-' + m.id,
       title: (m.caption || '').slice(0, 80) || 'Instagram post',
       platform: 'instagram',
+      mediaType: m.media_type,
       postedAt: (m.timestamp || '').slice(0, 10),
+      hour: m.timestamp ? new Date(m.timestamp).getHours() : null,
       views: impressions || reach,
-      likes: m.like_count ?? engagement,
+      reach,
+      likes: m.like_count ?? 0,
       comments: m.comments_count || 0,
       shares: 0,
       saves: saved,
+      videoViews,
+      engagement,
+      permalink: m.permalink || '',
       notes: m.permalink ? `Link: ${m.permalink}` : '',
       source: 'instagram_api',
     });
   }
 
+  // 6. Analyze what works
+  const reels = posts.filter(p => p.mediaType === 'VIDEO');
+  const images = posts.filter(p => p.mediaType === 'IMAGE');
+  const avgReelEngagement = reels.length ? Math.round(reels.reduce((s,p) => s + p.engagement, 0) / reels.length) : 0;
+  const avgImageEngagement = images.length ? Math.round(images.reduce((s,p) => s + p.engagement, 0) / images.length) : 0;
+  const bestHour = posts.length ? (() => {
+    const hours = {};
+    posts.forEach(p => { if (p.hour != null) hours[p.hour] = (hours[p.hour] || 0) + p.engagement; });
+    return Object.entries(hours).sort((a,b) => b[1]-a[1])[0]?.[0];
+  })() : null;
+  const topPost = posts.length ? posts.reduce((a,b) => b.engagement > a.engagement ? b : a, posts[0]) : null;
+
   return res.status(200).json({
-    account: { id: igUserId, username: igUsername },
+    account: {
+      id: igUserId,
+      username: profile.username || igUsername,
+      name: profile.name || '',
+      followers: profile.followers_count || 0,
+      following: profile.follows_count || 0,
+      mediaCount: profile.media_count || 0,
+      bio: profile.biography || '',
+      website: profile.website || '',
+    },
+    growth: {
+      newFollowers30d: totalNewFollowers,
+      reach30d: totalReach30d,
+      impressions30d: totalImpressions30d,
+      profileViews30d,
+      followerGrowth,
+    },
+    insights: {
+      avgReelEngagement,
+      avgImageEngagement,
+      bestPostingHour: bestHour ? `${bestHour}:00` : null,
+      topPost: topPost ? { title: topPost.title, engagement: topPost.engagement, permalink: topPost.permalink } : null,
+      reelCount: reels.length,
+      imageCount: images.length,
+    },
     posts,
   });
 }
