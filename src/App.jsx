@@ -6799,7 +6799,7 @@ const PostAnalytics = ({ onOpenSettings }) => {
           const newPosts = data.posts.filter(p => !existing.has(p.id)).map(p => ({ ...p, businessId: activeBusinessId }));
           const updated = data.posts.filter(p => existing.has(p.id));
           if (newPosts.length) { setPosts(prev => [...prev, ...newPosts]); added.push(`${newPosts.length} new Instagram posts`); }
-          if (updated.length) { setPosts(prev => prev.map(p => { const u = updated.find(x => x.id === p.id); return u ? { ...p, views: u.views, likes: u.likes, comments: u.comments, saves: u.saves, reach: u.reach, engagement: u.engagement } : p; })); added.push(`${updated.length} Instagram posts updated`); }
+          if (updated.length) { setPosts(prev => prev.map(p => { const u = updated.find(x => x.id === p.id); return u ? { ...p, businessId: activeBusinessId, views: u.views, likes: u.likes, comments: u.comments, saves: u.saves, reach: u.reach, engagement: u.engagement } : p; })); added.push(`${updated.length} Instagram posts updated`); }
         } else if (data.error) setSyncMsg('Instagram: ' + data.error);
       } catch (e) { setSyncMsg('Instagram sync failed: ' + e.message); }
     }
@@ -7091,10 +7091,17 @@ const PostAnalytics = ({ onOpenSettings }) => {
               const tv = bp.reduce((s, p) => s + p.views, 0);
               const te = bp.reduce((s, p) => s + p.likes + p.comments + p.shares + p.saves, 0);
               return (
-                <button key={b.id} onClick={() => setActiveBusinessId(b.id)} className={`text-left p-4 rounded-2xl border transition-all ${activeBusinessId === b.id ? 'border-rose-400 bg-rose-50 dark:bg-rose-900/20 dark:border-rose-600' : 'border-stone-200 dark:border-stone-600 hover:border-rose-200 dark:hover:border-stone-500'}`}>
-                  <p className="font-bold text-stone-800 dark:text-stone-100">{b.name}</p>
-                  <p className="text-sm text-stone-500 dark:text-stone-400 mt-1">{bp.length} posts · {tv.toLocaleString()} views · {te.toLocaleString()} engagement</p>
-                </button>
+                <div key={b.id} className={`relative p-4 rounded-2xl border transition-all ${activeBusinessId === b.id ? 'border-rose-400 bg-rose-50 dark:bg-rose-900/20 dark:border-rose-600' : 'border-stone-200 dark:border-stone-600'}`}>
+                  <button onClick={() => setActiveBusinessId(b.id)} className="text-left w-full">
+                    <p className="font-bold text-stone-800 dark:text-stone-100">{b.name}</p>
+                    <p className="text-sm text-stone-500 dark:text-stone-400 mt-1">{bp.length} posts · {tv.toLocaleString()} views · {te.toLocaleString()} engagement</p>
+                  </button>
+                  {bp.length > 0 && (
+                    <button onClick={() => { if (confirm(`Remove all ${bp.length} posts from ${b.name}?`)) setPosts(prev => prev.filter(p => p.businessId !== b.id)); }} className="absolute top-3 right-3 p-1 rounded-lg text-stone-300 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20">
+                      <Trash2 size={13} />
+                    </button>
+                  )}
+                </div>
               );
             })}
           </div>
