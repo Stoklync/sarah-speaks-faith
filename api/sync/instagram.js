@@ -56,11 +56,11 @@ export default async function handler(req, res) {
   );
   const profile = await profileRes.json().catch(() => ({}));
 
-  // 3. Get account-level insights (reach, impressions, follower growth last 30 days)
+  // 3. Get account-level insights (reach, profile views, follower growth last 30 days)
   const since = Math.floor((Date.now() - 30 * 86400000) / 1000);
   const until = Math.floor(Date.now() / 1000);
   const accountInsightsRes = await fetch(
-    `${FB}/${igUserId}/insights?metric=reach,impressions,profile_views,follower_count&period=day&since=${since}&until=${until}&access_token=${token}`
+    `${FB}/${igUserId}/insights?metric=reach,profile_views,follower_count&period=day&since=${since}&until=${until}&access_token=${token}`
   );
   const accountInsightsData = await accountInsightsRes.json().catch(() => ({}));
 
@@ -68,7 +68,6 @@ export default async function handler(req, res) {
   let followerGrowth = [];
   let totalNewFollowers = 0;
   let totalReach30d = 0;
-  let totalImpressions30d = 0;
   let profileViews30d = 0;
 
   if (accountInsightsData.data) {
@@ -78,8 +77,27 @@ export default async function handler(req, res) {
         totalNewFollowers = followerGrowth.reduce((s, v) => s + v.value, 0);
       }
       if (metric.name === 'reach') totalReach30d = (metric.values || []).reduce((s, v) => s + Number(v.value), 0);
-      if (metric.name === 'impressions') totalImpressions30d = (metric.values || []).reduce((s, v) => s + Number(v.value), 0);
       if (metric.name === 'profile_views') profileViews30d = (metric.values || []).reduce((s, v) => s + Number(v.value), 0);
+    });
+  }
+
+  // 3b. Audience demographics (lifetime metrics)
+  const audienceRes = await fetch(
+    `${FB}/${igUserId}/insights?metric=audience_gender_age,audience_city,audience_country&period=lifetime&access_token=${token}`
+  );
+  const audienceData = await audienceRes.json().catch(() => ({}));
+  let audience = { genderAge: {}, topCities: [], topCountries: [] };
+  if (audienceData.data) {
+    audienceData.data.forEach(metric => {
+      if (metric.name === 'audience_gender_age') {
+        audience.genderAge = metric.values?.[0]?.value || {};
+      } else if (metric.name === 'audience_city') {
+        const v = metric.values?.[0]?.value || {};
+        audience.topCities = Object.entries(v).sort((a,b) => b[1]-a[1]).slice(0,5).map(([name,count]) => ({ name, count }));
+      } else if (metric.name === 'audience_country') {
+        const v = metric.values?.[0]?.value || {};
+        audience.topCountries = Object.entries(v).sort((a,b) => b[1]-a[1]).slice(0,5).map(([name,count]) => ({ name, count }));
+      }
     });
   }
 
@@ -101,25 +119,35 @@ export default async function handler(req, res) {
     // likes + comments always available from basic fields — no insights permission needed
     const likes = m.like_count || 0;
     const comments = m.comments_count || 0;
-    let impressions = 0;
     let reach = 0;
     let saved = 0;
     let videoViews = 0;
+    let avgWatchTime = 0;
+    let totalPlays = 0;
 
-    // Use correct non-deprecated metrics per media type
-    const isVideo = m.media_type === 'VIDEO' || m.media_type === 'REEL';
-    const metrics = isVideo ? 'impressions,reach,saved,video_views' : 'impressions,reach,saved';
+    // Use v22+ supported metrics: impressions/video_views deprecated, use reach + views
+    const isReel = m.media_type === 'REEL';
+    const isVideo = m.media_type === 'VIDEO';
+    const isCarousel = m.media_type === 'CAROUSEL_ALBUM';
+    // Reels-specific metrics only valid for REEL type, not regular VIDEO
+    const metrics = isReel ? 'reach,saved,views,ig_reels_avg_watch_time,ig_reels_aggregated_all_plays_count'
+      : isVideo ? 'reach,saved,views'
+      : isCarousel ? 'reach,saved'
+      : 'reach,saved';
     const insightsRes = await fetch(`${FB}/${m.id}/insights?metric=${metrics}&access_token=${token}`);
     const insightsData = await insightsRes.json().catch(() => ({}));
 
     if (insightsData.data) {
       insightsData.data.forEach(metric => {
         const v = metric.values?.[0]?.value ?? metric.value ?? 0;
-        if (metric.name === 'impressions') impressions = Number(v);
-        else if (metric.name === 'reach') reach = Number(v);
+        if (metric.name === 'reach') reach = Number(v);
         else if (metric.name === 'saved') saved = Number(v);
-        else if (metric.name === 'video_views') videoViews = Number(v);
+        else if (metric.name === 'views') videoViews = Number(v);
+        else if (metric.name === 'ig_reels_avg_watch_time') avgWatchTime = Number(v); // milliseconds
+        else if (metric.name === 'ig_reels_aggregated_all_plays_count') totalPlays = Number(v);
       });
+    } else if (insightsData.error) {
+      console.warn(`Insights error for ${m.id}:`, insightsData.error?.code, insightsData.error?.message);
     }
 
     posts.push({
@@ -129,13 +157,15 @@ export default async function handler(req, res) {
       mediaType: m.media_type,
       postedAt: (m.timestamp || '').slice(0, 10),
       hour: m.timestamp ? new Date(m.timestamp).getHours() : null,
-      views: impressions || reach || videoViews || null,
-      reach: reach || impressions || 0,
+      views: (isReel || isVideo) ? (videoViews || reach || null) : (reach || null),
+      reach: reach || 0,
       likes,
       comments,
       shares: 0,
       saves: saved,
       videoViews,
+      avgWatchTimeMs: avgWatchTime || null,
+      totalPlays: totalPlays || null,
       engagement: likes + comments + saved,
       permalink: m.permalink || '',
       notes: m.permalink ? `Link: ${m.permalink}` : '',
@@ -169,7 +199,6 @@ export default async function handler(req, res) {
     growth: {
       newFollowers30d: totalNewFollowers,
       reach30d: totalReach30d,
-      impressions30d: totalImpressions30d,
       profileViews30d,
       followerGrowth,
     },
@@ -181,6 +210,7 @@ export default async function handler(req, res) {
       reelCount: reels.length,
       imageCount: images.length,
     },
+    audience,
     posts,
   });
 }

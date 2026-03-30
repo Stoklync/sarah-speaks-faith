@@ -4,14 +4,11 @@
  * Delete this file after debugging.
  */
 export default function handler(req, res) {
-  let baseUrl = process.env.BASE_URL || (req.headers['x-vercel-url'] ? `https://${req.headers['x-vercel-url']}` : req.headers.origin || 'unknown');
-  baseUrl = (baseUrl || '').replace(/\/$/, '');
-  const redirectUri = `${baseUrl}/api/auth/instagram/callback`;
+  const clientId = process.env.GOOGLE_CLIENT_ID || '(not set)';
   res.setHeader('Content-Type', 'application/json');
   res.status(200).json({
-    BASE_URL_env: process.env.BASE_URL || '(not set)',
-    baseUrl_used: baseUrl,
-    redirect_uri_sent_to_meta: redirectUri,
-    message: 'Meta Valid OAuth Redirect URIs must contain exactly: ' + redirectUri,
+    GOOGLE_CLIENT_ID: clientId,
+    GOOGLE_CLIENT_ID_length: clientId.length,
+    GOOGLE_CLIENT_SECRET_set: !!process.env.GOOGLE_CLIENT_SECRET,
   });
 }

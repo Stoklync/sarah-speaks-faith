@@ -89,7 +89,8 @@ import {
   Lightbulb,
   Hash as HashIcon,
   Clock as ClockIcon,
-  Flame
+  Flame,
+  Users
 } from 'lucide-react';
 
 // --- App Context ---
@@ -213,7 +214,7 @@ const App = () => {
     });
   }, []);
 
-  const [activeTab, setActiveTab] = useState('start');
+  const [activeTab, setActiveTab] = useState(() => { try { return localStorage.getItem('faith-studio-active-tab') || 'pro'; } catch { return 'pro'; } });
   const assets = useEditorStore(s => Array.isArray(s?.assets) ? s.assets : []);
   const addAsset = useEditorStore(s => s.addAsset);
   const removeAsset = useEditorStore(s => s.removeAsset);
@@ -263,6 +264,9 @@ const App = () => {
   const [showAddBusiness, setShowAddBusiness] = useState(false);
 
   useEffect(() => {
+    try { localStorage.setItem('faith-studio-active-tab', activeTab); } catch (_) {}
+  }, [activeTab]);
+  useEffect(() => {
     try { if (contactPageUrl) localStorage.setItem('faith-contact-url', contactPageUrl); } catch (_) {}
   }, [contactPageUrl]);
   useEffect(() => {
@@ -291,11 +295,8 @@ const App = () => {
   const [openaiKey, setOpenaiKey] = useState(() => { try { return localStorage.getItem('faith-studio-openai-api-key') || ''; } catch { return ''; } });
 
   const primaryNav = [
-    ['start', Target, 'Start Here'],
-    ['video', Sliders, 'Video Editor'],
-    ['photo-edit', ImageIcon, 'Photo Editor'],
+    ['pro', Zap, 'Content Studio'],
     ['design', Palette, 'Design Studio'],
-    ['pro', Zap, 'Content Toolkit'],
     ['social', Share2, 'Social & Podcast'],
     ['traffic', Link2, 'Traffic Links'],
     ['analytics', BarChart2, 'Analytics'],
@@ -989,20 +990,74 @@ const BUSINESS_TEMPLATES = [
 ];
 
 const ProContentToolkit = () => {
-  const { addAsset, filteredAssets, activeBusinessId, businesses } = useStudio();
-  const [selectedTransitions, setSelectedTransitions] = useState([]);
-  const [copiedId, setCopiedId] = useState(null);
-  const [playbookOpen, setPlaybookOpen] = useState(false);
-  const musicRef = useRef(null);
-  const audioAssets = filteredAssets.filter(a => a.type === 'audio');
-  const bizId = activeBusinessId || 'sarah';
-  const nicheHooks = NICHE_HOOKS[bizId] || NICHE_HOOKS.sarah;
+  const { activeBusinessId, businesses } = useStudio();
   const bizName = (businesses || []).find(b => b?.id === activeBusinessId)?.name || 'Your brand';
+  const [aiMode, setAiMode] = useState('ideas'); // ideas | script | caption | calendar | chat
+  const [topic, setTopic] = useState('');
+  const [chatInput, setChatInput] = useState('');
+  const [chatHistory, setChatHistory] = useState([]);
+  const [aiResult, setAiResult] = useState(null);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState('');
+  const [copiedId, setCopiedId] = useState(null);
 
-  const toggleTransition = (id) => {
-    setSelectedTransitions(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  const copyText = (text, id) => { navigator.clipboard.writeText(text); setCopiedId(id); setTimeout(() => setCopiedId(null), 2000); };
+
+  const callAI = async (promptTopic, promptDesc, format = '9:16 Reel') => {
+    setAiLoading(true); setAiError(''); setAiResult(null);
+    try {
+      const r = await fetch('/api/ai/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ topic: promptTopic, description: promptDesc, niche: 'faith/lifestyle', format })
+      });
+      const data = await r.json();
+      if (data.error) throw new Error(data.error);
+      setAiResult(data);
+    } catch (e) {
+      setAiError(e.message || 'AI failed');
+    } finally {
+      setAiLoading(false);
+    }
   };
 
+  const sendChat = async () => {
+    if (!chatInput.trim()) return;
+    const userMsg = chatInput.trim();
+    setChatInput('');
+    const newHistory = [...chatHistory, { role: 'user', text: userMsg }];
+    setChatHistory(newHistory);
+    setAiLoading(true);
+    try {
+      const r = await fetch('/api/ai/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          mode: 'chat',
+          topic: userMsg,
+          chatHistory: chatHistory,
+        })
+      });
+      const data = await r.json();
+      const reply = data.reply || data.postingTip || data.caption || 'Sorry, I had trouble responding. Try again.';
+      setChatHistory(h => [...h, { role: 'ai', text: reply }]);
+    } catch (e) {
+      setChatHistory(h => [...h, { role: 'ai', text: 'Sorry, I had trouble responding. Try again.' }]);
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+  const QUICK_IDEAS = [
+    'My faith journey — how I found God',
+    'Morning routine as a Christian woman',
+    '3 Bible verses that changed my life',
+    'What I learned from my hardest season',
+    'How prayer actually works',
+    'Why I stopped chasing perfection',
+    'What being a steward means to me',
+    'A message for women who feel lost',
+  ];
   const copyTemplate = (text, id) => {
     navigator.clipboard.writeText(text);
     setCopiedId(id);
@@ -1016,309 +1071,249 @@ const ProContentToolkit = () => {
   };
 
   return (
-    <div className="max-w-6xl mx-auto space-y-10">
+    <div className="max-w-4xl mx-auto space-y-6">
       <BrandKitReminder compact />
 
-      {/* Growth Playbook */}
-      <div className="bg-white dark:bg-stone-800 border border-rose-100 dark:border-stone-700 rounded-3xl p-6 shadow-sm transition-colors">
-        <button onClick={() => setPlaybookOpen(p => !p)} className="flex items-center justify-between w-full text-left">
-          <h3 className="text-lg font-bold text-stone-800 dark:text-stone-100 flex items-center gap-2">
-            <Target size={22} className="text-rose-400" />
-            Growth Playbook — What Works
-          </h3>
-          {playbookOpen ? <ChevronDown size={20} className="text-stone-500" /> : <ChevronRight size={20} className="text-stone-500" />}
-        </button>
-        {playbookOpen && (
-          <div className="mt-4 space-y-3 pt-4 border-t border-rose-100 dark:border-stone-700">
-            {GROWTH_PLAYBOOK.map((item, i) => (
-              <div key={i} className="p-4 rounded-xl bg-rose-50/50 dark:bg-stone-700/30 border border-rose-100 dark:border-stone-600">
-                <span className="text-xs font-bold text-rose-600 dark:text-rose-400 uppercase">{item.title}</span>
-                <p className="text-sm text-stone-600 dark:text-stone-300 mt-1">{item.tip}</p>
-              </div>
+      {/* Header */}
+      <div className="bg-gradient-to-br from-rose-50 to-amber-50 dark:from-stone-800 dark:to-stone-800 border-2 border-rose-200 dark:border-rose-800 rounded-3xl p-6">
+        <h2 className="text-2xl font-bold text-stone-800 dark:text-stone-100 mb-1">✨ AI Content Studio</h2>
+        <p className="text-stone-500 dark:text-stone-400 text-sm">Your personal content coach. Get scripts, ideas, captions, and a weekly plan — powered by AI.</p>
+      </div>
+
+      {/* Mode tabs */}
+      <div className="flex gap-2 flex-wrap">
+        {[['ideas','💡 Ideas'],['script','🎬 Script'],['caption','✍️ Caption'],['calendar','📅 Weekly Plan'],['review','🔍 Review Before Post'],['chat','💬 Ask AI']].map(([mode, label]) => (
+          <button key={mode} onClick={() => { setAiMode(mode); setAiResult(null); setAiError(''); }} className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${aiMode === mode ? 'bg-rose-500 text-white shadow' : 'bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 text-stone-600 dark:text-stone-300 hover:border-rose-300'}`}>{label}</button>
+        ))}
+      </div>
+
+      {/* Review mode */}
+      {aiMode === 'review' && (
+        <div className="bg-white dark:bg-stone-800 border border-rose-100 dark:border-stone-700 rounded-3xl p-6 space-y-4">
+          <h3 className="font-bold text-stone-800 dark:text-stone-100 flex items-center gap-2"><Search size={18} className="text-rose-400" /> Review before you post</h3>
+          <p className="text-xs text-stone-500">AI will score your content, find weaknesses, and tell you exactly what to fix before you hit publish.</p>
+          <div className="flex gap-2 flex-wrap">
+            {[['caption','📝 Caption'],['script','🎬 Script'],['idea','💡 Idea'],['thumbnail','🖼️ Image/Thumbnail']].map(([t,l]) => (
+              <button key={t} onClick={() => { setTopic(t); setAiResult(null); }} className={`px-3 py-1.5 rounded-xl text-sm font-bold border transition-all ${topic===t ? 'bg-rose-500 text-white border-rose-500' : 'bg-stone-50 dark:bg-stone-700 border-stone-200 dark:border-stone-600 text-stone-600 dark:text-stone-300'}`}>{l}</button>
             ))}
           </div>
-        )}
-      </div>
-
-      {/* Transition Guide + Transitions */}
-      <div className="bg-white dark:bg-stone-800 border border-rose-100 dark:border-stone-700 rounded-3xl p-8 shadow-sm transition-colors">
-        <h3 className="text-xl font-bold text-stone-800 dark:text-stone-100 flex items-center gap-2 mb-2">
-          <Sliders size={22} className="text-rose-400" />
-          Seamless vs Purposeful Transitions
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 p-4 rounded-2xl bg-rose-50/50 dark:bg-stone-700/30 border border-rose-100 dark:border-stone-600">
-          <div>
-            <span className="text-xs font-bold text-rose-600 dark:text-rose-400 uppercase">Seamless</span>
-            <p className="text-sm text-stone-600 dark:text-stone-300 mt-1">Fade, Blur — invisible flow. Use when story or mood stays the same. Keeps viewers in the moment.</p>
-          </div>
-          <div>
-            <span className="text-xs font-bold text-rose-600 dark:text-rose-400 uppercase">Purposeful</span>
-            <p className="text-sm text-stone-600 dark:text-stone-300 mt-1">Cut, Zoom, Slide, Wipe, Dip — visible. Use when changing topic, beat, or energy. Creates rhythm and emphasis.</p>
-          </div>
-        </div>
-        <p className="text-sm text-stone-500 dark:text-stone-400 mb-4">Select transitions. Match cut to music beat for punch. Keep duration 0.3–0.6s for Reels.</p>
-        <div className="flex flex-wrap gap-3">
-          {TRANSITIONS.map((t) => (
-            <button
-              key={t.id}
-              onClick={() => toggleTransition(t.id)}
-              title={t.use}
-              className={`px-4 py-2 rounded-xl text-sm font-bold transition-all flex flex-col items-start gap-0.5 ${
-                selectedTransitions.includes(t.id)
-                  ? 'bg-rose-500 text-white shadow-lg'
-                  : 'bg-rose-50 dark:bg-stone-700/50 border border-rose-100 dark:border-stone-600 text-stone-700 dark:text-stone-300 hover:border-rose-300'
-              }`}
-            >
-              <span>{t.name} <span className="text-[10px] opacity-80">({t.duration})</span></span>
-              <span className={`text-[10px] ${selectedTransitions.includes(t.id) ? 'text-rose-100' : 'text-stone-500 dark:text-stone-400'}`}>{t.style} · {t.use}</span>
-            </button>
-          ))}
-        </div>
-        {selectedTransitions.length > 0 && (
-          <p className="mt-4 text-xs text-stone-500 dark:text-stone-400">Using: {selectedTransitions.join(', ')}</p>
-        )}
-      </div>
-
-      {/* Music & SFX */}
-      <div className="bg-white dark:bg-stone-800 border border-rose-100 dark:border-stone-700 rounded-3xl p-8 shadow-sm transition-colors">
-        <h3 className="text-xl font-bold text-stone-800 dark:text-stone-100 flex items-center gap-2 mb-2">
-          <Music size={22} className="text-rose-400" />
-          Music & Sound Effects
-        </h3>
-        <p className="text-sm text-stone-500 dark:text-stone-400 mb-6">Upload your own music and SFX, or use tracks from Media Library.</p>
-        <input ref={musicRef} type="file" accept="audio/*" multiple onChange={handleMusicUpload} className="hidden" />
-        <button onClick={() => musicRef.current?.click()} className="px-6 py-3 rounded-xl bg-rose-500 text-white font-bold hover:bg-rose-600 flex items-center gap-2 mb-6">
-          <Upload size={18} /> Upload Music / SFX
-        </button>
-        {audioAssets.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {audioAssets.map((a) => (
-              <div key={a.id} className="flex items-center gap-4 p-4 rounded-2xl bg-rose-50/50 dark:bg-stone-700/50 border border-rose-100 dark:border-stone-600">
-                <Music className="text-rose-400 w-10 h-10 shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-bold text-stone-800 dark:text-stone-100 truncate">{a.name}</p>
-                  <p className="text-xs text-stone-500 dark:text-stone-400">Use as background music or SFX</p>
+          {topic === 'thumbnail' ? (
+            <div className="space-y-3">
+              <label className="block text-xs font-semibold text-stone-600 dark:text-stone-400">Upload your image/thumbnail</label>
+              <input type="file" accept="image/*" onChange={async (e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = async (ev) => {
+                  const base64 = ev.target.result.split(',')[1];
+                  setAiLoading(true); setAiError(''); setAiResult(null);
+                  try {
+                    const r = await fetch('/api/ai/review', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ type: 'thumbnail', content: 'image review', imageBase64: base64, imageMimeType: file.type })
+                    });
+                    const data = await r.json();
+                    if (data.error) throw new Error(data.error);
+                    setAiResult(data);
+                  } catch (err) { setAiError(err.message); } finally { setAiLoading(false); }
+                };
+                reader.readAsDataURL(file);
+              }} className="block w-full text-sm text-stone-600 dark:text-stone-400 bg-stone-50 dark:bg-stone-700 border border-stone-200 dark:border-stone-600 rounded-xl px-4 py-3" />
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <textarea value={topic && topic !== 'thumbnail' ? undefined : ''} onChange={e => setChatInput(e.target.value)} placeholder={topic === 'caption' ? 'Paste your caption here…' : topic === 'script' ? 'Paste your Reel script here…' : 'Describe your content idea…'} rows={5} className="w-full bg-stone-50 dark:bg-stone-700 border border-stone-200 dark:border-stone-600 rounded-xl px-4 py-3 text-sm resize-none" />
+              <button onClick={async () => {
+                if (!chatInput.trim()) return;
+                setAiLoading(true); setAiError(''); setAiResult(null);
+                try {
+                  const r = await fetch('/api/ai/review', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ type: topic || 'caption', content: chatInput })
+                  });
+                  const data = await r.json();
+                  if (data.error) throw new Error(data.error);
+                  setAiResult(data);
+                } catch (err) { setAiError(err.message); } finally { setAiLoading(false); }
+              }} disabled={aiLoading || !chatInput.trim()} className="px-5 py-2 bg-rose-500 text-white rounded-xl font-bold text-sm disabled:opacity-50 hover:bg-rose-600">
+                {aiLoading ? <><Loader2 size={14} className="animate-spin inline mr-1" />Reviewing…</> : '🔍 Review My Content'}
+              </button>
+            </div>
+          )}
+          {aiError && <p className="text-sm text-red-500">{aiError}</p>}
+          {aiResult && (
+            <div className="space-y-3 pt-2">
+              {aiResult.score != null && (
+                <div className={`p-4 rounded-xl border-2 ${aiResult.score >= 80 ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-400' : aiResult.score >= 60 ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-400' : 'bg-red-50 dark:bg-red-900/20 border-red-400'}`}>
+                  <div className="flex items-center gap-3">
+                    <span className={`text-4xl font-black ${aiResult.score >= 80 ? 'text-emerald-600' : aiResult.score >= 60 ? 'text-amber-600' : 'text-red-600'}`}>{aiResult.score}/100</span>
+                    <div>
+                      <p className="font-bold text-stone-800 dark:text-stone-100">{aiResult.verdict}</p>
+                      <p className="text-xs text-stone-500">Powered by {aiResult.poweredBy === 'gemini' ? 'Gemini Vision' : 'Groq AI'}</p>
+                    </div>
+                  </div>
                 </div>
-                <audio src={a.url} controls className="h-8 w-32" />
+              )}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {(aiResult.strengths || aiResult.visualStrengths)?.length > 0 && (
+                  <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800">
+                    <p className="font-bold text-emerald-700 dark:text-emerald-400 text-xs mb-2">✅ Strengths</p>
+                    {(aiResult.strengths || aiResult.visualStrengths).map((s,i) => <p key={i} className="text-xs text-stone-600 dark:text-stone-300">• {s}</p>)}
+                  </div>
+                )}
+                {(aiResult.weaknesses || aiResult.visualWeaknesses)?.length > 0 && (
+                  <div className="p-3 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
+                    <p className="font-bold text-red-700 dark:text-red-400 text-xs mb-2">⚠️ Weaknesses</p>
+                    {(aiResult.weaknesses || aiResult.visualWeaknesses).map((w,i) => <p key={i} className="text-xs text-stone-600 dark:text-stone-300">• {w}</p>)}
+                  </div>
+                )}
               </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Hooks — Latch People In */}
-      <div className="bg-white dark:bg-stone-800 border border-rose-100 dark:border-stone-700 rounded-3xl p-8 shadow-sm transition-colors">
-        <h3 className="text-xl font-bold text-stone-800 dark:text-stone-100 flex items-center gap-2 mb-2">
-          <Zap size={22} className="text-rose-400" />
-          Hooks & Openers — First 3 Seconds
-        </h3>
-        <p className="text-sm text-stone-500 dark:text-stone-400 mb-6">Copy these hooks to grab attention. Use in captions, voiceover, or on-screen text.</p>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {HOOK_TEMPLATES.map((h, i) => (
-            <div key={i} className="p-4 rounded-2xl bg-rose-50/50 dark:bg-stone-700/50 border border-rose-100 dark:border-stone-600 group">
-              <span className="text-[10px] font-bold uppercase text-rose-500 dark:text-rose-400">{h.type} · {h.platform}</span>
-              <p className="text-sm font-medium text-stone-800 dark:text-stone-100 mt-2">{h.text}</p>
-              <button onClick={() => copyTemplate(h.text, `hook-${i}`)} className="mt-3 text-xs font-bold text-rose-600 dark:text-rose-400 hover:underline flex items-center gap-1">
-                <Copy size={14} /> {copiedId === `hook-${i}` ? 'Copied!' : 'Copy'}
-              </button>
+              {(aiResult.suggestions || aiResult.improvements)?.length > 0 && (
+                <div className="p-3 rounded-xl bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
+                  <p className="font-bold text-blue-700 dark:text-blue-400 text-xs mb-2">🛠️ Fix these before posting</p>
+                  {(aiResult.suggestions || aiResult.improvements).map((s,i) => <p key={i} className="text-xs text-stone-600 dark:text-stone-300 mb-1">{i+1}. {s}</p>)}
+                </div>
+              )}
+              {aiResult.rewrite && (
+                <div className="p-3 rounded-xl bg-violet-50 dark:bg-violet-900/20 border border-violet-200 dark:border-violet-800">
+                  <div className="flex justify-between mb-1"><p className="font-bold text-violet-700 dark:text-violet-400 text-xs">✍️ Improved version</p><button onClick={() => { navigator.clipboard.writeText(aiResult.rewrite); }} className="text-xs text-rose-500">Copy</button></div>
+                  <p className="text-xs text-stone-600 dark:text-stone-300 whitespace-pre-wrap">{aiResult.rewrite}</p>
+                </div>
+              )}
+              {(aiResult.rewrittenHook || aiResult.betterAngle) && (
+                <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
+                  <p className="font-bold text-amber-700 dark:text-amber-400 text-xs mb-2">💡 Stronger version</p>
+                  {aiResult.rewrittenHook && <p className="text-xs text-stone-600 dark:text-stone-300 mb-1"><strong>Hook:</strong> "{aiResult.rewrittenHook}"</p>}
+                  {aiResult.rewrittenCTA && <p className="text-xs text-stone-600 dark:text-stone-300 mb-1"><strong>CTA:</strong> "{aiResult.rewrittenCTA}"</p>}
+                  {aiResult.betterAngle && <p className="text-xs text-stone-600 dark:text-stone-300"><strong>Better angle:</strong> {aiResult.betterAngle}</p>}
+                </div>
+              )}
+              {aiResult.predictedPerformance && (
+                <div className="p-3 rounded-xl bg-stone-50 dark:bg-stone-700/40 border border-stone-200 dark:border-stone-600">
+                  <p className="font-bold text-stone-700 dark:text-stone-200 text-xs mb-1">📊 Predicted performance</p>
+                  <p className="text-xs text-stone-600 dark:text-stone-300">{aiResult.predictedPerformance}</p>
+                </div>
+              )}
+              {aiResult.overallRecommendation && (
+                <div className={`p-3 rounded-xl border-2 font-bold text-center ${aiResult.overallRecommendation?.includes('Post') ? 'bg-emerald-50 border-emerald-400 text-emerald-700' : 'bg-amber-50 border-amber-400 text-amber-700'}`}>
+                  {aiResult.overallRecommendation}
+                </div>
+              )}
             </div>
-          ))}
+          )}
         </div>
+      )}
 
-        {/* Niche-specific hooks (for {bizName}) */}
-        <div className="mt-6 pt-6 border-t border-rose-100 dark:border-stone-600">
-          <h4 className="text-sm font-bold text-stone-700 dark:text-stone-200 mb-3 flex items-center gap-2">
-            <Package size={16} className="text-rose-400" /> Hooks for {bizName}
-          </h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {nicheHooks.map((h, i) => (
-              <div key={i} className="p-4 rounded-xl bg-rose-100/50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800/50">
-                <p className="text-sm font-medium text-stone-800 dark:text-stone-100">{h.text}</p>
-                <p className="text-xs text-rose-600 dark:text-rose-400 mt-2 font-medium">CTA: {h.cta}</p>
-                <button onClick={() => copyTemplate(`${h.text}\n\n${h.cta}`, `niche-${i}`)} className="mt-2 text-xs font-bold text-rose-600 dark:text-rose-400 hover:underline flex items-center gap-1">
-                  <Copy size={12} /> {copiedId === `niche-${i}` ? 'Copied!' : 'Copy'}
-                </button>
+      {/* Chat mode */}
+      {aiMode === 'chat' && (
+        <div className="bg-white dark:bg-stone-800 border border-rose-100 dark:border-stone-700 rounded-3xl p-6 space-y-4">
+          <h3 className="font-bold text-stone-800 dark:text-stone-100 flex items-center gap-2"><Bot size={18} className="text-rose-400" /> Ask your AI content coach</h3>
+          <p className="text-xs text-stone-500">Ask anything — "What should I post this week?", "Write me a hook about faith", "How do I grow faster?", "Give me a 30-day content plan"</p>
+          <div className="min-h-[200px] max-h-[400px] overflow-y-auto space-y-3 p-3 bg-stone-50 dark:bg-stone-700/30 rounded-2xl">
+            {chatHistory.length === 0 && <p className="text-center text-stone-400 text-sm pt-8">Start a conversation with your AI coach</p>}
+            {chatHistory.map((msg, i) => (
+              <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                <div className={`max-w-[85%] px-4 py-2 rounded-2xl text-sm ${msg.role === 'user' ? 'bg-rose-500 text-white' : 'bg-white dark:bg-stone-600 text-stone-700 dark:text-stone-200 border border-stone-200 dark:border-stone-500'}`}>
+                  {msg.text}
+                </div>
               </div>
+            ))}
+            {aiLoading && <div className="flex justify-start"><div className="bg-white dark:bg-stone-600 border border-stone-200 dark:border-stone-500 px-4 py-2 rounded-2xl text-sm text-stone-400"><Loader2 size={14} className="animate-spin inline mr-1" />Thinking…</div></div>}
+          </div>
+          <div className="flex gap-2">
+            <input value={chatInput} onChange={e => setChatInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && !e.shiftKey && sendChat()} placeholder="Ask your AI coach anything…" className="flex-1 bg-stone-50 dark:bg-stone-700 border border-stone-200 dark:border-stone-600 rounded-xl px-4 py-2 text-sm" />
+            <button onClick={sendChat} disabled={aiLoading || !chatInput.trim()} className="px-4 py-2 bg-rose-500 text-white rounded-xl font-bold text-sm disabled:opacity-50 hover:bg-rose-600">Send</button>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {['What should I post this week?','Give me 5 faith Reel ideas','Write a hook about overcoming fear','How do I get more saves?','Give me a 30-day content plan'].map(q => (
+              <button key={q} onClick={() => { setChatInput(q); }} className="text-xs px-3 py-1 bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400 rounded-lg border border-rose-200 dark:border-rose-800 hover:bg-rose-100">{q}</button>
             ))}
           </div>
         </div>
-      </div>
+      )}
 
-      {/* Business & Product Content */}
-      <div className="bg-white dark:bg-stone-800 border border-rose-100 dark:border-stone-700 rounded-3xl p-8 shadow-sm transition-colors">
-        <h3 className="text-xl font-bold text-stone-800 dark:text-stone-100 flex items-center gap-2 mb-2">
-          <Package size={22} className="text-rose-400" />
-          Business & Product Content Templates
-        </h3>
-        <p className="text-sm text-stone-500 dark:text-stone-400 mb-6">Ready-to-use structures for products and services. Fill in the blanks.</p>
-        <div className="space-y-4">
-          {BUSINESS_TEMPLATES.map((b, i) => (
-            <div key={i} className="p-5 rounded-2xl bg-rose-50/50 dark:bg-stone-700/50 border border-rose-100 dark:border-stone-600">
-              <h4 className="text-sm font-bold text-stone-800 dark:text-stone-100 mb-2">{b.name}</h4>
-              <p className="text-xs text-stone-600 dark:text-stone-300 mb-1"><strong>Hook:</strong> {b.hook}</p>
-              <p className="text-xs text-stone-600 dark:text-stone-300 mb-3"><strong>CTA:</strong> {b.cta}</p>
-              <button onClick={() => copyTemplate(`${b.hook}\n\n${b.cta}`, `biz-${i}`)} className="text-xs font-bold text-rose-600 dark:text-rose-400 hover:underline flex items-center gap-1">
-                <Copy size={14} /> {copiedId === `biz-${i}` ? 'Copied!' : 'Copy template'}
-              </button>
+      {/* Ideas, Script, Caption, Calendar modes */}
+      {aiMode !== 'chat' && (
+        <div className="bg-white dark:bg-stone-800 border border-rose-100 dark:border-stone-700 rounded-3xl p-6 space-y-4">
+          {aiMode === 'ideas' && <>
+            <h3 className="font-bold text-stone-800 dark:text-stone-100">💡 Content Ideas Generator</h3>
+            <p className="text-xs text-stone-500">Enter a topic or pick one below — get hooks, caption, hashtags, and posting tips instantly.</p>
+            <div className="flex flex-wrap gap-2">
+              {QUICK_IDEAS.map(q => <button key={q} onClick={() => setTopic(q)} className={`text-xs px-3 py-1 rounded-lg border transition-all ${topic===q ? 'bg-rose-500 text-white border-rose-500' : 'bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400 border-rose-200 dark:border-rose-800 hover:bg-rose-100'}`}>{q}</button>)}
             </div>
-          ))}
-        </div>
-      </div>
+          </>}
+          {aiMode === 'script' && <>
+            <h3 className="font-bold text-stone-800 dark:text-stone-100">🎬 Reel Script Generator</h3>
+            <p className="text-xs text-stone-500">Get a full script with hook, story, and CTA for your next Reel.</p>
+          </>}
+          {aiMode === 'caption' && <>
+            <h3 className="font-bold text-stone-800 dark:text-stone-100">✍️ Caption + Hashtag Generator</h3>
+            <p className="text-xs text-stone-500">Enter your post topic and get a ready-to-post caption with hashtags.</p>
+          </>}
+          {aiMode === 'calendar' && <>
+            <h3 className="font-bold text-stone-800 dark:text-stone-100">📅 Weekly Content Plan</h3>
+            <p className="text-xs text-stone-500">Get a full week of content ideas tailored to your niche.</p>
+          </>}
 
-      {/* Marketing CTAs + CTA Reminders */}
-      <div className="bg-white dark:bg-stone-800 border border-rose-100 dark:border-stone-700 rounded-3xl p-8 shadow-sm transition-colors">
-        <h3 className="text-xl font-bold text-stone-800 dark:text-stone-100 flex items-center gap-2 mb-2">
-          <Share2 size={22} className="text-rose-400" />
-          Quick CTAs for Marketing
-        </h3>
-        <p className="text-sm text-stone-500 dark:text-stone-400 mb-4">Call-to-action phrases that convert. Add to captions and Reels.</p>
-
-        <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/50 mb-6">
-          <h4 className="text-xs font-bold text-amber-800 dark:text-amber-400 uppercase mb-3">CTA Reminder — Use these instead</h4>
-          <div className="space-y-2 text-sm">
-            {CTA_REMINDERS.map((r, i) => (
-              <div key={i} className="flex flex-wrap items-center gap-2">
-                <span className="text-red-500 line-through">{r.avoid}</span>
-                <span className="text-stone-400">→</span>
-                <button onClick={() => copyTemplate(r.use, `reminder-${i}`)} className="text-rose-600 dark:text-rose-400 font-medium hover:underline">
-                  {r.use} {copiedId === `reminder-${i}` ? '✓' : ''}
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="flex flex-wrap gap-2">
-          {[
-            'Take the assessment to see your score',
-            'Get your personalized report — link in bio',
-            'Take the quiz to find your level',
-            'Link in bio',
-            'DM me to get started',
-            'Save this for later',
-            'Share with someone who needs this',
-            'Follow for more',
-            'Comment YES if you want the full guide',
-            'Swipe for the full breakdown',
-            'Tap to see the before/after'
-          ].map((cta, i) => (
-            <button key={i} onClick={() => copyTemplate(cta, `cta-${i}`)} className="px-4 py-2 rounded-xl bg-rose-50 dark:bg-stone-700 border border-rose-100 dark:border-stone-600 text-sm font-medium text-stone-700 dark:text-stone-300 hover:border-rose-300 dark:hover:border-rose-700">
-              {cta} {copiedId === `cta-${i}` ? '✓' : ''}
+          <div className="flex gap-2">
+            <input value={topic} onChange={e => setTopic(e.target.value)} placeholder={aiMode === 'calendar' ? 'Optional: focus theme (e.g. "prayer", "faith & money")' : 'Enter your topic or idea…'} className="flex-1 bg-stone-50 dark:bg-stone-700 border border-stone-200 dark:border-stone-600 rounded-xl px-4 py-2 text-sm" />
+            <button onClick={() => {
+              const modeDescriptions = {
+                ideas: `Generate content ideas for this topic for a faith-based Instagram creator. Give hooks, caption, hashtags, and posting tip.`,
+                script: `Write a complete Reel script for a faith-based creator with: 1) A strong hook (first 3 seconds), 2) The main story/teaching (30-60 seconds), 3) A clear CTA at the end. Format as: HOOK: ...\n\nSTORY: ...\n\nCTA: ... Put the full script in the "caption" field and tips in "postingTip".`,
+                caption: `Write an Instagram caption with hashtags for this post topic for a faith-based lifestyle creator.`,
+                calendar: `Create a 7-day content calendar for a faith-based Instagram creator${topic ? ` focused on: ${topic}` : ''}. For each day give a post idea and hook. Put the full calendar in the "caption" field.`,
+              };
+              callAI(topic || `${aiMode} for ${bizName}`, modeDescriptions[aiMode], aiMode === 'script' ? 'Reel script' : '9:16 Reel');
+            }} disabled={aiLoading} className="px-5 py-2 bg-rose-500 text-white rounded-xl font-bold text-sm disabled:opacity-50 hover:bg-rose-600 whitespace-nowrap">
+              {aiLoading ? <Loader2 size={14} className="animate-spin" /> : 'Generate ✨'}
             </button>
-          ))}
-        </div>
-      </div>
+          </div>
+          {aiError && <p className="text-sm text-red-500">{aiError}</p>}
 
-      {/* SEO & Discoverability */}
-      <div className="bg-white dark:bg-stone-800 border border-rose-100 dark:border-stone-700 rounded-3xl p-8 shadow-sm transition-colors">
-        <h3 className="text-xl font-bold text-stone-800 dark:text-stone-100 flex items-center gap-2 mb-2">
-          <Search size={22} className="text-rose-400" />
-          SEO & Discoverability
-        </h3>
-        <p className="text-sm text-stone-500 dark:text-stone-400 mb-6">Get found on Google, YouTube, Pinterest & in-app search.</p>
-        <div className="space-y-4">
-          <div className="p-4 rounded-2xl bg-rose-50/50 dark:bg-stone-700/50 border border-rose-100 dark:border-stone-600">
-            <span className="text-[10px] font-bold text-rose-500 uppercase">Video Title (YouTube / Reels)</span>
-            <p className="text-sm text-stone-700 dark:text-stone-200 mt-1">Put main keyword in first 5 words. Example: &quot;3 Bible Verses for Anxiety When You Feel Overwhelmed&quot;</p>
-          </div>
-          <div className="p-4 rounded-2xl bg-rose-50/50 dark:bg-stone-700/50 border border-rose-100 dark:border-stone-600">
-            <span className="text-[10px] font-bold text-rose-500 uppercase">Description (first 2 lines)</span>
-            <p className="text-sm text-stone-700 dark:text-stone-200 mt-1">Front-load keywords. Repeating your hook + 2–3 key phrases. First 2 lines show in Google/snippets.</p>
-          </div>
-          <div className="p-4 rounded-2xl bg-rose-50/50 dark:bg-stone-700/50 border border-rose-100 dark:border-stone-600">
-            <span className="text-[10px] font-bold text-rose-500 uppercase">Alt Text (Images / Pins)</span>
-            <p className="text-sm text-stone-700 dark:text-stone-200 mt-1">Describe image + include keyword. Example: &quot;Woman reading Bible at sunrise, morning devotional&quot;</p>
-          </div>
-          <div className="p-4 rounded-2xl bg-rose-50/50 dark:bg-stone-700/50 border border-rose-100 dark:border-stone-600">
-            <span className="text-[10px] font-bold text-rose-500 uppercase">Pinterest Pin Title</span>
-            <p className="text-sm text-stone-700 dark:text-stone-200 mt-1">Use long-tail keywords. &quot;5 Bible Verses for When You Feel Alone — Faith Encouragement&quot;</p>
-          </div>
+          {aiResult && (
+            <div className="space-y-3 pt-2">
+              {aiResult.hooks?.length > 0 && (
+                <div className="p-4 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
+                  <p className="font-bold text-amber-700 dark:text-amber-400 text-xs uppercase mb-2">🎣 Hooks (first 3 seconds)</p>
+                  {aiResult.hooks.map((h, i) => (
+                    <div key={i} className="flex items-start justify-between gap-2 mb-2">
+                      <p className="text-stone-700 dark:text-stone-200 text-sm flex-1">"{h}"</p>
+                      <button onClick={() => copyText(h, `hook-${i}`)} className="text-xs text-rose-500 shrink-0">{copiedId===`hook-${i}` ? '✓' : 'Copy'}</button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {aiResult.caption && (
+                <div className="p-4 rounded-xl bg-stone-50 dark:bg-stone-700/40 border border-stone-200 dark:border-stone-600">
+                  <div className="flex justify-between mb-2"><p className="font-bold text-stone-700 dark:text-stone-200 text-xs uppercase">📝 Caption / Script</p><button onClick={() => copyText(aiResult.caption, 'cap')} className="text-xs text-rose-500">{copiedId==='cap' ? '✓ Copied' : 'Copy'}</button></div>
+                  <p className="text-stone-600 dark:text-stone-300 text-sm whitespace-pre-wrap">{aiResult.caption}</p>
+                </div>
+              )}
+              {aiResult.hashtags?.length > 0 && (
+                <div className="p-3 rounded-xl bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
+                  <div className="flex justify-between mb-1"><p className="font-bold text-blue-700 dark:text-blue-400 text-xs uppercase"># Hashtags</p><button onClick={() => copyText(aiResult.hashtags.map(h=>`#${h}`).join(' '), 'tags')} className="text-xs text-rose-500">{copiedId==='tags' ? '✓ Copied' : 'Copy all'}</button></div>
+                  <p className="text-blue-600 dark:text-blue-300 text-sm">{aiResult.hashtags.map(h=>`#${h}`).join(' ')}</p>
+                </div>
+              )}
+              {aiResult.cta && (
+                <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800">
+                  <p className="font-bold text-emerald-700 dark:text-emerald-400 text-xs uppercase mb-1">📣 Call to Action</p>
+                  <p className="text-stone-600 dark:text-stone-300 text-sm">"{aiResult.cta}"</p>
+                </div>
+              )}
+              {aiResult.postingTip && (
+                <div className="p-3 rounded-xl bg-violet-50 dark:bg-violet-900/20 border border-violet-200 dark:border-violet-800">
+                  <p className="font-bold text-violet-700 dark:text-violet-400 text-xs uppercase mb-1">💡 Posting tip</p>
+                  <p className="text-stone-600 dark:text-stone-300 text-sm">{aiResult.postingTip}</p>
+                </div>
+              )}
+            </div>
+          )}
         </div>
-      </div>
-
-      {/* Hashtag Strategy */}
-      <div className="bg-white dark:bg-stone-800 border border-rose-100 dark:border-stone-700 rounded-3xl p-8 shadow-sm transition-colors">
-        <h3 className="text-xl font-bold text-stone-800 dark:text-stone-100 flex items-center gap-2 mb-2">
-          <Hash size={22} className="text-rose-400" />
-          Hashtag Strategy
-        </h3>
-        <p className="text-sm text-stone-500 dark:text-stone-400 mb-6">Mix sizes for reach + niche. 3–5 niche, 2–3 mid, 1–2 broad per post.</p>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="p-4 rounded-2xl bg-rose-50/50 dark:bg-stone-700/50 border border-rose-100 dark:border-stone-600">
-            <span className="text-[10px] font-bold text-rose-500 uppercase">Niche (Faith)</span>
-            <p className="text-xs text-stone-600 dark:text-stone-300 mt-2">#ChristianWomen #FaithJourney #WomensMinistry #Devotional #BiblicalEncouragement</p>
-            <button onClick={() => copyTemplate('#ChristianWomen #FaithJourney #WomensMinistry #Devotional #BiblicalEncouragement', 'hashtag-faith')} className="mt-2 text-xs font-bold text-rose-600"><Copy size={12} className="inline" /> Copy</button>
-          </div>
-          <div className="p-4 rounded-2xl bg-rose-50/50 dark:bg-stone-700/50 border border-rose-100 dark:border-stone-600">
-            <span className="text-[10px] font-bold text-rose-500 uppercase">Mid (Growth)</span>
-            <p className="text-xs text-stone-600 dark:text-stone-300 mt-2">#FaithTikTok #ChristianContentCreator #FaithBased #ChristianLiving</p>
-            <button onClick={() => copyTemplate('#FaithTikTok #ChristianContentCreator #FaithBased #ChristianLiving', 'hashtag-mid')} className="mt-2 text-xs font-bold text-rose-600"><Copy size={12} className="inline" /> Copy</button>
-          </div>
-          <div className="p-4 rounded-2xl bg-rose-50/50 dark:bg-stone-700/50 border border-rose-100 dark:border-stone-600">
-            <span className="text-[10px] font-bold text-rose-500 uppercase">Broad (Discovery)</span>
-            <p className="text-xs text-stone-600 dark:text-stone-300 mt-2">#Faith #Jesus #Blessed #GodIsGood #Inspiration</p>
-            <button onClick={() => copyTemplate('#Faith #Jesus #Blessed #GodIsGood #Inspiration', 'hashtag-broad')} className="mt-2 text-xs font-bold text-rose-600"><Copy size={12} className="inline" /> Copy</button>
-          </div>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-          <div className="p-4 rounded-2xl bg-amber-50/50 dark:bg-stone-700/50 border border-amber-100 dark:border-stone-600">
-            <span className="text-[10px] font-bold text-amber-600 uppercase">Skin / Beauty</span>
-            <p className="text-xs text-stone-600 dark:text-stone-300 mt-2">#SkincareRoutine #CleanBeauty #SkincareTok #GlowUp #SkinGoals</p>
-            <button onClick={() => copyTemplate('#SkincareRoutine #CleanBeauty #SkincareTok #GlowUp #SkinGoals', 'hashtag-skin')} className="mt-2 text-xs font-bold text-rose-600"><Copy size={12} className="inline" /> Copy</button>
-          </div>
-          <div className="p-4 rounded-2xl bg-indigo-50/50 dark:bg-stone-700/50 border border-indigo-100 dark:border-stone-600">
-            <span className="text-[10px] font-bold text-indigo-600 uppercase">Product / E-commerce</span>
-            <p className="text-xs text-stone-600 dark:text-stone-300 mt-2">#ShopSmall #SmallBusiness #ProductReview #MustHave #LinkInBio</p>
-            <button onClick={() => copyTemplate('#ShopSmall #SmallBusiness #ProductReview #MustHave #LinkInBio', 'hashtag-product')} className="mt-2 text-xs font-bold text-rose-600"><Copy size={12} className="inline" /> Copy</button>
-          </div>
-        </div>
-      </div>
-
-      {/* Growth & Algorithm */}
-      <div className="bg-white dark:bg-stone-800 border border-rose-100 dark:border-stone-700 rounded-3xl p-8 shadow-sm transition-colors">
-        <h3 className="text-xl font-bold text-stone-800 dark:text-stone-100 flex items-center gap-2 mb-2">
-          <TrendingUp size={22} className="text-rose-400" />
-          Growth & Algorithm Checklist
-        </h3>
-        <p className="text-sm text-stone-500 dark:text-stone-400 mb-6">What platforms reward. Do these consistently to grow.</p>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="p-4 rounded-2xl bg-rose-50/50 dark:bg-stone-700/50 border border-rose-100 dark:border-stone-600">
-            <h4 className="text-sm font-bold text-stone-800 dark:text-stone-100 mb-2">Posting Schedule</h4>
-            <ul className="text-xs text-stone-600 dark:text-stone-300 space-y-1">
-              <li>• Reels/Short: 3–5x/week (ideal 9–11am or 7–9pm)</li>
-              <li>• Carousels: 2–3x/week</li>
-              <li>• Stories: Daily (keeps algorithm warm)</li>
-              <li>• YouTube: 1 long-form + 1 Short/week</li>
-            </ul>
-          </div>
-          <div className="p-4 rounded-2xl bg-rose-50/50 dark:bg-stone-700/50 border border-rose-100 dark:border-stone-600">
-            <h4 className="text-sm font-bold text-stone-800 dark:text-stone-100 mb-2">Algorithm Wins</h4>
-            <ul className="text-xs text-stone-600 dark:text-stone-300 space-y-1">
-              <li>• First 3 sec: hook or curiosity gap</li>
-              <li>• Watch time: keep to end (tease payoff)</li>
-              <li>• Saves & shares {'>'} likes (create save-worthy)</li>
-              <li>• Reply to comments in first 30 min</li>
-            </ul>
-          </div>
-          <div className="p-4 rounded-2xl bg-rose-50/50 dark:bg-stone-700/50 border border-rose-100 dark:border-stone-600">
-            <h4 className="text-sm font-bold text-stone-800 dark:text-stone-100 mb-2">Engagement Prompts</h4>
-            <ul className="text-xs text-stone-600 dark:text-stone-300 space-y-1">
-              <li>• &quot;Comment YES if this hit different&quot;</li>
-              <li>• &quot;Save this for when you need it&quot;</li>
-              <li>• &quot;Tag someone who needs to hear this&quot;</li>
-              <li>• &quot;Which one are you? 1 or 2?&quot;</li>
-            </ul>
-          </div>
-          <div className="p-4 rounded-2xl bg-rose-50/50 dark:bg-stone-700/50 border border-rose-100 dark:border-stone-600">
-            <h4 className="text-sm font-bold text-stone-800 dark:text-stone-100 mb-2">Cross-Promotion</h4>
-            <ul className="text-xs text-stone-600 dark:text-stone-300 space-y-1">
-              <li>• Reel → &quot;Full teaching on YouTube (link in bio)&quot;</li>
-              <li>• Carousel → &quot;Watch the Reel version&quot;</li>
-              <li>• Podcast → &quot;Video version on YouTube&quot;</li>
-            </ul>
-          </div>
-        </div>
-      </div>
+      )}
     </div>
   );
 };
@@ -6744,9 +6739,11 @@ const PostAnalytics = ({ onOpenSettings }) => {
   const [igProfileMap, setIgProfileMap] = useState(() => { try { return JSON.parse(localStorage.getItem('faith-studio-ig-profile-map') || '{}'); } catch { return {}; } });
   const [igGrowthMap, setIgGrowthMap] = useState(() => { try { return JSON.parse(localStorage.getItem('faith-studio-ig-growth-map') || '{}'); } catch { return {}; } });
   const [igInsightsMap, setIgInsightsMap] = useState(() => { try { return JSON.parse(localStorage.getItem('faith-studio-ig-insights-map') || '{}'); } catch { return {}; } });
+  const [igAudienceMap, setIgAudienceMap] = useState(() => { try { return JSON.parse(localStorage.getItem('faith-studio-ig-audience-map') || '{}'); } catch { return {}; } });
   const igProfile = igProfileMap[brandKey] || null;
   const igGrowth = igGrowthMap[brandKey] || null;
   const igInsights = igInsightsMap[brandKey] || null;
+  const igAudience = igAudienceMap[brandKey] || null;
   const [adsTab, setAdsTab] = useState(false);
   const [adAccountId, setAdAccountId] = useState(() => localStorage.getItem('faith-studio-ad-account') || '');
   const [adAccounts, setAdAccounts] = useState([]);
@@ -6791,12 +6788,13 @@ const PostAnalytics = ({ onOpenSettings }) => {
         if (data.account) { setIgProfileMap(p => { const n = { ...p, [brandKey]: data.account }; localStorage.setItem('faith-studio-ig-profile-map', JSON.stringify(n)); return n; }); }
         if (data.growth) { setIgGrowthMap(p => { const n = { ...p, [brandKey]: data.growth }; localStorage.setItem('faith-studio-ig-growth-map', JSON.stringify(n)); return n; }); }
         if (data.insights) { setIgInsightsMap(p => { const n = { ...p, [brandKey]: data.insights }; localStorage.setItem('faith-studio-ig-insights-map', JSON.stringify(n)); return n; }); }
+        if (data.audience) { setIgAudienceMap(p => { const n = { ...p, [brandKey]: data.audience }; localStorage.setItem('faith-studio-ig-audience-map', JSON.stringify(n)); return n; }); }
         if (data.posts?.length) {
           const existing = new Set(posts.map(p => p.id));
           const newPosts = data.posts.filter(p => !existing.has(p.id)).map(p => ({ ...p, businessId: activeBusinessId }));
           const updated = data.posts.filter(p => existing.has(p.id));
           if (newPosts.length) { setPosts(prev => [...prev, ...newPosts]); added.push(`${newPosts.length} new Instagram posts`); }
-          if (updated.length) { setPosts(prev => prev.map(p => { const u = updated.find(x => x.id === p.id); return u ? { ...p, businessId: activeBusinessId, views: u.views, likes: u.likes, comments: u.comments, saves: u.saves, reach: u.reach, engagement: u.engagement } : p; })); added.push(`${updated.length} Instagram posts updated`); }
+          if (updated.length) { setPosts(prev => prev.map(p => { const u = updated.find(x => x.id === p.id); return u ? { ...p, businessId: activeBusinessId, views: u.views, likes: u.likes, comments: u.comments, saves: u.saves, reach: u.reach, engagement: u.engagement, avgWatchTimeMs: u.avgWatchTimeMs, totalPlays: u.totalPlays } : p; })); added.push(`${updated.length} Instagram posts updated`); }
         } else if (data.error) setSyncMsg('Instagram: ' + data.error);
       } catch (e) { setSyncMsg('Instagram sync failed: ' + e.message); }
     }
@@ -7065,6 +7063,61 @@ const PostAnalytics = ({ onOpenSettings }) => {
               </div>
             </div>
           )}
+
+          {/* Audience Demographics */}
+          {igAudience && (igAudience.topCountries?.length > 0 || Object.keys(igAudience.genderAge || {}).length > 0) && (
+            <div className="bg-stone-50 dark:bg-stone-700/40 rounded-2xl p-4 space-y-3">
+              <h4 className="font-bold text-stone-700 dark:text-stone-200 flex items-center gap-2"><Users size={14} className="text-rose-400" /> Your audience</h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                {igAudience.topCountries?.length > 0 && (
+                  <div>
+                    <p className="text-xs font-semibold text-stone-500 dark:text-stone-400 mb-2 uppercase tracking-wide">Top countries</p>
+                    <div className="space-y-1">
+                      {igAudience.topCountries.map(({ name, count }) => {
+                        const total = igAudience.topCountries.reduce((s, c) => s + c.count, 0);
+                        const pct = total ? Math.round((count / total) * 100) : 0;
+                        return (
+                          <div key={name}>
+                            <div className="flex justify-between text-xs mb-0.5"><span>{name}</span><span className="text-stone-500">{pct}%</span></div>
+                            <div className="h-1.5 bg-stone-200 dark:bg-stone-600 rounded-full"><div className="h-1.5 bg-rose-400 rounded-full" style={{ width: `${pct}%` }} /></div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+                {igAudience.topCities?.length > 0 && (
+                  <div>
+                    <p className="text-xs font-semibold text-stone-500 dark:text-stone-400 mb-2 uppercase tracking-wide">Top cities</p>
+                    <div className="space-y-1">
+                      {igAudience.topCities.map(({ name, count }) => {
+                        const total = igAudience.topCities.reduce((s, c) => s + c.count, 0);
+                        const pct = total ? Math.round((count / total) * 100) : 0;
+                        return (
+                          <div key={name}>
+                            <div className="flex justify-between text-xs mb-0.5"><span>{name}</span><span className="text-stone-500">{pct}%</span></div>
+                            <div className="h-1.5 bg-stone-200 dark:bg-stone-600 rounded-full"><div className="h-1.5 bg-amber-400 rounded-full" style={{ width: `${pct}%` }} /></div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+                {Object.keys(igAudience.genderAge || {}).length > 0 && (
+                  <div className="sm:col-span-2">
+                    <p className="text-xs font-semibold text-stone-500 dark:text-stone-400 mb-2 uppercase tracking-wide">Age & gender</p>
+                    <div className="flex flex-wrap gap-2">
+                      {Object.entries(igAudience.genderAge).sort((a,b) => b[1]-a[1]).slice(0,8).map(([key, count]) => (
+                        <span key={key} className="px-2 py-1 bg-white dark:bg-stone-600 border border-stone-200 dark:border-stone-500 rounded-lg text-xs">
+                          <span className={key.startsWith('F') ? 'text-pink-500' : 'text-blue-500'}>{key.startsWith('F') ? '♀' : '♂'}</span> {key.replace('F.','').replace('M.','')} — {count}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -7154,34 +7207,117 @@ const PostAnalytics = ({ onOpenSettings }) => {
         <div className="bg-white dark:bg-stone-800 border border-rose-100 dark:border-stone-700 rounded-3xl p-6 shadow-sm">
           <h3 className="text-lg font-bold text-stone-800 dark:text-stone-100 mb-4 flex items-center gap-2"><TrendingUp size={20} className="text-rose-400" /> Insights & tips</h3>
           <ul className="space-y-3 text-sm text-stone-600 dark:text-stone-300">
-            {bestPost && <li><strong>Top performer:</strong> &quot;{bestPost.title}&quot; — {bestPost.views.toLocaleString()} views. {bestPost.notes && `Notes: ${bestPost.notes}`}</li>}
+            {bestPost && <li><strong>Top performer:</strong> &quot;{bestPost.title}&quot; — {bestPost.views != null ? bestPost.views.toLocaleString() : '—'} views. {bestPost.notes && `Notes: ${bestPost.notes}`}</li>}
             {Object.keys(byPlatform).length > 0 && <li><strong>By platform:</strong> {Object.entries(byPlatform).map(([k, v]) => `${platformLabels[k] || k}: ${v.toLocaleString()} views`).join('; ')}</li>}
             <li><strong>Improve:</strong> Log 3+ posts per platform to see patterns. Note your hook, time posted, and format.</li>
             <li><strong>What works:</strong> Reels/Shorts at 9–11am or 7–9pm tend to get more reach. Saves and shares matter more than likes.</li>
           </ul>
           <div className="mt-4 pt-4 border-t border-stone-200 dark:border-stone-600">
             <button onClick={async () => {
-              const useOpenAI = hasOpenAIKey();
-              const useGemini = hasGeminiKey();
-              if (!useOpenAI && !useGemini) { onOpenSettings?.(); return; }
               setAiLoading(true); setAiError(null); setAiInsights(null);
               try {
                 const businessName = businesses?.find(b => b.id === activeBusinessId)?.name || 'Your brand';
-                const analyzePosts = useOpenAI ? analyzePostsOpenAI : analyzePostsGemini;
-                const result = await analyzePosts(bizPosts, businessName);
-                setAiInsights(result);
+                const r = await fetch('/api/ai/generate', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    mode: 'analytics',
+                    topic: `Analytics for ${businessName}`,
+                    analyticsData: {
+                      brandName: businessName,
+                      posts: bizPosts,
+                      account: igProfile,
+                      growth: igGrowth,
+                      insights: igInsights,
+                      audience: igAudience,
+                    }
+                  })
+                });
+                const data = await r.json();
+                if (data.error) throw new Error(data.error);
+                setAiInsights(data);
               } catch (e) {
                 setAiError(e?.message || 'AI analysis failed');
               } finally {
                 setAiLoading(false);
               }
-            }} disabled={aiLoading} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-amber-500/20 text-amber-700 dark:text-amber-400 font-bold text-sm hover:bg-amber-500/30 disabled:opacity-50">
-              {aiLoading ? 'Analyzing…' : '✨ Get AI insights'}
+            }} disabled={aiLoading} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500/20 to-rose-500/20 text-amber-700 dark:text-amber-400 font-bold text-sm hover:from-amber-500/30 hover:to-rose-500/30 disabled:opacity-50 border border-amber-200 dark:border-amber-800">
+              {aiLoading ? <><Loader2 size={14} className="animate-spin" /> Analyzing your data…</> : '✨ Get AI Expert Analysis'}
             </button>
-            {!hasOpenAIKey() && !hasGeminiKey() && <p className="text-xs text-stone-500 mt-2">Add your OpenAI or Gemini API key in App Settings first.</p>}
             {aiError && <p className="text-sm text-red-600 dark:text-red-400 mt-2">{aiError}</p>}
-            {aiInsights && (
-              <div className="mt-4 p-4 rounded-xl bg-stone-100 dark:bg-stone-700/50 text-sm whitespace-pre-wrap">{aiInsights}</div>
+            {aiInsights && typeof aiInsights === 'object' && (
+              <div className="mt-4 space-y-4 text-sm">
+                {aiInsights.verdict && (
+                  <div className="p-4 rounded-xl bg-gradient-to-br from-amber-50 to-rose-50 dark:from-amber-900/20 dark:to-rose-900/20 border border-amber-200 dark:border-amber-800">
+                    <p className="font-bold text-amber-800 dark:text-amber-300 mb-1">📊 Expert Verdict</p>
+                    <p className="text-stone-700 dark:text-stone-300">{aiInsights.verdict}</p>
+                  </div>
+                )}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {aiInsights.whatIsWorking?.length > 0 && (
+                    <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800">
+                      <p className="font-bold text-emerald-700 dark:text-emerald-400 mb-2">✅ What's working</p>
+                      <ul className="space-y-1">{aiInsights.whatIsWorking.map((w,i) => <li key={i} className="text-stone-600 dark:text-stone-300 text-xs">• {w}</li>)}</ul>
+                    </div>
+                  )}
+                  {aiInsights.whatIsNotWorking?.length > 0 && (
+                    <div className="p-3 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
+                      <p className="font-bold text-red-700 dark:text-red-400 mb-2">⚠️ Fix these</p>
+                      <ul className="space-y-1">{aiInsights.whatIsNotWorking.map((w,i) => <li key={i} className="text-stone-600 dark:text-stone-300 text-xs">• {w}</li>)}</ul>
+                    </div>
+                  )}
+                </div>
+                {aiInsights.contentStrategy && (
+                  <div className="p-3 rounded-xl bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
+                    <p className="font-bold text-blue-700 dark:text-blue-400 mb-1">🎯 Content Strategy</p>
+                    <p className="text-stone-600 dark:text-stone-300 text-xs">{aiInsights.contentStrategy}</p>
+                  </div>
+                )}
+                {aiInsights.contentIdeas?.length > 0 && (
+                  <div className="p-3 rounded-xl bg-violet-50 dark:bg-violet-900/20 border border-violet-200 dark:border-violet-800">
+                    <p className="font-bold text-violet-700 dark:text-violet-400 mb-2">💡 Content Ideas</p>
+                    <div className="space-y-2">
+                      {aiInsights.contentIdeas.map((idea, i) => (
+                        <div key={i} className="bg-white dark:bg-stone-700 rounded-lg p-2">
+                          <p className="font-semibold text-stone-700 dark:text-stone-200 text-xs">{i+1}. {idea.title}</p>
+                          <p className="text-violet-600 dark:text-violet-400 text-xs mt-0.5">Hook: "{idea.hook}"</p>
+                          <p className="text-stone-500 dark:text-stone-400 text-xs mt-0.5">{idea.why}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {aiInsights.bestTimeToPost && (
+                    <div className="p-3 rounded-xl bg-stone-50 dark:bg-stone-700/40 border border-stone-200 dark:border-stone-600">
+                      <p className="font-bold text-stone-700 dark:text-stone-200 mb-1">🕐 Best time to post</p>
+                      <p className="text-stone-600 dark:text-stone-300 text-xs">{aiInsights.bestTimeToPost}</p>
+                    </div>
+                  )}
+                  {aiInsights.growthHack && (
+                    <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800">
+                      <p className="font-bold text-rose-700 dark:text-rose-400 mb-1">🚀 Growth hack</p>
+                      <p className="text-stone-600 dark:text-stone-300 text-xs">{aiInsights.growthHack}</p>
+                    </div>
+                  )}
+                </div>
+                {aiInsights.warningSign && (
+                  <div className="p-3 rounded-xl bg-orange-50 dark:bg-orange-900/20 border border-orange-300 dark:border-orange-700">
+                    <p className="font-bold text-orange-700 dark:text-orange-400 mb-1">🚨 Critical warning</p>
+                    <p className="text-stone-600 dark:text-stone-300 text-xs">{aiInsights.warningSign}</p>
+                  </div>
+                )}
+                {aiInsights.weeklyPlan && (
+                  <div className="p-3 rounded-xl bg-stone-50 dark:bg-stone-700/40 border border-stone-200 dark:border-stone-600">
+                    <p className="font-bold text-stone-700 dark:text-stone-200 mb-2">📅 This week's posting plan</p>
+                    <div className="grid grid-cols-2 gap-1">
+                      {Object.entries(aiInsights.weeklyPlan).map(([day, plan]) => (
+                        <div key={day} className="text-xs"><span className="font-semibold capitalize text-rose-600 dark:text-rose-400">{day}:</span> <span className="text-stone-600 dark:text-stone-300">{plan}</span></div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
             )}
           </div>
         </div>
@@ -7217,11 +7353,13 @@ const PostAnalytics = ({ onOpenSettings }) => {
                   ))}
                 </div>
               ) : (
-                <div className="flex gap-4 mt-2 text-xs text-stone-500 dark:text-stone-400">
+                <div className="flex flex-wrap gap-3 mt-2 text-xs text-stone-500 dark:text-stone-400">
                   <span><strong className="text-stone-700 dark:text-stone-200 font-mono">{p.views != null ? Number(p.views).toLocaleString() : '—'}</strong> views</span>
-                  <span><strong className="text-stone-700 dark:text-stone-200 font-mono">{p.likes.toLocaleString()}</strong> likes</span>
-                  <span><strong className="text-stone-700 dark:text-stone-200 font-mono">{p.comments.toLocaleString()}</strong> comments</span>
-                  <span><strong className="text-stone-700 dark:text-stone-200 font-mono">{p.saves.toLocaleString()}</strong> saves</span>
+                  <span><strong className="text-stone-700 dark:text-stone-200 font-mono">{(p.likes || 0).toLocaleString()}</strong> likes</span>
+                  <span><strong className="text-stone-700 dark:text-stone-200 font-mono">{(p.comments || 0).toLocaleString()}</strong> comments</span>
+                  <span><strong className="text-stone-700 dark:text-stone-200 font-mono">{(p.saves || 0).toLocaleString()}</strong> saves</span>
+                  {p.totalPlays > 0 && <span><strong className="text-stone-700 dark:text-stone-200 font-mono">{p.totalPlays.toLocaleString()}</strong> plays</span>}
+                  {p.avgWatchTimeMs > 0 && <span><strong className="text-violet-600 dark:text-violet-400 font-mono">{(p.avgWatchTimeMs / 1000).toFixed(1)}s</strong> avg watch</span>}
                 </div>
               )}
             </div>
