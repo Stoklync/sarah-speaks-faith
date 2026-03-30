@@ -507,7 +507,7 @@ const App = () => {
                 {activeTab === 'start' && 'Start Here'}
                 {activeTab === 'photo-edit' && 'Photo Editor'}
                 {activeTab === 'design' && 'Design Studio'}
-                {activeTab === 'pro' && 'Content Toolkit'}
+                {activeTab === 'pro' && 'Content Studio'}
                 {activeTab === 'social' && 'Social & Podcast'}
                 {activeTab === 'traffic' && 'Traffic Links'}
                 {activeTab === 'analytics' && 'Analytics'}
@@ -1093,13 +1093,13 @@ const ProContentToolkit = () => {
           <h3 className="font-bold text-stone-800 dark:text-stone-100 flex items-center gap-2"><Search size={18} className="text-rose-400" /> Review before you post</h3>
           <p className="text-xs text-stone-500">AI will score your content, find weaknesses, and tell you exactly what to fix before you hit publish.</p>
           <div className="flex gap-2 flex-wrap">
-            {[['caption','📝 Caption'],['script','🎬 Script'],['idea','💡 Idea'],['thumbnail','🖼️ Image/Thumbnail']].map(([t,l]) => (
-              <button key={t} onClick={() => { setTopic(t); setAiResult(null); }} className={`px-3 py-1.5 rounded-xl text-sm font-bold border transition-all ${topic===t ? 'bg-rose-500 text-white border-rose-500' : 'bg-stone-50 dark:bg-stone-700 border-stone-200 dark:border-stone-600 text-stone-600 dark:text-stone-300'}`}>{l}</button>
+            {[['caption','📝 Caption'],['script','🎬 Script'],['idea','💡 Idea'],['thumbnail','🖼️ Image/Thumbnail'],['video','🎬 Video (frame)']].map(([t,l]) => (
+              <button key={t} onClick={() => { setTopic(t); setAiResult(null); setAiError(''); }} className={`px-3 py-1.5 rounded-xl text-sm font-bold border transition-all ${topic===t ? 'bg-rose-500 text-white border-rose-500' : 'bg-stone-50 dark:bg-stone-700 border-stone-200 dark:border-stone-600 text-stone-600 dark:text-stone-300'}`}>{l}</button>
             ))}
           </div>
           {topic === 'thumbnail' ? (
             <div className="space-y-3">
-              <label className="block text-xs font-semibold text-stone-600 dark:text-stone-400">Upload your image/thumbnail</label>
+              <label className="block text-xs font-semibold text-stone-600 dark:text-stone-400">Upload your image or thumbnail</label>
               <input type="file" accept="image/*" onChange={async (e) => {
                 const file = e.target.files?.[0];
                 if (!file) return;
@@ -1120,6 +1120,44 @@ const ProContentToolkit = () => {
                 };
                 reader.readAsDataURL(file);
               }} className="block w-full text-sm text-stone-600 dark:text-stone-400 bg-stone-50 dark:bg-stone-700 border border-stone-200 dark:border-stone-600 rounded-xl px-4 py-3" />
+            </div>
+          ) : topic === 'video' ? (
+            <div className="space-y-3">
+              <label className="block text-xs font-semibold text-stone-600 dark:text-stone-400">Upload your video — AI will analyze a frame from it</label>
+              <input type="file" accept="video/*" onChange={async (e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                setAiLoading(true); setAiError(''); setAiResult(null);
+                try {
+                  // Extract a frame from the video using canvas
+                  const videoEl = document.createElement('video');
+                  videoEl.muted = true;
+                  videoEl.src = URL.createObjectURL(file);
+                  await new Promise((resolve, reject) => {
+                    videoEl.onloadedmetadata = () => {
+                      videoEl.currentTime = Math.min(3, videoEl.duration * 0.1);
+                    };
+                    videoEl.onseeked = resolve;
+                    videoEl.onerror = reject;
+                    videoEl.load();
+                  });
+                  const canvas = document.createElement('canvas');
+                  canvas.width = videoEl.videoWidth || 720;
+                  canvas.height = videoEl.videoHeight || 1280;
+                  canvas.getContext('2d').drawImage(videoEl, 0, 0);
+                  URL.revokeObjectURL(videoEl.src);
+                  const base64 = canvas.toDataURL('image/jpeg', 0.8).split(',')[1];
+                  const r = await fetch('/api/ai/review', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ type: 'thumbnail', content: 'video frame review — analyze this Reel thumbnail/opening frame for visual impact, hook strength, and whether it will stop the scroll', imageBase64: base64, imageMimeType: 'image/jpeg' })
+                  });
+                  const data = await r.json();
+                  if (data.error) throw new Error(data.error);
+                  setAiResult(data);
+                } catch (err) { setAiError('Could not read video frame: ' + (err.message || 'Try a different video')); } finally { setAiLoading(false); }
+              }} className="block w-full text-sm text-stone-600 dark:text-stone-400 bg-stone-50 dark:bg-stone-700 border border-stone-200 dark:border-stone-600 rounded-xl px-4 py-3" />
+              <p className="text-xs text-stone-400">Tip: AI analyzes the opening frame — make sure your first 3 seconds look amazing</p>
             </div>
           ) : (
             <div className="space-y-3">
