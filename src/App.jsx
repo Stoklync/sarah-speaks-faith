@@ -6730,14 +6730,13 @@ const PostAnalytics = ({ onOpenSettings }) => {
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState(null);
 
-  // Social account connection state
-  const [userKey] = useState(() => {
-    let k = localStorage.getItem('faith-studio-user-key');
-    if (!k) { k = `user-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`; localStorage.setItem('faith-studio-user-key', k); }
-    return k;
-  });
-  const [igConnected, setIgConnected] = useState(() => !!localStorage.getItem('faith-studio-ig-connected'));
-  const [ytConnected, setYtConnected] = useState(() => !!localStorage.getItem('faith-studio-yt-connected'));
+  // Social account connection — per brand
+  const brandKey = `brand-${activeBusinessId}`;
+  const [connectedBrands, setConnectedBrands] = useState(() => { try { return JSON.parse(localStorage.getItem('faith-studio-connected-brands') || '{}'); } catch { return {}; } });
+  const igConnected = !!connectedBrands[brandKey]?.ig;
+  const ytConnected = !!connectedBrands[brandKey]?.yt;
+  const setIgConnected = (v) => setConnectedBrands(prev => { const next = { ...prev, [brandKey]: { ...prev[brandKey], ig: v } }; localStorage.setItem('faith-studio-connected-brands', JSON.stringify(next)); return next; });
+  const setYtConnected = (v) => setConnectedBrands(prev => { const next = { ...prev, [brandKey]: { ...prev[brandKey], yt: v } }; localStorage.setItem('faith-studio-connected-brands', JSON.stringify(next)); return next; });
   const [syncing, setSyncing] = useState(false);
   const [syncMsg, setSyncMsg] = useState('');
 
@@ -6757,17 +6756,12 @@ const PostAnalytics = ({ onOpenSettings }) => {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
+    const state = params.get('state');
     if (params.get('instagram_connected') === '1') {
-      setIgConnected(true);
-      localStorage.setItem('faith-studio-ig-connected', '1');
+      if (state) setConnectedBrands(prev => { const next = { ...prev, [state]: { ...prev[state], ig: true } }; localStorage.setItem('faith-studio-connected-brands', JSON.stringify(next)); return next; });
     }
     if (params.get('youtube_connected') === '1') {
-      setYtConnected(true);
-      localStorage.setItem('faith-studio-yt-connected', '1');
-    }
-    const state = params.get('state');
-    if (state && (params.get('instagram_connected') || params.get('youtube_connected'))) {
-      try { localStorage.setItem('faith-studio-user-key', state); } catch (_) {}
+      if (state) setConnectedBrands(prev => { const next = { ...prev, [state]: { ...prev[state], yt: true } }; localStorage.setItem('faith-studio-connected-brands', JSON.stringify(next)); return next; });
     }
     if (params.get('instagram_connected') || params.get('youtube_connected')) {
       window.history.replaceState({}, '', window.location.pathname);
@@ -6781,15 +6775,15 @@ const PostAnalytics = ({ onOpenSettings }) => {
   const startEdit = (p) => { setEditingId(p.id); setEditBuf({ views: p.views || '', likes: p.likes || '', comments: p.comments || '', saves: p.saves || '' }); };
   const saveEdit = (id) => { updatePost(id, { views: Number(editBuf.views) || 0, likes: Number(editBuf.likes) || 0, comments: Number(editBuf.comments) || 0, saves: Number(editBuf.saves) || 0 }); setEditingId(null); };
 
-  const connectInstagram = () => { window.location.href = `/api/auth/instagram?state=${encodeURIComponent(userKey)}`; };
-  const connectYouTube = () => { window.location.href = `/api/auth/youtube?state=${encodeURIComponent(userKey)}`; };
+  const connectInstagram = () => { window.location.href = `/api/auth/instagram?state=${encodeURIComponent(brandKey)}`; };
+  const connectYouTube = () => { window.location.href = `/api/auth/youtube?state=${encodeURIComponent(brandKey)}`; };
 
   const syncAll = async () => {
     setSyncing(true); setSyncMsg('');
     const added = [];
     if (igConnected) {
       try {
-        const r = await fetch('/api/sync/instagram', { headers: { 'X-User-Key': userKey } });
+        const r = await fetch('/api/sync/instagram', { headers: { 'X-User-Key': brandKey } });
         const data = await r.json();
         if (data.account) { setIgProfile(data.account); localStorage.setItem('faith-studio-ig-profile', JSON.stringify(data.account)); }
         if (data.growth) { setIgGrowth(data.growth); localStorage.setItem('faith-studio-ig-growth', JSON.stringify(data.growth)); }
@@ -6805,7 +6799,7 @@ const PostAnalytics = ({ onOpenSettings }) => {
     }
     if (ytConnected) {
       try {
-        const r = await fetch('/api/sync/youtube', { headers: { 'X-User-Key': userKey } });
+        const r = await fetch('/api/sync/youtube', { headers: { 'X-User-Key': brandKey } });
         const data = await r.json();
         if (data.posts?.length) {
           const existing = new Set(posts.map(p => p.id));
@@ -6825,7 +6819,7 @@ const PostAnalytics = ({ onOpenSettings }) => {
     if (!igConnected) { setAdsError('Connect Instagram/Facebook first to access your ad accounts.'); return; }
     setAdsLoading(true); setAdsError('');
     try {
-      const r = await fetch('/api/ads?action=accounts', { headers: { 'X-User-Key': userKey } });
+      const r = await fetch('/api/ads?action=accounts', { headers: { 'X-User-Key': brandKey } });
       const data = await r.json();
       if (data.error) { setAdsError(data.error); } else { setAdAccounts(data.accounts || []); }
     } catch (e) { setAdsError('Failed to load ad accounts: ' + e.message); }
@@ -6836,7 +6830,7 @@ const PostAnalytics = ({ onOpenSettings }) => {
     if (!accountId) return;
     setAdsLoading(true); setAdsError('');
     try {
-      const r = await fetch(`/api/ads?action=campaigns&account_id=${encodeURIComponent(accountId)}`, { headers: { 'X-User-Key': userKey } });
+      const r = await fetch(`/api/ads?action=campaigns&account_id=${encodeURIComponent(accountId)}`, { headers: { 'X-User-Key': brandKey } });
       const data = await r.json();
       if (data.error) setAdsError(data.error);
       else setCampaigns(data.campaigns || []);
@@ -6852,7 +6846,7 @@ const PostAnalytics = ({ onOpenSettings }) => {
       const r = await fetch('/api/ads?action=create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-User-Key': userKey },
-        body: JSON.stringify({ account_id: adAccountId, name: adForm.name, objective: adForm.objective, daily_budget: Math.round(Number(adForm.budget) * 100), days: Number(adForm.days), url: adForm.url }),
+        body: JSON.stringify({ account_id: adAccountId, name: adForm.name, objective: adForm.objective, daily_budget: Math.round(Number(adForm.budget) * 100), days: Number(adForm.days), url: adForm.url, user_key: brandKey }),
       });
       const data = await r.json();
       if (data.error) setAdMsg('Error: ' + data.error);
