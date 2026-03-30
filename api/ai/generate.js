@@ -29,18 +29,38 @@ export default async function handler(req, res) {
       ? 'product-based business focused on sales, marketing, and customer growth'
       : 'creator and entrepreneur';
     const history = (chatHistory || []).map(m => `${m.role === 'user' ? 'Creator' : 'Coach'}: ${m.text}`).join('\n');
-    prompt = `You are a world-class social media coach, content strategist, marketing expert, and creative tools instructor. You are coaching Sarah, the creator behind "${brand}" — a ${nicheDesc}.
+    prompt = `You are a world-class social media coach, content strategist, marketing expert, and creative tools instructor coaching Sarah directly.
 
-You are an expert in:
-- Instagram growth, viral Reels, caption writing, hashtags, audience building
-- Sales, marketing, and monetisation for creators
-- DaVinci Resolve — you know every feature: the Cut page, Edit page, Color page (wheels, curves, LUTs, nodes), Fusion (text+, effects), Deliver page (export settings for Instagram Reels: H.264, 1080x1920, 30fps, 16Mbps). You give step-by-step instructions with exact menu names and keyboard shortcuts (Mac: Cmd, Win: Ctrl).
-- Adobe Lightroom — you know the full mobile and desktop workflow: importing, Basic panel (exposure, contrast, highlights, shadows, whites, blacks, clarity, vibrance, saturation), HSL/Color Mix, Tone Curve, Detail (sharpening, noise reduction), Presets, exporting for Instagram. You give clear step-by-step instructions.
-- Content creation workflow: shoot → edit in DaVinci → color grade/photo edit in Lightroom → plan in this app → post
+SARAH'S BRAND ECOSYSTEM — know this deeply:
 
-When Sarah asks how to do something in DaVinci or Lightroom, give clear numbered steps with exact button/menu names. Be like a patient expert sitting next to her.
+1. SARAH SPEAKS FAITH (primary brand, current focus)
+   - Christian content creator: discipleship, gospel, saving souls, faith lifestyle, spiritual growth for women
+   - Platform: Instagram (Reels + posts) + YouTube channel
+   - Audience: Christian women seeking real, raw, faith-filled content
+   - YouTube channel name: "Sarah Speaks Faith" (the personal brand is the channel)
 
-Be specific to ${brand}. Give real, actionable answers — not generic advice. No fluff. Stay conversational.
+2. HER STEWARDSHIP (second brand — lives INSIDE Sarah Speaks Faith)
+   - A podcast/show series that lives on the Sarah Speaks Faith YouTube channel
+   - Focus: financial stewardship, biblical money management, faith + finances for women
+   - Same audience as Sarah Speaks Faith — same Christian women, just deeper into their journey
+   - Cross-posting strategy: Sarah Speaks Faith builds the audience → Her Stewardship converts/deepens them
+   - Recommended posting schedule: Mon/Fri = faith Reels (Sarah Speaks Faith), Wed = Her Stewardship episode or faith + finance content, Sun = devotional with soft Her Stewardship mention
+   - When suggesting content plans, always weave Her Stewardship into the Sarah Speaks Faith schedule naturally
+
+3. STOKLYNC (separate business — product/tech)
+4. SKIN PRODUCTS (separate business — beauty/product)
+
+CONTENT WORKFLOW Sarah uses:
+- Films on phone/camera → edits in DaVinci Resolve → color grades photos in Adobe Lightroom → designs graphics in Canva → plans/writes content in this app → posts
+
+TOOLS Sarah uses — you know all of these deeply:
+- DaVinci Resolve: Cut page, Edit page, Color page (wheels, curves, LUTs, nodes), Fusion (Text+), Deliver page. Export for Reels: H.264, 1080x1920, 30fps. Give step-by-step instructions with exact menu/button names and keyboard shortcuts (Cmd on Mac).
+- Adobe Lightroom: Basic panel, HSL/Color Mix, Tone Curve, Detail, Presets, export for Instagram (JPEG, sRGB, 1080px). Step-by-step instructions.
+- Canva: canvas sizing (1080x1920 for Reels), brand kit, templates, export. Step-by-step instructions.
+
+CURRENT BRAND in focus: "${brand}" (type: ${type})
+
+Be specific, practical, and brilliant. Give real answers — not generic advice. No fluff. When Sarah asks about DaVinci, Lightroom or Canva, walk her through it step by step like a patient expert sitting next to her. When she asks about planning, always consider both Sarah Speaks Faith AND Her Stewardship as a connected ecosystem.
 
 Conversation:
 ${history}
@@ -137,7 +157,13 @@ AUDIENCE LOCATION: ${topCountries || 'unknown'}
 AUDIENCE CITIES: ${topCities || 'unknown'}
 GENDER/AGE BREAKDOWN: ${genderAge}
 
-Build a strategic 30-day content roadmap based on what the DATA says this audience craves. Think like a strategist, not a creator.
+IMPORTANT BRAND CONTEXT:
+- Sarah Speaks Faith is the PRIMARY brand and YouTube channel name
+- Her Stewardship is a podcast/show series that lives INSIDE the Sarah Speaks Faith channel — same audience, same women, deeper topic (faith + finances)
+- Cross-brand schedule: Mon/Fri = faith Reels, Wed = Her Stewardship episode/faith+finance content, Sun = devotional with soft Her Stewardship mention
+- The roadmap must weave Her Stewardship naturally into the Sarah Speaks Faith schedule — they are one ecosystem, not two competing brands
+
+Build a strategic 30-day content roadmap based on what the DATA says this audience craves. Weave Her Stewardship into the plan at the right moments. Think like a strategist, not a creator.
 
 Respond in this EXACT JSON:
 {
@@ -156,24 +182,28 @@ Respond in this EXACT JSON:
   ],
   "roadmap": [
     {"week": 1, "theme": "Week theme", "goal": "Specific measurable goal", "posts": [
-      {"day": "Mon", "type": "Reel/Carousel/Single", "topic": "Exact topic", "hook": "Opening hook", "audienceWhy": "Why THIS audience will engage"},
-      {"day": "Wed", "type": "Reel/Carousel/Single", "topic": "Exact topic", "hook": "Opening hook", "audienceWhy": "Why THIS audience will engage"},
-      {"day": "Fri", "type": "Reel/Carousel/Single", "topic": "Exact topic", "hook": "Opening hook", "audienceWhy": "Why THIS audience will engage"}
+      {"day": "Mon", "brand": "Sarah Speaks Faith", "type": "Reel/Carousel/Single", "topic": "Exact topic", "hook": "Opening hook", "audienceWhy": "Why THIS audience will engage"},
+      {"day": "Wed", "brand": "Her Stewardship", "type": "Reel/Podcast clip/Carousel", "topic": "Exact faith+finance topic", "hook": "Opening hook", "audienceWhy": "Why this bridges faith and stewardship for her audience"},
+      {"day": "Fri", "brand": "Sarah Speaks Faith", "type": "Reel/Carousel/Single", "topic": "Exact topic", "hook": "Opening hook", "audienceWhy": "Why THIS audience will engage"},
+      {"day": "Sun", "brand": "Sarah Speaks Faith", "type": "Single/Carousel", "topic": "Devotional — soft Her Stewardship mention", "hook": "Opening hook", "audienceWhy": "Sunday devotional content performs high for faith audiences"}
     ]},
     {"week": 2, "theme": "Week theme", "goal": "Specific measurable goal", "posts": [
-      {"day": "Mon", "type": "Reel/Carousel/Single", "topic": "Exact topic", "hook": "Opening hook", "audienceWhy": "Why THIS audience will engage"},
-      {"day": "Wed", "type": "Reel/Carousel/Single", "topic": "Exact topic", "hook": "Opening hook", "audienceWhy": "Why THIS audience will engage"},
-      {"day": "Fri", "type": "Reel/Carousel/Single", "topic": "Exact topic", "hook": "Opening hook", "audienceWhy": "Why THIS audience will engage"}
+      {"day": "Mon", "brand": "Sarah Speaks Faith", "type": "Reel/Carousel/Single", "topic": "Exact topic", "hook": "Opening hook", "audienceWhy": "Why THIS audience will engage"},
+      {"day": "Wed", "brand": "Her Stewardship", "type": "Reel/Podcast clip/Carousel", "topic": "Exact faith+finance topic", "hook": "Opening hook", "audienceWhy": "Why this works"},
+      {"day": "Fri", "brand": "Sarah Speaks Faith", "type": "Reel/Carousel/Single", "topic": "Exact topic", "hook": "Opening hook", "audienceWhy": "Why THIS audience will engage"},
+      {"day": "Sun", "brand": "Sarah Speaks Faith", "type": "Single/Carousel", "topic": "Devotional — soft Her Stewardship mention", "hook": "Opening hook", "audienceWhy": "Sunday devotional"}
     ]},
     {"week": 3, "theme": "Week theme", "goal": "Specific measurable goal", "posts": [
-      {"day": "Mon", "type": "Reel/Carousel/Single", "topic": "Exact topic", "hook": "Opening hook", "audienceWhy": "Why THIS audience will engage"},
-      {"day": "Wed", "type": "Reel/Carousel/Single", "topic": "Exact topic", "hook": "Opening hook", "audienceWhy": "Why THIS audience will engage"},
-      {"day": "Fri", "type": "Reel/Carousel/Single", "topic": "Exact topic", "hook": "Opening hook", "audienceWhy": "Why THIS audience will engage"}
+      {"day": "Mon", "brand": "Sarah Speaks Faith", "type": "Reel/Carousel/Single", "topic": "Exact topic", "hook": "Opening hook", "audienceWhy": "Why THIS audience will engage"},
+      {"day": "Wed", "brand": "Her Stewardship", "type": "Reel/Podcast clip/Carousel", "topic": "Exact faith+finance topic", "hook": "Opening hook", "audienceWhy": "Why this works"},
+      {"day": "Fri", "brand": "Sarah Speaks Faith", "type": "Reel/Carousel/Single", "topic": "Exact topic", "hook": "Opening hook", "audienceWhy": "Why THIS audience will engage"},
+      {"day": "Sun", "brand": "Sarah Speaks Faith", "type": "Single/Carousel", "topic": "Devotional — soft Her Stewardship mention", "hook": "Opening hook", "audienceWhy": "Sunday devotional"}
     ]},
     {"week": 4, "theme": "Week theme", "goal": "Specific measurable goal", "posts": [
-      {"day": "Mon", "type": "Reel/Carousel/Single", "topic": "Exact topic", "hook": "Opening hook", "audienceWhy": "Why THIS audience will engage"},
-      {"day": "Wed", "type": "Reel/Carousel/Single", "topic": "Exact topic", "hook": "Opening hook", "audienceWhy": "Why THIS audience will engage"},
-      {"day": "Fri", "type": "Reel/Carousel/Single", "topic": "Exact topic", "hook": "Opening hook", "audienceWhy": "Why THIS audience will engage"}
+      {"day": "Mon", "brand": "Sarah Speaks Faith", "type": "Reel/Carousel/Single", "topic": "Exact topic", "hook": "Opening hook", "audienceWhy": "Why THIS audience will engage"},
+      {"day": "Wed", "brand": "Her Stewardship", "type": "Reel/Podcast clip/Carousel", "topic": "Exact faith+finance topic", "hook": "Opening hook", "audienceWhy": "Why this works"},
+      {"day": "Fri", "brand": "Sarah Speaks Faith", "type": "Reel/Carousel/Single", "topic": "Exact topic", "hook": "Opening hook", "audienceWhy": "Why THIS audience will engage"},
+      {"day": "Sun", "brand": "Sarah Speaks Faith", "type": "Single/Carousel", "topic": "Devotional — soft Her Stewardship mention", "hook": "Opening hook", "audienceWhy": "Sunday devotional"}
     ]}
   ],
   "seriesIdea": {"name": "A recurring series title", "concept": "What this series is about", "why": "Why this will build a loyal returning audience"},

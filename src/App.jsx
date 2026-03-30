@@ -1433,19 +1433,23 @@ const ProContentToolkit = () => {
                         <span className="text-xs text-violet-500 font-semibold">{week.goal}</span>
                       </div>
                       <div className="space-y-2">
-                        {(week.posts||[]).map((post, pi) => (
-                          <div key={pi} className="flex gap-3 p-3 rounded-xl bg-stone-50 dark:bg-stone-700/40">
+                        {(week.posts||[]).map((post, pi) => {
+                          const isHS = post.brand === 'Her Stewardship';
+                          return (
+                          <div key={pi} className={`flex gap-3 p-3 rounded-xl ${isHS ? 'bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800' : 'bg-stone-50 dark:bg-stone-700/40'}`}>
                             <span className="text-xs font-bold text-rose-500 w-8 shrink-0 pt-0.5">{post.day}</span>
                             <div className="flex-1">
-                              <div className="flex items-center gap-2 mb-0.5">
+                              <div className="flex items-center gap-2 mb-0.5 flex-wrap">
                                 <span className="text-xs font-bold text-stone-700 dark:text-stone-200">{post.topic}</span>
                                 <span className="text-xs text-stone-400 bg-stone-100 dark:bg-stone-600 px-2 py-0.5 rounded-full">{post.type}</span>
+                                {post.brand && <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${isHS ? 'bg-emerald-100 dark:bg-emerald-800 text-emerald-700 dark:text-emerald-300' : 'bg-rose-100 dark:bg-rose-900 text-rose-600 dark:text-rose-300'}`}>{post.brand}</span>}
                               </div>
                               <p className="text-xs text-amber-600 dark:text-amber-400 mb-0.5">Hook: "{post.hook}"</p>
                               <p className="text-xs text-stone-500 dark:text-stone-400">Why it works: {post.audienceWhy}</p>
                             </div>
                           </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     </div>
                   ))}
