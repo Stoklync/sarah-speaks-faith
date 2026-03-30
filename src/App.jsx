@@ -991,11 +991,28 @@ const BUSINESS_TEMPLATES = [
 
 const ProContentToolkit = () => {
   const { activeBusinessId, businesses } = useStudio();
-  const bizName = (businesses || []).find(b => b?.id === activeBusinessId)?.name || 'Your brand';
+  const activeBiz = (businesses || []).find(b => b?.id === activeBusinessId);
+  const bizName = activeBiz?.name || 'Your brand';
+  const bizType = activeBiz?.type || 'faith';
   const [aiMode, setAiMode] = useState('ideas'); // ideas | script | caption | calendar | chat
   const [topic, setTopic] = useState('');
   const [chatInput, setChatInput] = useState('');
-  const [chatHistory, setChatHistory] = useState([]);
+
+  // Per-brand chat history, persisted to localStorage
+  const [chatHistories, setChatHistories] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('faith-studio-chat-histories') || '{}'); } catch { return {}; }
+  });
+  const chatHistory = chatHistories[activeBusinessId] || [];
+  const setChatHistory = (updater) => {
+    setChatHistories(prev => {
+      const current = prev[activeBusinessId] || [];
+      const next = typeof updater === 'function' ? updater(current) : updater;
+      const updated = { ...prev, [activeBusinessId]: next };
+      try { localStorage.setItem('faith-studio-chat-histories', JSON.stringify(updated)); } catch (_) {}
+      return updated;
+    });
+  };
+
   const [aiResult, setAiResult] = useState(null);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState('');
@@ -1036,6 +1053,8 @@ const ProContentToolkit = () => {
           mode: 'chat',
           topic: userMsg,
           chatHistory: newHistory,
+          brandName: bizName,
+          brandType: bizType,
         })
       });
       const data = await r.json();
@@ -1247,7 +1266,10 @@ const ProContentToolkit = () => {
       {/* Chat mode */}
       {aiMode === 'chat' && (
         <div className="bg-white dark:bg-stone-800 border border-rose-100 dark:border-stone-700 rounded-3xl p-6 space-y-4">
-          <h3 className="font-bold text-stone-800 dark:text-stone-100 flex items-center gap-2"><Bot size={18} className="text-rose-400" /> Ask your AI content coach</h3>
+          <div className="flex items-center justify-between">
+            <h3 className="font-bold text-stone-800 dark:text-stone-100 flex items-center gap-2"><Bot size={18} className="text-rose-400" /> Ask your AI content coach — {bizName}</h3>
+            {chatHistory.length > 0 && <button onClick={() => setChatHistory([])} className="text-xs text-stone-400 hover:text-red-400">Clear chat</button>}
+          </div>
           <p className="text-xs text-stone-500">Ask anything — "What should I post this week?", "Write me a hook about faith", "How do I grow faster?", "Give me a 30-day content plan"</p>
           <div className="min-h-[200px] max-h-[400px] overflow-y-auto space-y-3 p-3 bg-stone-50 dark:bg-stone-700/30 rounded-2xl">
             {chatHistory.length === 0 && <p className="text-center text-stone-400 text-sm pt-8">Start a conversation with your AI coach</p>}

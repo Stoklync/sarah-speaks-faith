@@ -8,7 +8,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { mode, topic, description, niche, format, analyticsData, chatHistory } = req.body || {};
+  const { mode, topic, description, niche, format, analyticsData, chatHistory, brandName, brandType } = req.body || {};
 
   if (!topic && !analyticsData) {
     return res.status(400).json({ error: 'topic or analyticsData is required' });
@@ -19,10 +19,19 @@ export default async function handler(req, res) {
 
   if (mode === 'chat') {
     isChat = true;
+    const brand = brandName || 'Sarah Speaks Faith';
+    const type = brandType || 'faith';
+    const nicheDesc = type === 'faith'
+      ? 'Christian creator focused on discipleship, spreading the gospel, saving souls, faith lifestyle, and spiritual growth for women'
+      : type === 'service'
+      ? 'service-based business focused on helping clients achieve results'
+      : type === 'product'
+      ? 'product-based business focused on sales, marketing, and customer growth'
+      : 'creator and entrepreneur';
     const history = (chatHistory || []).map(m => `${m.role === 'user' ? 'Creator' : 'Coach'}: ${m.text}`).join('\n');
-    prompt = `You are a world-class social media coach and content strategist for Sarah Speaks Faith — a Christian creator focused on discipleship, spreading the gospel, saving souls, faith lifestyle, and spiritual growth for women. You are an expert in Instagram growth, viral Reels, caption writing, and faith-based marketing.
+    prompt = `You are a world-class social media coach, content strategist, and marketing expert. You are coaching the creator behind "${brand}" — a ${nicheDesc}. You know Instagram growth, viral Reels, caption writing, sales, and audience building inside and out.
 
-Be specific, practical, encouraging, and brilliant. Give real answers — not generic advice. No fluff. Keep your answer focused and conversational.
+Be specific to ${brand}. Give real, actionable answers — not generic advice. No fluff. Stay conversational.
 
 Conversation:
 ${history}
