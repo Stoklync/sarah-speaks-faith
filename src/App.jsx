@@ -6730,11 +6730,43 @@ const PostAnalytics = ({ onOpenSettings }) => {
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState(null);
 
+  // Social account connection state
+  const [userKey] = useState(() => {
+    let k = localStorage.getItem('faith-studio-user-key');
+    if (!k) { k = `user-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`; localStorage.setItem('faith-studio-user-key', k); }
+    return k;
+  });
+  const [igConnected, setIgConnected] = useState(() => !!localStorage.getItem('faith-studio-ig-connected'));
+  const [ytConnected, setYtConnected] = useState(() => !!localStorage.getItem('faith-studio-yt-connected'));
+  const [syncing, setSyncing] = useState(false);
+  const [syncMsg, setSyncMsg] = useState('');
+
+  // Ads state
+  const [adsTab, setAdsTab] = useState(false);
+  const [adAccountId, setAdAccountId] = useState(() => localStorage.getItem('faith-studio-ad-account') || '');
+  const [adAccounts, setAdAccounts] = useState([]);
+  const [campaigns, setCampaigns] = useState([]);
+  const [adsLoading, setAdsLoading] = useState(false);
+  const [adsError, setAdsError] = useState('');
+  const [adForm, setAdForm] = useState({ name: '', objective: 'OUTCOME_ENGAGEMENT', budget: '10', days: '7', url: '' });
+  const [adCreating, setAdCreating] = useState(false);
+  const [adMsg, setAdMsg] = useState('');
+
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    if (params.get('instagram_connected') === '1' || params.get('youtube_connected') === '1') {
-      const state = params.get('state');
-      if (state) try { localStorage.setItem('faith-studio-user-key', state); } catch (_) {}
+    if (params.get('instagram_connected') === '1') {
+      setIgConnected(true);
+      localStorage.setItem('faith-studio-ig-connected', '1');
+    }
+    if (params.get('youtube_connected') === '1') {
+      setYtConnected(true);
+      localStorage.setItem('faith-studio-yt-connected', '1');
+    }
+    const state = params.get('state');
+    if (state && (params.get('instagram_connected') || params.get('youtube_connected'))) {
+      try { localStorage.setItem('faith-studio-user-key', state); } catch (_) {}
+    }
+    if (params.get('instagram_connected') || params.get('youtube_connected')) {
       window.history.replaceState({}, '', window.location.pathname);
     }
   }, []);
@@ -6745,6 +6777,83 @@ const PostAnalytics = ({ onOpenSettings }) => {
   const updatePost = (id, updates) => setPosts(prev => prev.map(p => p.id === id ? { ...p, ...updates } : p));
   const startEdit = (p) => { setEditingId(p.id); setEditBuf({ views: p.views || '', likes: p.likes || '', comments: p.comments || '', saves: p.saves || '' }); };
   const saveEdit = (id) => { updatePost(id, { views: Number(editBuf.views) || 0, likes: Number(editBuf.likes) || 0, comments: Number(editBuf.comments) || 0, saves: Number(editBuf.saves) || 0 }); setEditingId(null); };
+
+  const connectInstagram = () => { window.location.href = `/api/auth/instagram?state=${encodeURIComponent(userKey)}`; };
+  const connectYouTube = () => { window.location.href = `/api/auth/youtube?state=${encodeURIComponent(userKey)}`; };
+
+  const syncAll = async () => {
+    setSyncing(true); setSyncMsg('');
+    const added = [];
+    if (igConnected) {
+      try {
+        const r = await fetch('/api/sync/instagram', { headers: { 'X-User-Key': userKey } });
+        const data = await r.json();
+        if (data.posts?.length) {
+          const existing = new Set(posts.map(p => p.id));
+          const newPosts = data.posts.filter(p => !existing.has(p.id)).map(p => ({ ...p, businessId: activeBusinessId }));
+          const updated = data.posts.filter(p => existing.has(p.id));
+          if (newPosts.length) { setPosts(prev => [...prev, ...newPosts]); added.push(`${newPosts.length} new Instagram posts`); }
+          if (updated.length) { setPosts(prev => prev.map(p => { const u = updated.find(x => x.id === p.id); return u ? { ...p, views: u.views, likes: u.likes, comments: u.comments, saves: u.saves } : p; })); added.push(`${updated.length} Instagram posts updated`); }
+        } else if (data.error) setSyncMsg('Instagram: ' + data.error);
+      } catch (e) { setSyncMsg('Instagram sync failed: ' + e.message); }
+    }
+    if (ytConnected) {
+      try {
+        const r = await fetch('/api/sync/youtube', { headers: { 'X-User-Key': userKey } });
+        const data = await r.json();
+        if (data.posts?.length) {
+          const existing = new Set(posts.map(p => p.id));
+          const newPosts = data.posts.filter(p => !existing.has(p.id)).map(p => ({ ...p, businessId: activeBusinessId }));
+          const updated = data.posts.filter(p => existing.has(p.id));
+          if (newPosts.length) { setPosts(prev => [...prev, ...newPosts]); added.push(`${newPosts.length} new YouTube videos`); }
+          if (updated.length) { setPosts(prev => prev.map(p => { const u = updated.find(x => x.id === p.id); return u ? { ...p, views: u.views, likes: u.likes, comments: u.comments } : p; })); added.push(`${updated.length} YouTube videos updated`); }
+        } else if (data.error) setSyncMsg(m => (m ? m + ' | ' : '') + 'YouTube: ' + data.error);
+      } catch (e) { setSyncMsg(m => (m ? m + ' | ' : '') + 'YouTube failed: ' + e.message); }
+    }
+    setSyncing(false);
+    if (added.length) setSyncMsg('Synced: ' + added.join(', '));
+    else if (!igConnected && !ytConnected) setSyncMsg('Connect an account first.');
+  };
+
+  const loadAdAccounts = async () => {
+    if (!igConnected) { setAdsError('Connect Instagram/Facebook first to access your ad accounts.'); return; }
+    setAdsLoading(true); setAdsError('');
+    try {
+      const r = await fetch('/api/ads/meta/accounts', { headers: { 'X-User-Key': userKey } });
+      const data = await r.json();
+      if (data.error) { setAdsError(data.error); } else { setAdAccounts(data.accounts || []); }
+    } catch (e) { setAdsError('Failed to load ad accounts: ' + e.message); }
+    setAdsLoading(false);
+  };
+
+  const loadCampaigns = async (accountId) => {
+    if (!accountId) return;
+    setAdsLoading(true); setAdsError('');
+    try {
+      const r = await fetch(`/api/ads/meta/campaigns?account_id=${encodeURIComponent(accountId)}`, { headers: { 'X-User-Key': userKey } });
+      const data = await r.json();
+      if (data.error) setAdsError(data.error);
+      else setCampaigns(data.campaigns || []);
+    } catch (e) { setAdsError(e.message); }
+    setAdsLoading(false);
+  };
+
+  const createAd = async () => {
+    if (!adAccountId) { setAdMsg('Select an ad account first.'); return; }
+    if (!adForm.name || !adForm.url) { setAdMsg('Fill in campaign name and destination URL.'); return; }
+    setAdCreating(true); setAdMsg('');
+    try {
+      const r = await fetch('/api/ads/meta/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-User-Key': userKey },
+        body: JSON.stringify({ account_id: adAccountId, name: adForm.name, objective: adForm.objective, daily_budget: Math.round(Number(adForm.budget) * 100), days: Number(adForm.days), url: adForm.url }),
+      });
+      const data = await r.json();
+      if (data.error) setAdMsg('Error: ' + data.error);
+      else { setAdMsg('Campaign created! ID: ' + (data.campaign_id || 'done')); loadCampaigns(adAccountId); }
+    } catch (e) { setAdMsg('Failed: ' + e.message); }
+    setAdCreating(false);
+  };
 
   const bizPosts = posts.filter(p => p.businessId === activeBusinessId);
   const totalViews = bizPosts.reduce((s, p) => s + p.views, 0);
@@ -6769,6 +6878,127 @@ const PostAnalytics = ({ onOpenSettings }) => {
 
   return (
     <div className="max-w-6xl mx-auto space-y-8">
+
+      {/* Tab bar: Analytics | Ads Manager */}
+      <div className="flex gap-2">
+        <button onClick={() => setAdsTab(false)} className={`px-5 py-2 rounded-xl font-bold text-sm transition-colors ${!adsTab ? 'bg-rose-500 text-white' : 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-300 hover:bg-rose-50 dark:hover:bg-stone-700'}`}>Post Analytics</button>
+        <button onClick={() => { setAdsTab(true); if (!adAccounts.length) loadAdAccounts(); }} className={`px-5 py-2 rounded-xl font-bold text-sm transition-colors ${adsTab ? 'bg-rose-500 text-white' : 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-300 hover:bg-rose-50 dark:hover:bg-stone-700'}`}>Ads Manager</button>
+      </div>
+
+      {/* Connected Accounts */}
+      <div className="bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-3xl p-6 shadow-sm">
+        <h3 className="font-bold text-stone-800 dark:text-stone-100 mb-4 flex items-center gap-2"><Zap size={16} className="text-rose-400" /> Connected Accounts</h3>
+        <div className="flex flex-wrap gap-3 mb-4">
+          <button onClick={connectInstagram} className={`flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-sm border-2 transition-all ${igConnected ? 'border-pink-400 bg-pink-50 dark:bg-pink-900/20 text-pink-700 dark:text-pink-300' : 'border-stone-300 dark:border-stone-600 text-stone-600 dark:text-stone-300 hover:border-pink-400 hover:text-pink-600'}`}>
+            <Instagram size={16} /> {igConnected ? 'Instagram Connected' : 'Connect Instagram'}
+          </button>
+          <button onClick={connectYouTube} className={`flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-sm border-2 transition-all ${ytConnected ? 'border-red-400 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300' : 'border-stone-300 dark:border-stone-600 text-stone-600 dark:text-stone-300 hover:border-red-400 hover:text-red-600'}`}>
+            <Youtube size={16} /> {ytConnected ? 'YouTube Connected' : 'Connect YouTube'}
+          </button>
+          {(igConnected || ytConnected) && (
+            <button onClick={syncAll} disabled={syncing} className="flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-sm bg-emerald-500 text-white hover:bg-emerald-600 disabled:opacity-50">
+              {syncing ? <><Loader2 size={14} className="animate-spin" /> Syncing…</> : <><Zap size={14} /> Sync Posts</>}
+            </button>
+          )}
+        </div>
+        {syncMsg && <p className={`text-sm font-medium ${syncMsg.includes('ailed') || syncMsg.includes('Error') ? 'text-red-500' : 'text-emerald-600 dark:text-emerald-400'}`}>{syncMsg}</p>}
+        {!igConnected && !ytConnected && <p className="text-xs text-stone-400">Connect your accounts to auto-sync real post data — views, likes, reach, saves.</p>}
+      </div>
+
+      {/* ADS MANAGER TAB */}
+      {adsTab && (
+        <div className="space-y-6">
+          <div className="bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-3xl p-6 shadow-sm">
+            <h3 className="font-bold text-stone-800 dark:text-stone-100 mb-1 flex items-center gap-2"><TrendingUp size={16} className="text-rose-400" /> Meta Ads Manager</h3>
+            <p className="text-xs text-stone-400 mb-4">Create and manage Facebook & Instagram ad campaigns directly. Requires your Instagram/Facebook to be connected with ads permissions.</p>
+
+            {/* Ad Account Selector */}
+            <div className="mb-4">
+              <label className="block text-xs font-bold text-stone-500 uppercase mb-1">Your Ad Accounts</label>
+              {adAccounts.length === 0 ? (
+                <button onClick={loadAdAccounts} disabled={adsLoading} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-stone-100 dark:bg-stone-700 text-sm font-bold text-stone-600 dark:text-stone-300 hover:bg-rose-50 dark:hover:bg-rose-900/20">
+                  {adsLoading ? <><Loader2 size={14} className="animate-spin" /> Loading…</> : 'Load Ad Accounts'}
+                </button>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {adAccounts.map(a => (
+                    <button key={a.id} onClick={() => { setAdAccountId(a.id); localStorage.setItem('faith-studio-ad-account', a.id); loadCampaigns(a.id); }}
+                      className={`px-3 py-1.5 rounded-lg text-sm font-bold border-2 ${adAccountId === a.id ? 'border-rose-400 bg-rose-50 dark:bg-rose-900/20 text-rose-700 dark:text-rose-300' : 'border-stone-200 dark:border-stone-600 text-stone-600 dark:text-stone-300'}`}>
+                      {a.name} ({a.currency}) — Balance: {a.balance}
+                    </button>
+                  ))}
+                </div>
+              )}
+              {adsError && <p className="text-sm text-red-500 mt-2">{adsError}</p>}
+            </div>
+
+            {/* Active Campaigns */}
+            {campaigns.length > 0 && (
+              <div className="mb-6">
+                <h4 className="text-xs font-bold text-stone-500 uppercase mb-2">Active Campaigns</h4>
+                <div className="space-y-2">
+                  {campaigns.map(c => (
+                    <div key={c.id} className="flex items-center justify-between bg-stone-50 dark:bg-stone-700/50 rounded-xl px-4 py-2">
+                      <div>
+                        <p className="font-bold text-sm text-stone-800 dark:text-stone-100">{c.name}</p>
+                        <p className="text-xs text-stone-400">{c.objective} · {c.status}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-mono font-bold text-sm text-rose-600 dark:text-rose-400">${(Number(c.spend || 0) / 100).toFixed(2)} spent</p>
+                        <p className="text-xs text-stone-400">{c.impressions || 0} impressions · {c.clicks || 0} clicks</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Create Campaign */}
+            {adAccountId && (
+              <div className="border-t border-stone-200 dark:border-stone-700 pt-5">
+                <h4 className="text-xs font-bold text-stone-500 uppercase mb-3">Create New Campaign</h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+                  <div>
+                    <label className="block text-xs text-stone-500 mb-1">Campaign Name</label>
+                    <input value={adForm.name} onChange={e => setAdForm(f => ({ ...f, name: e.target.value }))} placeholder="e.g. Spring Promo 2026" className="w-full bg-stone-50 dark:bg-stone-700 border border-stone-200 dark:border-stone-600 rounded-xl px-3 py-2 text-sm" />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-stone-500 mb-1">Objective</label>
+                    <select value={adForm.objective} onChange={e => setAdForm(f => ({ ...f, objective: e.target.value }))} className="w-full bg-stone-50 dark:bg-stone-700 border border-stone-200 dark:border-stone-600 rounded-xl px-3 py-2 text-sm">
+                      <option value="OUTCOME_ENGAGEMENT">Engagement (likes, comments)</option>
+                      <option value="OUTCOME_TRAFFIC">Traffic (clicks to website)</option>
+                      <option value="OUTCOME_LEADS">Leads (capture info)</option>
+                      <option value="OUTCOME_AWARENESS">Brand Awareness</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs text-stone-500 mb-1">Daily Budget (USD)</label>
+                    <input type="number" min="1" value={adForm.budget} onChange={e => setAdForm(f => ({ ...f, budget: e.target.value }))} placeholder="10" className="w-full bg-stone-50 dark:bg-stone-700 border border-stone-200 dark:border-stone-600 rounded-xl px-3 py-2 text-sm" />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-stone-500 mb-1">Duration (days)</label>
+                    <input type="number" min="1" max="90" value={adForm.days} onChange={e => setAdForm(f => ({ ...f, days: e.target.value }))} placeholder="7" className="w-full bg-stone-50 dark:bg-stone-700 border border-stone-200 dark:border-stone-600 rounded-xl px-3 py-2 text-sm" />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <label className="block text-xs text-stone-500 mb-1">Destination URL</label>
+                    <input value={adForm.url} onChange={e => setAdForm(f => ({ ...f, url: e.target.value }))} placeholder="https://yourwebsite.com" className="w-full bg-stone-50 dark:bg-stone-700 border border-stone-200 dark:border-stone-600 rounded-xl px-3 py-2 text-sm" />
+                  </div>
+                </div>
+                <p className="text-xs text-stone-400 mb-3">Total budget: <strong>${(Number(adForm.budget || 0) * Number(adForm.days || 0)).toFixed(2)}</strong> over {adForm.days} days</p>
+                <button onClick={createAd} disabled={adCreating} className="flex items-center gap-2 px-5 py-2 rounded-xl bg-rose-500 text-white font-bold text-sm hover:bg-rose-600 disabled:opacity-50">
+                  {adCreating ? <><Loader2 size={14} className="animate-spin" /> Creating…</> : <><Zap size={14} /> Launch Campaign</>}
+                </button>
+                {adMsg && <p className={`text-sm mt-2 font-medium ${adMsg.includes('Error') || adMsg.includes('Failed') ? 'text-red-500' : 'text-emerald-600 dark:text-emerald-400'}`}>{adMsg}</p>}
+                <p className="text-xs text-stone-400 mt-3">Note: Ads require <strong>ads_management</strong> permission approved by Meta. In development mode, only your own account can run ads.</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ANALYTICS TAB — hidden when Ads tab active */}
+      {!adsTab && <>
+
       {/* Auto-log notice */}
       <div className="bg-gradient-to-br from-rose-50 to-amber-50 dark:from-stone-800 dark:to-stone-800 border-2 border-rose-200 dark:border-rose-800 rounded-3xl p-6 shadow-lg">
         <h2 className="text-2xl font-bold text-stone-800 dark:text-stone-100 mb-1">Post Analytics</h2>
@@ -6890,7 +7120,7 @@ const PostAnalytics = ({ onOpenSettings }) => {
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
                   <p className="font-bold text-stone-800 dark:text-stone-100 truncate">{p.title}</p>
-                  <p className="text-xs text-stone-400 mt-0.5">{platformLabels[p.platform] || p.platform} · {p.postedAt}</p>
+                  <p className="text-xs text-stone-400 mt-0.5">{platformLabels[p.platform] || p.platform} · {p.postedAt} {p.source === 'instagram_api' || p.source === 'youtube_api' ? '· synced' : ''}</p>
                 </div>
                 <div className="flex gap-1 shrink-0">
                   <button onClick={() => editingId === p.id ? saveEdit(p.id) : startEdit(p)} className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${editingId === p.id ? 'bg-rose-500 text-white' : 'bg-stone-100 dark:bg-stone-700 text-stone-600 dark:text-stone-300 hover:bg-rose-50 dark:hover:bg-rose-900/30 hover:text-rose-600'}`}>{editingId === p.id ? 'Save' : 'Update'}</button>
@@ -6918,6 +7148,8 @@ const PostAnalytics = ({ onOpenSettings }) => {
           ))}
         </div>
       )}
+
+      </> /* end analytics tab */}
     </div>
   );
 };

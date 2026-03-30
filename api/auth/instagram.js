@@ -14,7 +14,7 @@ export default function handler(req, res) {
   }
 
   const redirectUri = `${baseUrl}/api/auth/instagram/callback`;
-  const scope = encodeURIComponent('instagram_basic,instagram_manage_insights,pages_show_list,pages_read_engagement');
+  const scope = encodeURIComponent('instagram_basic,instagram_manage_insights,pages_show_list,pages_read_engagement,ads_management,ads_read');
   const url = `https://www.facebook.com/v18.0/dialog/oauth?client_id=${appId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${scope}&state=${encodeURIComponent(state)}&response_type=code`;
 
   res.redirect(302, url);
