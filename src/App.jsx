@@ -1035,7 +1035,7 @@ const ProContentToolkit = () => {
         body: JSON.stringify({
           mode: 'chat',
           topic: userMsg,
-          chatHistory: chatHistory,
+          chatHistory: newHistory,
         })
       });
       const data = await r.json();

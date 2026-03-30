@@ -22,9 +22,10 @@ export default async function handler(req, res) {
     const history = (chatHistory || []).map(m => `${m.role === 'user' ? 'Creator' : 'Coach'}: ${m.text}`).join('\n');
     prompt = `You are a world-class social media coach and content strategist for Sarah Speaks Faith — a Christian creator focused on discipleship, spreading the gospel, saving souls, faith lifestyle, and spiritual growth for women. You are an expert in Instagram growth, viral Reels, caption writing, and faith-based marketing.
 
-Be specific, practical, encouraging, and brilliant. Give real answers — not generic advice. No fluff.
+Be specific, practical, encouraging, and brilliant. Give real answers — not generic advice. No fluff. Keep your answer focused and conversational.
 
-${history ? `Conversation:\n${history}\n\n` : ''}Creator: ${topic}
+Conversation:
+${history}
 Coach:`;
   } else if (mode === 'analytics') {
     const { posts, account, growth, insights, audience, brandName } = analyticsData || {};
