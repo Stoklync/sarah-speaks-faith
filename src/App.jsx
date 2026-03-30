@@ -6819,7 +6819,7 @@ const PostAnalytics = ({ onOpenSettings }) => {
     if (!igConnected) { setAdsError('Connect Instagram/Facebook first to access your ad accounts.'); return; }
     setAdsLoading(true); setAdsError('');
     try {
-      const r = await fetch('/api/ads/meta/accounts', { headers: { 'X-User-Key': userKey } });
+      const r = await fetch('/api/ads?action=accounts', { headers: { 'X-User-Key': userKey } });
       const data = await r.json();
       if (data.error) { setAdsError(data.error); } else { setAdAccounts(data.accounts || []); }
     } catch (e) { setAdsError('Failed to load ad accounts: ' + e.message); }
@@ -6830,7 +6830,7 @@ const PostAnalytics = ({ onOpenSettings }) => {
     if (!accountId) return;
     setAdsLoading(true); setAdsError('');
     try {
-      const r = await fetch(`/api/ads/meta/campaigns?account_id=${encodeURIComponent(accountId)}`, { headers: { 'X-User-Key': userKey } });
+      const r = await fetch(`/api/ads?action=campaigns&account_id=${encodeURIComponent(accountId)}`, { headers: { 'X-User-Key': userKey } });
       const data = await r.json();
       if (data.error) setAdsError(data.error);
       else setCampaigns(data.campaigns || []);
@@ -6843,7 +6843,7 @@ const PostAnalytics = ({ onOpenSettings }) => {
     if (!adForm.name || !adForm.url) { setAdMsg('Fill in campaign name and destination URL.'); return; }
     setAdCreating(true); setAdMsg('');
     try {
-      const r = await fetch('/api/ads/meta/create', {
+      const r = await fetch('/api/ads?action=create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-User-Key': userKey },
         body: JSON.stringify({ account_id: adAccountId, name: adForm.name, objective: adForm.objective, daily_budget: Math.round(Number(adForm.budget) * 100), days: Number(adForm.days), url: adForm.url }),
