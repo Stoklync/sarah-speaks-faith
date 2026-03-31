@@ -16,6 +16,7 @@ import { LayeredTimelineTracks } from './components/LayeredTimelineTracks';
 import { CaptionOverlay } from './components/CaptionOverlay';
 import { CreatorInsights } from './components/CreatorInsights';
 import { AdobeExpressEditor } from './components/AdobeExpressEditor';
+import { FloatingAIChat } from './components/FloatingAIChat';
 import { 
   Scissors, 
   Camera, 
@@ -687,6 +688,10 @@ const App = () => {
           </div>
         </main>
       </div>
+
+      {/* Floating AI Chat — visible on every tab */}
+      <FloatingAIChat businesses={businesses} activeBusinessId={activeBusinessId} />
+
     </StudioContext.Provider>
   );
 };
