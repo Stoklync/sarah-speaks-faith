@@ -247,6 +247,7 @@ const App = () => {
   const [businesses, setBusinesses] = useState(() => {
     const defaults = [
       { id: 'sarah', name: 'Sarah Speaks Faith', type: 'brand', color: 'violet' },
+
       { id: 'stewardship', name: 'Her Stewardship', type: 'stewardship', color: 'emerald' },
       { id: 'stoklync', name: 'Stoklync', type: 'business', color: 'indigo' },
       { id: 'skin', name: 'Skin Products', type: 'business', color: 'amber' }
@@ -256,7 +257,9 @@ const App = () => {
       if (raw) {
         const parsed = JSON.parse(raw);
         if (Array.isArray(parsed)) {
-          const valid = parsed.filter(b => b && (b.id || b.name));
+          // migrate: rename old 'KreativeLync' brand entry to 'Sarah Speaks Faith'
+          const migrated = parsed.map(b => b && b.id === 'sarah' && b.name === 'KreativeLync' ? { ...b, name: 'Sarah Speaks Faith' } : b);
+          const valid = migrated.filter(b => b && (b.id || b.name));
           if (valid.length > 0) return valid;
         }
       }
