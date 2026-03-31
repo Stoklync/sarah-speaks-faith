@@ -55,7 +55,7 @@ export function FloatingAIChat({ businesses = [], activeBusinessId }) {
     <>
       {/* Chat panel */}
       {open && (
-        <div className="fixed bottom-20 right-4 z-50 w-80 md:w-96 bg-white dark:bg-stone-900 rounded-2xl shadow-2xl border border-violet-100 dark:border-stone-700 flex flex-col overflow-hidden" style={{ maxHeight: '70vh' }}>
+        <div className="fixed bottom-20 right-4 z-50 w-80 md:w-[420px] bg-white dark:bg-stone-900 rounded-2xl shadow-2xl border border-violet-100 dark:border-stone-700 flex flex-col overflow-hidden" style={{ height: '80vh', maxHeight: 700 }}>
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-violet-600 to-indigo-600">
             <div className="flex items-center gap-2">
