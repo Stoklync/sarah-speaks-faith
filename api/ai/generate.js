@@ -257,20 +257,46 @@ Return ONLY the JSON object.`;
         body: JSON.stringify({
           model: 'llama-3.3-70b-versatile',
           messages: [{ role: 'user', content: prompt }],
-          max_tokens: isChat ? 800 : 1500,
+          max_tokens: isChat ? 800 : (mode === 'roadmap' || mode === 'analytics') ? 4000 : 1500,
           temperature: 0.7,
         }),
       });
       const groqData = await groqRes.json();
+      if (groqData.error) throw new Error(`Groq API error: ${groqData.error.message}`);
       const text = groqData.choices?.[0]?.message?.content || '';
       if (text) {
         if (isChat) return res.status(200).json({ reply: text.trim() });
         const match = text.match(/\{[\s\S]*\}/);
-        const result = JSON.parse(match ? match[0] : text);
+        if (!match) throw new Error('No JSON in Groq response');
+        const result = JSON.parse(match[0]);
         return res.status(200).json(result);
       }
     } catch (e) {
-      console.warn('Groq failed:', e.message);
+      console.error('Groq failed:', e.message);
+      // For roadmap/analytics, try Gemini as fallback since it supports longer responses
+      if ((mode === 'roadmap' || mode === 'analytics') && process.env.GEMINI_API_KEY) {
+        try {
+          const geminiRes = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { maxOutputTokens: 4000 } }),
+            }
+          );
+          const geminiData = await geminiRes.json();
+          const gText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || '';
+          if (gText) {
+            const match = gText.match(/\{[\s\S]*\}/);
+            if (match) {
+              const result = JSON.parse(match[0]);
+              return res.status(200).json({ ...result, poweredBy: 'gemini' });
+            }
+          }
+        } catch (ge) {
+          console.error('Gemini fallback failed:', ge.message);
+        }
+      }
     }
   }
 
