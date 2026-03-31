@@ -259,11 +259,12 @@ const App = () => {
           // migrate: rename display name only, keep id as 'kreativelync' so connections stay intact
           const migrated = parsed.map(b => {
             if (!b) return b;
-            if (b.id === 'kreativelync' && b.name === 'KreativeLync') {
-              return { ...b, name: 'Sarah Speaks Faith', type: 'faith' };
+            // Fix any kreativelync entry — always ensure correct name and type
+            if (b.id === 'kreativelync') {
+              return { ...b, name: 'Sarah Speaks Faith', type: 'faith', color: 'violet' };
             }
             if (b.id === 'sarah') {
-              return { ...b, id: 'kreativelync', name: 'Sarah Speaks Faith' };
+              return { ...b, id: 'kreativelync', name: 'Sarah Speaks Faith', type: 'faith', color: 'violet' };
             }
             return b;
           });
