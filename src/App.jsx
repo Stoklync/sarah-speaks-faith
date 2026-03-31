@@ -1072,6 +1072,8 @@ const ProContentToolkit = () => {
   const [roadmapHistory, setRoadmapHistory] = useState([]);
   const [roadmapLoading, setRoadmapLoading] = useState(false);
   const [roadmapError, setRoadmapError] = useState('');
+  const [buildingPost, setBuildingPost] = useState(null); // { postKey, loading, brief }
+
 
   // Reload roadmap + history from localStorage whenever the active brand changes
   useEffect(() => {
@@ -1499,18 +1501,78 @@ const ProContentToolkit = () => {
                       <div className="space-y-2">
                         {(week.posts||[]).map((post, pi) => {
                           const isHS = post.brand === 'Her Stewardship';
+                          const postKey = `w${wi}-p${pi}`;
+                          const isBuilding = buildingPost?.postKey === postKey && buildingPost?.loading;
+                          const brief = buildingPost?.postKey === postKey ? buildingPost?.brief : null;
+                          const isOpen = !!brief;
+
+                          const buildPost = async () => {
+                            setBuildingPost({ postKey, loading: true, brief: null });
+                            try {
+                              const r = await fetch('/api/ai/generate', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                  mode: 'chat',
+                                  topic: `Full content brief for this post`,
+                                  brandName: bizName,
+                                  brandType: bizType,
+                                  chatHistory: [{
+                                    role: 'user',
+                                    text: `Build me a complete content brief for this post:
+
+Topic: ${post.topic}
+Format: ${post.type}
+Hook: ${post.hook}
+Day: ${post.day}
+Brand: ${post.brand || bizName}
+Why it works: ${post.audienceWhy}
+
+Give me ALL of this in detail:
+1. HOOK (first 3 seconds — exactly what to say or show)
+2. FULL SCRIPT or TALKING POINTS (word for word if Reel, bullet points if Carousel)
+3. CAPTION (ready to copy-paste with line breaks, emojis if appropriate)
+4. HASHTAGS (20-25 relevant ones)
+5. VISUAL/DESIGN DESCRIPTION (what to wear, background, text overlays, colours, mood for Canva graphics if needed)
+6. CALL TO ACTION (exactly what to say at the end)
+7. POSTING TIPS (best time, any special instructions)
+${bizType === 'business' ? '8. SALES/MARKETING ANGLE (how this post moves people toward buying or taking action)' : ''}`
+                                  }],
+                                })
+                              });
+                              const data = await r.json();
+                              setBuildingPost({ postKey, loading: false, brief: data.reply || 'Could not build brief.' });
+                            } catch (e) {
+                              setBuildingPost({ postKey, loading: false, brief: 'Failed: ' + e.message });
+                            }
+                          };
+
                           return (
-                          <div key={pi} className={`flex gap-3 p-3 rounded-xl ${isHS ? 'bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800' : 'bg-stone-50 dark:bg-stone-700/40'}`}>
-                            <span className="text-xs font-bold text-rose-500 w-8 shrink-0 pt-0.5">{post.day}</span>
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2 mb-0.5 flex-wrap">
-                                <span className="text-xs font-bold text-stone-700 dark:text-stone-200">{post.topic}</span>
-                                <span className="text-xs text-stone-400 bg-stone-100 dark:bg-stone-600 px-2 py-0.5 rounded-full">{post.type}</span>
-                                {post.brand && <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${isHS ? 'bg-emerald-100 dark:bg-emerald-800 text-emerald-700 dark:text-emerald-300' : 'bg-rose-100 dark:bg-rose-900 text-rose-600 dark:text-rose-300'}`}>{post.brand}</span>}
+                          <div key={pi} className={`rounded-xl border ${isHS ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800' : 'bg-stone-50 dark:bg-stone-700/40 border-stone-200 dark:border-stone-600'}`}>
+                            <div className="flex gap-3 p-3">
+                              <span className="text-xs font-bold text-rose-500 w-8 shrink-0 pt-0.5">{post.day}</span>
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2 mb-0.5 flex-wrap">
+                                  <span className="text-xs font-bold text-stone-700 dark:text-stone-200">{post.topic}</span>
+                                  <span className="text-xs text-stone-400 bg-stone-100 dark:bg-stone-600 px-2 py-0.5 rounded-full">{post.type}</span>
+                                  {post.brand && <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${isHS ? 'bg-emerald-100 dark:bg-emerald-800 text-emerald-700 dark:text-emerald-300' : 'bg-rose-100 dark:bg-rose-900 text-rose-600 dark:text-rose-300'}`}>{post.brand}</span>}
+                                </div>
+                                <p className="text-xs text-amber-600 dark:text-amber-400 mb-1">Hook: "{post.hook}"</p>
+                                <p className="text-xs text-stone-500 dark:text-stone-400 mb-2">Why it works: {post.audienceWhy}</p>
+                                <button onClick={isOpen ? () => setBuildingPost(null) : buildPost} disabled={isBuilding} className="text-xs font-bold px-3 py-1.5 rounded-lg bg-violet-500 text-white hover:bg-violet-600 disabled:opacity-50 flex items-center gap-1">
+                                  {isBuilding ? <><Loader2 size={11} className="animate-spin" /> Building brief…</> : isOpen ? '▲ Close brief' : '✏️ Build this out'}
+                                </button>
                               </div>
-                              <p className="text-xs text-amber-600 dark:text-amber-400 mb-0.5">Hook: "{post.hook}"</p>
-                              <p className="text-xs text-stone-500 dark:text-stone-400">Why it works: {post.audienceWhy}</p>
                             </div>
+                            {isOpen && (
+                              <div className="border-t border-stone-200 dark:border-stone-600 p-4 space-y-2">
+                                <div className="flex items-center justify-between mb-2">
+                                  <p className="text-xs font-bold text-violet-600 uppercase">Full Content Brief</p>
+                                  <button onClick={() => navigator.clipboard.writeText(brief)} className="text-xs text-rose-500 font-bold">Copy all</button>
+                                </div>
+                                <p className="text-xs text-stone-700 dark:text-stone-200 whitespace-pre-wrap leading-relaxed">{brief}</p>
+                              </div>
+                            )}
                           </div>
                           );
                         })}
