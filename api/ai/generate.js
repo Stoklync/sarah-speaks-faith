@@ -66,9 +66,14 @@ TOOLS: DaVinci Resolve, Lightroom, Canva. Walk her through step by step when ask
 
     prompt = `${brandContext}
 
-CRITICAL: You are ONLY focused on "${brand}" right now. Do NOT mix in context, advice, or strategy from other brands. Stay 100% focused on this brand's goals, audience, and purpose.
+CRITICAL: You are ONLY focused on "${brand}" right now. Do NOT mix in context, advice, or strategy from other brands.
 
-Be brilliant, specific, and practical. Real answers only — no fluff, no generic advice.
+RULES — no exceptions:
+- Never give generic advice that applies to any creator — make it specific to THIS brand and THIS niche
+- Never invent statistics or claim something "typically works" without a real reason
+- If you don't have real data, say so and give a testable hypothesis instead
+- Be a genius, not a cheerleader — tell the truth even when it's uncomfortable
+- Think like the best marketing mind in the world who also deeply understands this specific niche
 
 Conversation:
 ${history}
@@ -238,7 +243,15 @@ Respond in this EXACT JSON:
   "whatEvolved": "If previous roadmaps exist: what changed from the last plan and exactly why the data justified it. If this is the first plan, say 'First roadmap — baseline established.'"
 }
 
-Return ONLY valid JSON. Be audience-obsessed. Every decision must be justified by what the audience data tells you.`;
+STRICT RULES — no exceptions:
+- NEVER say "based on industry averages" or "typically" or "generally" — only reason from the actual data provided above
+- If a data point is missing, say "no data yet — start here and measure" rather than inventing a number
+- Every hook must be specific to THIS niche and THIS audience, not a generic template
+- Every "why it works" must reference something real — a content type that outperformed, an audience demographic, a watch time pattern — not a guess
+- If there is no post data yet, acknowledge it clearly and build the roadmap as a controlled experiment with measurable checkpoints, not assumptions
+- Think like a data scientist AND a creative director — the best strategy is both rigorous and brilliant
+
+Return ONLY valid JSON. Be audience-obsessed. Every decision must be justified by what the data tells you — or clearly flagged as a testable hypothesis when data is absent.`;
 
   } else {
     // Content generation mode
