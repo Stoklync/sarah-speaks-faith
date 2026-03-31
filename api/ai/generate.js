@@ -144,7 +144,7 @@ Analyze this data deeply and respond in this EXACT JSON format:
 Return ONLY valid JSON. Be specific, data-driven, and brutally helpful. Reference their actual numbers.`;
 
   } else if (mode === 'roadmap') {
-    const { posts, account, growth, audience, brandName: rBrand } = analyticsData || {};
+    const { posts, account, growth, audience, brandName: rBrand, previousRoadmaps } = analyticsData || {};
     const sortedByViews = [...(posts||[])].sort((a,b) => (b.views||0)-(a.views||0));
     const top5 = sortedByViews.slice(0,5).map(p => `"${p.title?.slice(0,60)}" — ${p.views||0} views, ${p.engagement||0} engagement, type: ${p.mediaType}`).join('\n');
     const topCountries = (audience?.topCountries||[]).map(c=>`${c.name} (${c.count})`).join(', ');
@@ -176,7 +176,21 @@ IMPORTANT BRAND CONTEXT:
 - Cross-brand schedule: Mon/Fri = faith Reels, Wed = Her Stewardship episode/faith+finance content, Sun = devotional with soft Her Stewardship mention
 - The roadmap must weave Her Stewardship naturally into the Sarah Speaks Faith schedule — they are one ecosystem, not two competing brands
 
-Build a strategic 30-day content roadmap based on what the DATA says this audience craves. Weave Her Stewardship into the plan at the right moments. Think like a strategist, not a creator.
+${previousRoadmaps?.length > 0 ? `
+PREVIOUS ROADMAP HISTORY (${previousRoadmaps.length} prior plans):
+${previousRoadmaps.map((r, i) => `Plan ${i+1} (${r.generatedAt}):
+- Audience insight: ${r.audienceInsight || 'not recorded'}
+- Content pillars: ${r.contentPillars || 'not recorded'}
+${r.whatEvolved ? `- What evolved: ${r.whatEvolved}` : ''}`).join('\n')}
+
+EVOLUTION INSTRUCTIONS:
+- Analyze the pattern across previous plans. What stayed consistent? What shifted?
+- If the audience insight is changing, explain why — is the content attracting a different person now?
+- Adjust the content pillars if data shows certain topics outperforming others
+- In the "whatEvolved" field, explain specifically what changed from the last plan and why the data justified it
+- If this is working well, double down. If something isn't, pivot with a clear reason.
+` : ''}
+Build a strategic 30-day content roadmap based on what the DATA says this audience craves. Weave Her Stewardship into the plan at the right moments. Think like a strategist, not a creator. Be flexible — the best strategy evolves with real data.
 
 Respond in this EXACT JSON:
 {
@@ -220,7 +234,8 @@ Respond in this EXACT JSON:
     ]}
   ],
   "seriesIdea": {"name": "A recurring series title", "concept": "What this series is about", "why": "Why this will build a loyal returning audience"},
-  "viralOpportunity": "The single highest-probability viral content idea for THIS specific audience right now — be very specific"
+  "viralOpportunity": "The single highest-probability viral content idea for THIS specific audience right now — be very specific",
+  "whatEvolved": "If previous roadmaps exist: what changed from the last plan and exactly why the data justified it. If this is the first plan, say 'First roadmap — baseline established.'"
 }
 
 Return ONLY valid JSON. Be audience-obsessed. Every decision must be justified by what the audience data tells you.`;

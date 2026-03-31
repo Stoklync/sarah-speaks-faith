@@ -1067,19 +1067,34 @@ const ProContentToolkit = () => {
   const [newNoteVideo, setNewNoteVideo] = useState('');
   const [editingNoteId, setEditingNoteId] = useState(null);
 
-  // Roadmap state
+  // Roadmap state — keeps full history per brand (last 5 roadmaps)
   const [roadmapResult, setRoadmapResult] = useState(null);
+  const [roadmapHistory, setRoadmapHistory] = useState([]);
   const [roadmapLoading, setRoadmapLoading] = useState(false);
   const [roadmapError, setRoadmapError] = useState('');
 
-  // Reload roadmap from localStorage whenever the active brand changes
+  // Reload roadmap + history from localStorage whenever the active brand changes
   useEffect(() => {
     try {
       const saved = localStorage.getItem(`faith-roadmap-${activeBusinessId}`);
       setRoadmapResult(saved ? JSON.parse(saved) : null);
-    } catch { setRoadmapResult(null); }
+      const hist = localStorage.getItem(`faith-roadmap-history-${activeBusinessId}`);
+      setRoadmapHistory(hist ? JSON.parse(hist) : []);
+    } catch { setRoadmapResult(null); setRoadmapHistory([]); }
     setRoadmapError('');
   }, [activeBusinessId]);
+
+  const saveRoadmap = (data) => {
+    const dataWithDate = { ...data, _generatedAt: Date.now() };
+    setRoadmapResult(dataWithDate);
+    // Push to history (keep last 5)
+    const hist = [...roadmapHistory, dataWithDate].slice(-5);
+    setRoadmapHistory(hist);
+    try {
+      localStorage.setItem(`faith-roadmap-${activeBusinessId}`, JSON.stringify(dataWithDate));
+      localStorage.setItem(`faith-roadmap-history-${activeBusinessId}`, JSON.stringify(hist));
+    } catch (_) {}
+  };
 
   const copyText = (text, id) => { navigator.clipboard.writeText(text); setCopiedId(id); setTimeout(() => setCopiedId(null), 2000); };
 
@@ -1373,6 +1388,14 @@ const ProContentToolkit = () => {
                 const igAudienceMap = JSON.parse(localStorage.getItem('faith-studio-ig-audience-map') || '{}');
                 const allPosts = JSON.parse(localStorage.getItem('faith-studio-posts') || '[]');
                 const bizPosts = allPosts.filter(p => p.businessId === activeBusinessId || p.source === 'instagram_api');
+                // Build history summary for the AI to learn from
+                const prevHistory = roadmapHistory.slice(-3).map((r, i) => ({
+                  generatedAt: new Date(r._generatedAt || 0).toLocaleDateString(),
+                  audienceInsight: r.audienceInsight,
+                  contentPillars: (r.contentPillars || []).map(p => `${p.pillar} (${p.percentage})`).join(', '),
+                  whatEvolved: r._whatEvolved || null,
+                }));
+
                 const r = await fetch('/api/ai/generate', {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
@@ -1386,14 +1409,13 @@ const ProContentToolkit = () => {
                       account: igProfileMap[brandKey] || null,
                       growth: igGrowthMap[brandKey] || null,
                       audience: igAudienceMap[brandKey] || null,
+                      previousRoadmaps: prevHistory,
                     }
                   })
                 });
                 const data = await r.json();
                 if (data.error) throw new Error(data.error);
-                const dataWithDate = { ...data, _generatedAt: Date.now() };
-                setRoadmapResult(dataWithDate);
-                try { localStorage.setItem(`faith-roadmap-${activeBusinessId}`, JSON.stringify(dataWithDate)); } catch (_) {}
+                saveRoadmap(data);
               } catch (e) { setRoadmapError(e.message || 'Failed to generate roadmap'); }
               finally { setRoadmapLoading(false); }
             }} data-roadmap-generate disabled={roadmapLoading} className="px-6 py-3 bg-gradient-to-r from-violet-500 to-rose-500 text-white rounded-2xl font-bold text-sm hover:opacity-90 disabled:opacity-50 flex items-center gap-2">
@@ -1401,9 +1423,14 @@ const ProContentToolkit = () => {
             </button>
             {roadmapError && <p className="text-sm text-red-500">{roadmapError}</p>}
             {roadmapResult && !roadmapLoading && (
-              <p className="text-xs text-stone-400">
-                Generated {new Date(roadmapResult._generatedAt || Date.now()).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} · Stays saved until you clear it · Regenerate anytime with fresh data
-              </p>
+              <div className="space-y-1">
+                <p className="text-xs text-stone-400">
+                  Generated {new Date(roadmapResult._generatedAt || Date.now()).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} · {roadmapHistory.length} version{roadmapHistory.length !== 1 ? 's' : ''} saved · Regenerates smarter each time
+                </p>
+                {roadmapResult.whatEvolved && (
+                  <p className="text-xs text-violet-500 font-medium">📈 {roadmapResult.whatEvolved}</p>
+                )}
+              </div>
             )}
             {!roadmapResult && !roadmapLoading && <p className="text-xs text-stone-400">Tip: Connect Instagram in Analytics first for the most personalised roadmap. Works without it too.</p>}
           </div>
