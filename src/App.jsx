@@ -246,8 +246,7 @@ const App = () => {
 
   const [businesses, setBusinesses] = useState(() => {
     const defaults = [
-      { id: 'sarah', name: 'Sarah Speaks Faith', type: 'brand', color: 'violet' },
-
+      { id: 'kreativelync', name: 'Sarah Speaks Faith', type: 'brand', color: 'violet' },
       { id: 'stewardship', name: 'Her Stewardship', type: 'stewardship', color: 'emerald' },
       { id: 'stoklync', name: 'Stoklync', type: 'business', color: 'indigo' },
       { id: 'skin', name: 'Skin Products', type: 'business', color: 'amber' }
@@ -257,11 +256,14 @@ const App = () => {
       if (raw) {
         const parsed = JSON.parse(raw);
         if (Array.isArray(parsed)) {
-          // migrate: rename old KreativeLync brand entry → Sarah Speaks Faith
+          // migrate: rename display name only, keep id as 'kreativelync' so connections stay intact
           const migrated = parsed.map(b => {
             if (!b) return b;
-            if ((b.id === 'kreativelync' || b.id === 'sarah') && b.name === 'KreativeLync') {
-              return { ...b, id: 'sarah', name: 'Sarah Speaks Faith', type: 'brand', color: 'violet' };
+            if (b.id === 'kreativelync' && b.name === 'KreativeLync') {
+              return { ...b, name: 'Sarah Speaks Faith' };
+            }
+            if (b.id === 'sarah') {
+              return { ...b, id: 'kreativelync', name: 'Sarah Speaks Faith' };
             }
             return b;
           });
@@ -272,7 +274,7 @@ const App = () => {
     } catch (_) {}
     return defaults;
   });
-  const [activeBusinessId, setActiveBusinessId] = useState(() => { try { const id = localStorage.getItem('kreativelync-active-business') || 'sarah'; return id === 'kreativelync' ? 'sarah' : id; } catch { return 'sarah'; } });
+  const [activeBusinessId, setActiveBusinessId] = useState(() => { try { const id = localStorage.getItem('kreativelync-active-business') || 'kreativelync'; return id === 'sarah' ? 'kreativelync' : id; } catch { return 'kreativelync'; } });
   const [showAddBusiness, setShowAddBusiness] = useState(false);
 
   useEffect(() => {
@@ -872,6 +874,7 @@ const PhotoPlanner = () => {
   const igRef = useRef(null);
   const pinRef = useRef(null);
   const businessName = (businesses || []).find(b => b?.id === activeBusinessId)?.name || 'Sarah Speaks Faith';
+
 
   const handleIgUpload = (e) => {
     const files = Array.from(e.target.files || []);
