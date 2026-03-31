@@ -305,8 +305,8 @@ const App = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
-  const [geminiKey, setGeminiKey] = useState(() => { try { return localStorage.getItem('kreativelync-gemini-api-key') || ''; } catch { return ''; } });
-  const [openaiKey, setOpenaiKey] = useState(() => { try { return localStorage.getItem('kreativelync-openai-api-key') || ''; } catch { return ''; } });
+  const [geminiKey, setGeminiKey] = useState(() => { try { return localStorage.getItem('kreativelync-gemini-api-key') || import.meta.env.VITE_GEMINI_API_KEY || ''; } catch { return import.meta.env.VITE_GEMINI_API_KEY || ''; } });
+  const [openaiKey, setOpenaiKey] = useState(() => { try { return localStorage.getItem('kreativelync-openai-api-key') || import.meta.env.VITE_OPENAI_API_KEY || ''; } catch { return import.meta.env.VITE_OPENAI_API_KEY || ''; } });
   const [canvaKey, setCanvaKey] = useState(() => { try { return localStorage.getItem('kreativelync-canva-api-key') || ''; } catch { return ''; } });
 
   const primaryNav = [
