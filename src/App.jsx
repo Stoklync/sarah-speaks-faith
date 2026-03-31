@@ -257,8 +257,14 @@ const App = () => {
       if (raw) {
         const parsed = JSON.parse(raw);
         if (Array.isArray(parsed)) {
-          // migrate: rename old 'KreativeLync' brand entry to 'Sarah Speaks Faith'
-          const migrated = parsed.map(b => b && b.id === 'sarah' && b.name === 'KreativeLync' ? { ...b, name: 'Sarah Speaks Faith' } : b);
+          // migrate: rename old KreativeLync brand entry → Sarah Speaks Faith
+          const migrated = parsed.map(b => {
+            if (!b) return b;
+            if ((b.id === 'kreativelync' || b.id === 'sarah') && b.name === 'KreativeLync') {
+              return { ...b, id: 'sarah', name: 'Sarah Speaks Faith', type: 'brand', color: 'violet' };
+            }
+            return b;
+          });
           const valid = migrated.filter(b => b && (b.id || b.name));
           if (valid.length > 0) return valid;
         }
