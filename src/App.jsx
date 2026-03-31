@@ -15,6 +15,7 @@ import { Stage, EXPORT_PRESETS, derivePresetFromPlatforms } from './components/S
 import { LayeredTimelineTracks } from './components/LayeredTimelineTracks';
 import { CaptionOverlay } from './components/CaptionOverlay';
 import { CreatorInsights } from './components/CreatorInsights';
+import { AdobeExpressEditor } from './components/AdobeExpressEditor';
 import { 
   Scissors, 
   Camera, 
@@ -245,7 +246,7 @@ const App = () => {
 
   const [businesses, setBusinesses] = useState(() => {
     const defaults = [
-      { id: 'sarah', name: 'KreativeLync', type: 'faith', color: 'violet' },
+      { id: 'sarah', name: 'Sarah Speaks Faith', type: 'brand', color: 'violet' },
       { id: 'stewardship', name: 'Her Stewardship', type: 'stewardship', color: 'emerald' },
       { id: 'stoklync', name: 'Stoklync', type: 'business', color: 'indigo' },
       { id: 'skin', name: 'Skin Products', type: 'business', color: 'amber' }
@@ -262,7 +263,7 @@ const App = () => {
     } catch (_) {}
     return defaults;
   });
-  const [activeBusinessId, setActiveBusinessId] = useState(() => { try { return localStorage.getItem('kreativelync-active-business') || 'sarah'; } catch { return 'sarah'; } });
+  const [activeBusinessId, setActiveBusinessId] = useState(() => { try { const id = localStorage.getItem('kreativelync-active-business') || 'sarah'; return id === 'kreativelync' ? 'sarah' : id; } catch { return 'sarah'; } });
   const [showAddBusiness, setShowAddBusiness] = useState(false);
 
   useEffect(() => {
@@ -577,6 +578,11 @@ const App = () => {
                   <p className="text-[11px] text-stone-500 dark:text-stone-400 mt-1"><a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer" className="text-violet-500 hover:underline">Get key &rarr;</a></p>
                 </section>
                 <section>
+                  <h4 className="text-xs font-bold text-stone-400 uppercase mb-2">Adobe Express — Photo & Video Editor</h4>
+                  <input type="text" defaultValue={localStorage.getItem('kreativelync-adobe-client-id') || ''} onChange={(e) => localStorage.setItem('kreativelync-adobe-client-id', e.target.value)} placeholder="Adobe Client ID..." className="w-full bg-violet-50 dark:bg-stone-700 border border-violet-100 dark:border-stone-600 rounded-xl px-4 py-3 text-sm font-mono" />
+                  <p className="text-[11px] text-stone-500 dark:text-stone-400 mt-1"><a href="https://developer.adobe.com/express/embed-sdk/" target="_blank" rel="noopener noreferrer" className="text-violet-500 hover:underline">Get Client ID at developer.adobe.com &rarr;</a></p>
+                </section>
+                <section>
                   <h4 className="text-xs font-bold text-stone-400 uppercase mb-2">Backup</h4>
                   <div className="flex flex-wrap gap-2">
                     <button onClick={() => {
@@ -660,12 +666,8 @@ const App = () => {
 
         <div className={`mx-auto flex-1 min-h-0 flex flex-col ${activeTab === 'video' ? 'max-w-full w-full min-h-[100dvh] p-0 overflow-hidden' : 'max-w-7xl p-4 md:p-10 pb-24'}`} style={{ minHeight: activeTab !== 'video' ? 400 : undefined }}>
             {activeTab === 'start' && <StartHere setActiveTab={setActiveTab} />}
-            {activeTab === 'video' && (
-              <EditorErrorBoundary>
-                <ClassicEditor />
-              </EditorErrorBoundary>
-            )}
-            {activeTab === 'photo-edit' && <PhotoEditor />}
+            {activeTab === 'video' && <AdobeExpressEditor mode="video" />}
+            {activeTab === 'photo-edit' && <AdobeExpressEditor mode="image" />}
             {activeTab === 'design' && <DesignStudio />}
             {activeTab === 'pro' && <ProContentToolkit />}
             {activeTab === 'social' && <SocialPublisher />}
@@ -860,7 +862,7 @@ const PhotoPlanner = () => {
   const { generateAltText } = useMarketingStore();
   const igRef = useRef(null);
   const pinRef = useRef(null);
-  const businessName = (businesses || []).find(b => b?.id === activeBusinessId)?.name || 'KreativeLync';
+  const businessName = (businesses || []).find(b => b?.id === activeBusinessId)?.name || 'Sarah Speaks Faith';
 
   const handleIgUpload = (e) => {
     const files = Array.from(e.target.files || []);
