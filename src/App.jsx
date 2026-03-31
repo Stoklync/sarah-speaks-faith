@@ -298,10 +298,11 @@ const App = () => {
   const [canvaKey, setCanvaKey] = useState(() => { try { return localStorage.getItem('kreativelync-canva-api-key') || ''; } catch { return ''; } });
 
   const primaryNav = [
-    ['pro', Zap, 'Content Studio'],
+    ['video', Film, 'Video Editor'],
+    ['photo-edit', ImageIcon, 'Photo Editor'],
     ['design', Palette, 'Design Studio'],
+    ['pro', Zap, 'Content Studio'],
     ['social', Share2, 'Social & Podcast'],
-    ['traffic', Link2, 'Traffic Links'],
     ['analytics', BarChart2, 'Analytics'],
   ];
 
