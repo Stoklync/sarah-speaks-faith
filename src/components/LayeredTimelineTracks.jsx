@@ -159,7 +159,7 @@ function ClipThumbnail({ asset, clip, trackLabel, minWidth = 24 }) {
 }
 
 const TRACK_ACCENT = {
-  Main: 'border-l-rose-500/80',
+  Main: 'border-l-violet-500/80',
   Overlay: 'border-l-cyan-500/80',
   Logos: 'border-l-amber-500/80',
   Audio: 'border-l-emerald-500/80',
@@ -361,7 +361,7 @@ export function LayeredTimelineTracks({
             <button onClick={() => updateTrackMeta?.(track.id, { hidden: !track.hidden })} className="p-1 rounded hover:bg-stone-600 text-stone-400" title={track.hidden ? 'Show layer' : 'Hide layer'}>
               {track.hidden ? <EyeOff size={12} /> : <Eye size={12} />}
             </button>
-            <button onClick={() => updateTrackMeta?.(track.id, { locked: !track.locked })} className={`p-1 rounded hover:bg-stone-600 ${track.locked ? 'text-rose-400' : 'text-stone-400'}`} title={track.locked ? 'Unlock layer' : 'Lock layer'}>
+            <button onClick={() => updateTrackMeta?.(track.id, { locked: !track.locked })} className={`p-1 rounded hover:bg-stone-600 ${track.locked ? 'text-violet-400' : 'text-stone-400'}`} title={track.locked ? 'Unlock layer' : 'Lock layer'}>
               {track.locked ? <Lock size={12} /> : <Unlock size={12} />}
             </button>
           </div>
@@ -401,7 +401,7 @@ export function LayeredTimelineTracks({
                 <div
                   key={clip.id}
                   data-clip
-                  className={`absolute h-[calc(100%-4px)] top-0.5 flex items-stretch group rounded overflow-hidden cursor-move select-none ${isSelected ? 'ring-2 ring-rose-400 ring-offset-2 z-20' : ''} ${isDragging ? 'opacity-80 z-20 ring-2 ring-white' : ''} ${isDragActive ? 'z-30' : ''}`}
+                  className={`absolute h-[calc(100%-4px)] top-0.5 flex items-stretch group rounded overflow-hidden cursor-move select-none ${isSelected ? 'ring-2 ring-violet-400 ring-offset-2 z-20' : ''} ${isDragging ? 'opacity-80 z-20 ring-2 ring-white' : ''} ${isDragActive ? 'z-30' : ''}`}
                   style={{ left: `${left}%`, width: `${w}%`, marginRight: '2px' }}
                   onClick={(e) => { e.stopPropagation(); if (draggingClip || dragRef.current.mode) return; onClipClick?.(clip, track); setSelectedClipId?.(clip.id); seekTo?.(clip.startOffset); }}
                   onPointerDown={(e) => handlePointerDown(e, clip.id, track.id)}
@@ -409,8 +409,8 @@ export function LayeredTimelineTracks({
                   onTouchStart={(e) => { if (e.target.closest('.resize-handle')) return; e.stopPropagation(); handleClipPointerDown(e, clip, track, 'move'); }}
                   onDoubleClick={(e) => { e.stopPropagation(); onClipClick?.(clip, track); }}
                 >
-                  <div onMouseDown={(e) => { e.stopPropagation(); handleClipPointerDown(e, clip, track, 'start'); }} onTouchStart={(e) => { e.stopPropagation(); handleClipPointerDown(e, clip, track, 'start'); }} className="resize-handle w-1.5 flex-shrink-0 h-full cursor-ew-resize bg-stone-500/50 hover:bg-rose-500/70 z-10" title="Drag to trim start" />
-                  <div className={`flex-1 min-w-0 h-full flex relative overflow-hidden rounded border hover:border-stone-400/60 ${isSelected ? 'border-rose-400 bg-rose-950/40' : 'border-stone-500/50 bg-stone-600/90'}`}>
+                  <div onMouseDown={(e) => { e.stopPropagation(); handleClipPointerDown(e, clip, track, 'start'); }} onTouchStart={(e) => { e.stopPropagation(); handleClipPointerDown(e, clip, track, 'start'); }} className="resize-handle w-1.5 flex-shrink-0 h-full cursor-ew-resize bg-stone-500/50 hover:bg-violet-500/70 z-10" title="Drag to trim start" />
+                  <div className={`flex-1 min-w-0 h-full flex relative overflow-hidden rounded border hover:border-stone-400/60 ${isSelected ? 'border-violet-400 bg-violet-950/40' : 'border-stone-500/50 bg-stone-600/90'}`}>
                     {showThumb ? (
                       <ClipThumbnail asset={asset} clip={clip} trackLabel={track.label} minWidth={28} />
                     ) : (
@@ -429,7 +429,7 @@ export function LayeredTimelineTracks({
                       {asset?.name?.replace(/\.[^.]+$/, '') || `Clip`}
                     </span>
                   </div>
-                  <div onMouseDown={(e) => { e.stopPropagation(); handleClipPointerDown(e, clip, track, 'end'); }} onTouchStart={(e) => { e.stopPropagation(); handleClipPointerDown(e, clip, track, 'end'); }} className="resize-handle w-1.5 flex-shrink-0 h-full cursor-ew-resize bg-stone-500/50 hover:bg-rose-500/70 z-10" title="Drag to trim end" />
+                  <div onMouseDown={(e) => { e.stopPropagation(); handleClipPointerDown(e, clip, track, 'end'); }} onTouchStart={(e) => { e.stopPropagation(); handleClipPointerDown(e, clip, track, 'end'); }} className="resize-handle w-1.5 flex-shrink-0 h-full cursor-ew-resize bg-stone-500/50 hover:bg-violet-500/70 z-10" title="Drag to trim end" />
                   <button
                     onClick={(e) => { e.stopPropagation(); removeClip?.(track.id, clip.id); }}
                     className="p-1 rounded bg-red-900/80 text-red-300 hover:bg-red-700 opacity-0 group-hover:opacity-100 shrink-0 self-center"
@@ -451,7 +451,7 @@ export function LayeredTimelineTracks({
               return (
                 <div
                   key={`gap-${clip.id}`}
-                  className={`absolute h-[calc(100%-4px)] top-0.5 flex items-center justify-center cursor-pointer z-10 ${isPopup ? 'bg-rose-600/60' : 'bg-stone-600/40 hover:bg-rose-500/40'}`}
+                  className={`absolute h-[calc(100%-4px)] top-0.5 flex items-center justify-center cursor-pointer z-10 ${isPopup ? 'bg-violet-600/60' : 'bg-stone-600/40 hover:bg-violet-500/40'}`}
                   style={{ left: `${left}%`, width: `${w}%`, minWidth: 8 }}
                   onClick={(e) => { e.stopPropagation(); setTransitionPopup(isPopup ? null : { clipId: clip.id, trackId: track.id }); }}
                   title="Click to add transition"

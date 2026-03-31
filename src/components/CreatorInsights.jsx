@@ -19,7 +19,7 @@ export function CreatorInsights({ caption, hookTranscript, businessName, busines
   return (
     <div className="space-y-4 p-4 bg-stone-800/60 rounded-xl border border-stone-700">
       <h4 className="font-bold text-stone-100 flex items-center gap-2">
-        <Target size={16} className="text-rose-400" />
+        <Target size={16} className="text-violet-400" />
         Creator Insights
       </h4>
 
@@ -91,7 +91,7 @@ export function CreatorInsights({ caption, hookTranscript, businessName, busines
           <p className="text-[10px] font-bold uppercase text-stone-400 mb-1">Suggested Hashtags</p>
           <div className="flex flex-wrap gap-1">
             {suggestions.suggestedHashtags.map((h) => (
-              <span key={h} className="text-[10px] bg-stone-700 text-rose-300 px-2 py-0.5 rounded">
+              <span key={h} className="text-[10px] bg-stone-700 text-violet-300 px-2 py-0.5 rounded">
                 {h}
               </span>
             ))}

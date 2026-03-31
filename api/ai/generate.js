@@ -8,7 +8,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { mode, topic, description, niche, format, analyticsData, chatHistory, brandName, brandType } = req.body || {};
+  const { mode, topic, description, niche, format, analyticsData, chatHistory, brandName, brandType, brandDesc } = req.body || {};
 
   if (!topic && !analyticsData) {
     return res.status(400).json({ error: 'topic or analyticsData is required' });
@@ -34,19 +34,24 @@ export default async function handler(req, res) {
 
 BRAND PURPOSE: Ministry first — discipleship, spreading the gospel, saving souls, spiritual growth, prayer, faith lifestyle for women. This is NOT a sales brand. The goal is to reach souls and glorify God. Impact drives everything.
 
+ABOUT SARAH (the creator): Single woman, no kids, no husband. She speaks to women on their faith journey regardless of life stage. NEVER suggest content about marriage, parenting, raising children, or being a wife — that is not her story. Her content is about personal faith, following God, spiritual growth, and encouraging women who are walking with God on their own.
+
 CONNECTED SHOW: Her Stewardship (podcast that lives inside the Sarah Speaks Faith YouTube channel) — same audience, covers faith + finances. Weave it into Sarah Speaks Faith's schedule naturally (Mon/Fri = faith Reels, Wed = Her Stewardship, Sun = devotional).
 
 PLATFORMS: Instagram Reels + posts, YouTube ("Sarah Speaks Faith" is the channel name).
-AUDIENCE: Christian women — real, raw, faith-filled content.
+AUDIENCE: Christian women — real, raw, faith-filled content. Women at all life stages, not just moms or wives.
 TOOLS: DaVinci Resolve (editing), Lightroom (photos), Canva (graphics). Walk her through step by step when asked.`;
 
     } else if (isStewardship) {
-      brandContext = `You are coaching Sarah on "${brand}" — a faith-based financial stewardship podcast/show that lives inside the Sarah Speaks Faith YouTube channel. Same Christian women audience, focused on biblical money management and financial freedom through faith. Wednesday is the primary content day. Blend faith and practical finance in every suggestion.`;
+      brandContext = `You are coaching Sarah on "${brand}" — a faith-based financial stewardship podcast/show that lives inside the Sarah Speaks Faith YouTube channel. Same Christian women audience, focused on biblical money management and financial freedom through faith. Wednesday is the primary content day. Blend faith and practical finance in every suggestion. Sarah is a single woman with no kids — never assume she is married or a parent.`;
 
     } else {
+      const descContext = brandDesc ? `\n\nBRAND DESCRIPTION (what this business actually is):\n${brandDesc}\n\nUse this to make every recommendation specific to what ${brand} sells, who they serve, and what problem they solve.` : `\n\nNOTE: No brand description provided yet — ask Sarah to describe what ${brand} sells and who it serves if you need more context.`;
+
       brandContext = `You are a world-class marketing strategist, sales expert, SEO specialist, and business growth coach coaching Sarah on her business "${brand}".
 
 BRAND PURPOSE: This is a BUSINESS. The goal is revenue, growth, sales, and market dominance. Completely separate from the faith brands — no religious overlay unless this brand specifically targets that niche.
+${descContext}
 
 YOUR FULL EXPERTISE for this brand:
 - Marketing strategy: content marketing, paid ads, organic growth, brand positioning, campaign planning
@@ -96,9 +101,17 @@ Coach:`;
     const topCountries = (audience?.topCountries||[]).map(c=>`${c.name} (${c.count})`).join(', ');
     const topCities = (audience?.topCities||[]).map(c=>`${c.name} (${c.count})`).join(', ');
 
-    prompt = `You are a world-class social media strategist and content marketing expert with deep expertise in faith-based creators, Instagram growth, and viral content strategy. You analyze data like a pro and give brutally honest, specific, actionable advice.
+    const aBrandType = analyticsData?.brandType || 'faith';
+    const aDesc = analyticsData?.brandDesc || brandDesc || '';
+    const aNiche = aBrandType === 'faith'
+      ? 'Christian faith creator — discipleship, gospel, saving souls, spiritual growth, prayer, faith lifestyle for women. Creator (Sarah) is a single woman with no kids.'
+      : aBrandType === 'stewardship'
+      ? 'Faith-based financial stewardship podcast — biblical money management, faith + finances for Christian women.'
+      : `Business brand "${brandName}"${aDesc ? ` — ${aDesc}` : ' — marketing, sales, SEO, content that converts. No faith overlay.'}`;
 
-CREATOR NICHE: Christian faith creator — discipleship, gospel, saving souls, spiritual growth, prayer, faith lifestyle for women
+    prompt = `You are a world-class social media strategist and content marketing expert. You analyze data like a pro and give brutally honest, specific, actionable advice tailored to this exact brand and niche.
+
+CREATOR NICHE: ${aNiche}
 BRAND: ${brandName || 'Sarah Speaks Faith'}
 ACCOUNT: @${account?.username || 'unknown'} | ${account?.followers||0} followers | ${account?.following||0} following
 GROWTH (last 30 days): +${growth?.newFollowers30d||0} new followers | ${(growth?.reach30d||0).toLocaleString()} reach | ${(growth?.profileViews30d||0).toLocaleString()} profile views
@@ -149,7 +162,8 @@ Analyze this data deeply and respond in this EXACT JSON format:
 Return ONLY valid JSON. Be specific, data-driven, and brutally helpful. Reference their actual numbers.`;
 
   } else if (mode === 'roadmap') {
-    const { posts, account, growth, audience, brandName: rBrand, previousRoadmaps } = analyticsData || {};
+    const { posts, account, growth, audience, brandName: rBrand, previousRoadmaps, brandDesc: rDesc } = analyticsData || {};
+    const effectiveBrandDesc = rDesc || brandDesc || '';
     const sortedByViews = [...(posts||[])].sort((a,b) => (b.views||0)-(a.views||0));
     const top5 = sortedByViews.slice(0,5).map(p => `"${p.title?.slice(0,60)}" — ${p.views||0} views, ${p.engagement||0} engagement, type: ${p.mediaType}`).join('\n');
     const topCountries = (audience?.topCountries||[]).map(c=>`${c.name} (${c.count})`).join(', ');
@@ -157,62 +171,40 @@ Return ONLY valid JSON. Be specific, data-driven, and brutally helpful. Referenc
     const genderAge = JSON.stringify(audience?.genderAge || {});
 
     const rType = analyticsData?.brandType || 'faith';
-    const rNiche = rType === 'faith' ? 'Christian faith creator — discipleship, gospel, saving souls, spiritual growth, prayer, faith lifestyle for women'
-      : rType === 'stewardship' ? 'Faith-based financial stewardship podcast — biblical money management and faith + finances for Christian women'
-      : `Business brand — focus on marketing, sales, content that converts, and revenue growth`;
+    const isFaithRoadmap = rType === 'faith';
+    const isStewardshipRoadmap = rType === 'stewardship';
+    const isBusinessRoadmap = !isFaithRoadmap && !isStewardshipRoadmap;
 
-    prompt = `You are a world-class content strategist and audience growth expert. Build a data-driven content roadmap that tells the creator exactly what their audience wants — not what they feel like posting.
+    const rNiche = isFaithRoadmap
+      ? 'Christian faith creator — discipleship, gospel, saving souls, spiritual growth, prayer, faith lifestyle for women. Creator (Sarah) is a single woman with no kids — do NOT suggest content about marriage, parenting, or raising children. She speaks to women on their faith journey, single or not.'
+      : isStewardshipRoadmap
+      ? 'Faith-based financial stewardship podcast — biblical money management and faith + finances for Christian women. Creator is Sarah, a single woman.'
+      : `Business brand "${rBrand}" — completely separate from any faith brands. Focus: marketing, sales, SEO, content that converts, revenue growth, lead generation, brand authority. No religious overlay unless this brand specifically serves that market.`;
 
-BRAND: ${rBrand || 'Sarah Speaks Faith'}
-NICHE: ${rNiche}
-FOLLOWERS: ${account?.followers||0} | POSTS ANALYZED: ${posts?.length||0}
-NEW FOLLOWERS (30d): ${growth?.newFollowers30d||0} | REACH (30d): ${growth?.reach30d||0}
-
-TOP PERFORMING CONTENT:
-${top5 || 'no data yet'}
-
-AUDIENCE LOCATION: ${topCountries || 'unknown'}
-AUDIENCE CITIES: ${topCities || 'unknown'}
-GENDER/AGE BREAKDOWN: ${genderAge}
-
+    const brandContextBlock = isFaithRoadmap ? `
 IMPORTANT BRAND CONTEXT:
 - Sarah Speaks Faith is the PRIMARY brand and YouTube channel name
 - Her Stewardship is a podcast/show series that lives INSIDE the Sarah Speaks Faith channel — same audience, same women, deeper topic (faith + finances)
-- Cross-brand schedule: Mon/Fri = faith Reels, Wed = Her Stewardship episode/faith+finance content, Sun = devotional with soft Her Stewardship mention
-- The roadmap must weave Her Stewardship naturally into the Sarah Speaks Faith schedule — they are one ecosystem, not two competing brands
+- Cross-brand posting schedule: Mon/Fri = faith Reels, Wed = Her Stewardship episode/faith+finance content, Sun = devotional with soft Her Stewardship mention
+- The roadmap must weave Her Stewardship naturally into the Sarah Speaks Faith schedule — they are ONE ecosystem
+- NEVER suggest topics about marriage, kids, or parenting — Sarah is a single woman without children` : isStewardshipRoadmap ? `
+IMPORTANT BRAND CONTEXT:
+- Her Stewardship is a faith + finance podcast/show for Christian women
+- Primary day: Wednesday — also surfaces in Sarah Speaks Faith Sunday devotionals
+- Focus: biblical money, budgeting, financial freedom, stewardship — always through a faith lens
+- NEVER suggest parenting or marriage content — creator is a single woman` : `
+IMPORTANT BRAND CONTEXT:
+- "${rBrand}" is a STANDALONE BUSINESS brand — completely separate from any faith/ministry brands
+- This roadmap must focus ONLY on business growth: marketing, sales, content strategy, brand positioning, SEO, lead generation, audience building for business goals
+- Do NOT include any faith, gospel, devotional, or ministry content in this roadmap
+- Content pillars must be business-oriented: brand awareness, lead gen, social proof, education, conversion
+${effectiveBrandDesc ? `
+WHAT THIS BUSINESS IS:
+${effectiveBrandDesc}
 
-${previousRoadmaps?.length > 0 ? `
-PREVIOUS ROADMAP HISTORY (${previousRoadmaps.length} prior plans):
-${previousRoadmaps.map((r, i) => `Plan ${i+1} (${r.generatedAt}):
-- Audience insight: ${r.audienceInsight || 'not recorded'}
-- Content pillars: ${r.contentPillars || 'not recorded'}
-${r.whatEvolved ? `- What evolved: ${r.whatEvolved}` : ''}`).join('\n')}
+Build the entire roadmap around these specifics — the products/services, target customer, and goals described above. Every content idea, hook, and pillar must directly serve this business.` : `- NOTE: No brand description provided. Build a general business growth roadmap. The creator should add a brand description (pencil icon next to brand name in sidebar) for more targeted results.`}`;
 
-EVOLUTION INSTRUCTIONS:
-- Analyze the pattern across previous plans. What stayed consistent? What shifted?
-- If the audience insight is changing, explain why — is the content attracting a different person now?
-- Adjust the content pillars if data shows certain topics outperforming others
-- In the "whatEvolved" field, explain specifically what changed from the last plan and why the data justified it
-- If this is working well, double down. If something isn't, pivot with a clear reason.
-` : ''}
-Build a strategic 30-day content roadmap based on what the DATA says this audience craves. Weave Her Stewardship into the plan at the right moments. Think like a strategist, not a creator. Be flexible — the best strategy evolves with real data.
-
-Respond in this EXACT JSON:
-{
-  "audienceInsight": "2-3 sentences: who exactly is watching, what do they want, what emotional state are they in when they find this creator",
-  "audiencePersona": {
-    "who": "Specific description of the core audience (age range, life stage, struggles, desires)",
-    "whatTheyWant": "The 3 core things this audience is searching for",
-    "whatStopsThemScrolling": "What visual or verbal trigger makes them stop and watch",
-    "bestEmotionalTrigger": "The single most powerful emotion to target with every post"
-  },
-  "contentPillars": [
-    {"pillar": "Pillar name", "why": "Why this works for THIS audience based on data", "percentage": "% of content", "exampleTopics": ["topic 1", "topic 2", "topic 3"]},
-    {"pillar": "Pillar name", "why": "Why", "percentage": "% of content", "exampleTopics": ["topic 1", "topic 2", "topic 3"]},
-    {"pillar": "Pillar name", "why": "Why", "percentage": "% of content", "exampleTopics": ["topic 1", "topic 2", "topic 3"]},
-    {"pillar": "Pillar name", "why": "Why", "percentage": "% of content", "exampleTopics": ["topic 1", "topic 2", "topic 3"]}
-  ],
-  "roadmap": [
+    const roadmapPostTemplate = isFaithRoadmap ? `
     {"week": 1, "theme": "Week theme", "goal": "Specific measurable goal", "posts": [
       {"day": "Mon", "brand": "Sarah Speaks Faith", "type": "Reel/Carousel/Single", "topic": "Exact topic", "hook": "Opening hook", "audienceWhy": "Why THIS audience will engage"},
       {"day": "Wed", "brand": "Her Stewardship", "type": "Reel/Podcast clip/Carousel", "topic": "Exact faith+finance topic", "hook": "Opening hook", "audienceWhy": "Why this bridges faith and stewardship for her audience"},
@@ -236,7 +228,75 @@ Respond in this EXACT JSON:
       {"day": "Wed", "brand": "Her Stewardship", "type": "Reel/Podcast clip/Carousel", "topic": "Exact faith+finance topic", "hook": "Opening hook", "audienceWhy": "Why this works"},
       {"day": "Fri", "brand": "Sarah Speaks Faith", "type": "Reel/Carousel/Single", "topic": "Exact topic", "hook": "Opening hook", "audienceWhy": "Why THIS audience will engage"},
       {"day": "Sun", "brand": "Sarah Speaks Faith", "type": "Single/Carousel", "topic": "Devotional — soft Her Stewardship mention", "hook": "Opening hook", "audienceWhy": "Sunday devotional"}
-    ]}
+    ]}` : `
+    {"week": 1, "theme": "Week theme", "goal": "Specific business goal (awareness/leads/sales)", "posts": [
+      {"day": "Mon", "brand": "${rBrand}", "type": "Reel/Carousel/Post", "topic": "Exact business topic", "hook": "Opening hook", "audienceWhy": "Business reason this content drives awareness, leads, or sales"},
+      {"day": "Wed", "brand": "${rBrand}", "type": "Reel/Carousel/Post", "topic": "Exact business topic", "hook": "Opening hook", "audienceWhy": "Why this converts or builds authority"},
+      {"day": "Fri", "brand": "${rBrand}", "type": "Reel/Carousel/Post", "topic": "Exact business topic", "hook": "Opening hook", "audienceWhy": "Why this drives action"}
+    ]},
+    {"week": 2, "theme": "Week theme", "goal": "Specific business goal", "posts": [
+      {"day": "Mon", "brand": "${rBrand}", "type": "Reel/Carousel/Post", "topic": "Exact business topic", "hook": "Opening hook", "audienceWhy": "Business reason"},
+      {"day": "Wed", "brand": "${rBrand}", "type": "Reel/Carousel/Post", "topic": "Exact business topic", "hook": "Opening hook", "audienceWhy": "Why this converts"},
+      {"day": "Fri", "brand": "${rBrand}", "type": "Reel/Carousel/Post", "topic": "Exact business topic", "hook": "Opening hook", "audienceWhy": "Why this drives action"}
+    ]},
+    {"week": 3, "theme": "Week theme", "goal": "Specific business goal", "posts": [
+      {"day": "Mon", "brand": "${rBrand}", "type": "Reel/Carousel/Post", "topic": "Exact business topic", "hook": "Opening hook", "audienceWhy": "Business reason"},
+      {"day": "Wed", "brand": "${rBrand}", "type": "Reel/Carousel/Post", "topic": "Exact business topic", "hook": "Opening hook", "audienceWhy": "Why this converts"},
+      {"day": "Fri", "brand": "${rBrand}", "type": "Reel/Carousel/Post", "topic": "Exact business topic", "hook": "Opening hook", "audienceWhy": "Why this drives action"}
+    ]},
+    {"week": 4, "theme": "Week theme", "goal": "Specific business goal", "posts": [
+      {"day": "Mon", "brand": "${rBrand}", "type": "Reel/Carousel/Post", "topic": "Exact business topic", "hook": "Opening hook", "audienceWhy": "Business reason"},
+      {"day": "Wed", "brand": "${rBrand}", "type": "Reel/Carousel/Post", "topic": "Exact business topic", "hook": "Opening hook", "audienceWhy": "Why this converts"},
+      {"day": "Fri", "brand": "${rBrand}", "type": "Reel/Carousel/Post", "topic": "Exact business topic", "hook": "Opening hook", "audienceWhy": "Why this drives action"}
+    ]}`;
+
+    prompt = `You are a world-class content strategist and audience growth expert. Build a data-driven content roadmap that tells the creator exactly what their audience wants — not what they feel like posting.
+
+BRAND: ${rBrand || 'Sarah Speaks Faith'}
+NICHE: ${rNiche}
+FOLLOWERS: ${account?.followers||0} | POSTS ANALYZED: ${posts?.length||0}
+NEW FOLLOWERS (30d): ${growth?.newFollowers30d||0} | REACH (30d): ${growth?.reach30d||0}
+
+TOP PERFORMING CONTENT:
+${top5 || 'no data yet'}
+
+AUDIENCE LOCATION: ${topCountries || 'unknown'}
+AUDIENCE CITIES: ${topCities || 'unknown'}
+GENDER/AGE BREAKDOWN: ${genderAge}
+${brandContextBlock}
+
+${previousRoadmaps?.length > 0 ? `
+PREVIOUS ROADMAP HISTORY (${previousRoadmaps.length} prior plans):
+${previousRoadmaps.map((r, i) => `Plan ${i+1} (${r.generatedAt}):
+- Audience insight: ${r.audienceInsight || 'not recorded'}
+- Content pillars: ${r.contentPillars || 'not recorded'}
+${r.whatEvolved ? `- What evolved: ${r.whatEvolved}` : ''}`).join('\n')}
+
+EVOLUTION INSTRUCTIONS:
+- Analyze the pattern across previous plans. What stayed consistent? What shifted?
+- If the audience insight is changing, explain why — is the content attracting a different person now?
+- Adjust the content pillars if data shows certain topics outperforming others
+- In the "whatEvolved" field, explain specifically what changed from the last plan and why the data justified it
+- If this is working well, double down. If something isn't, pivot with a clear reason.
+` : ''}
+Build a strategic 30-day content roadmap based on what the DATA says this audience craves. Think like a strategist, not a creator. Be flexible — the best strategy evolves with real data.
+
+Respond in this EXACT JSON:
+{
+  "audienceInsight": "2-3 sentences: who exactly is watching, what do they want, what emotional state are they in when they find this creator",
+  "audiencePersona": {
+    "who": "Specific description of the core audience (age range, life stage, struggles, desires)",
+    "whatTheyWant": "The 3 core things this audience is searching for",
+    "whatStopsThemScrolling": "What visual or verbal trigger makes them stop and watch",
+    "bestEmotionalTrigger": "The single most powerful emotion to target with every post"
+  },
+  "contentPillars": [
+    {"pillar": "Pillar name", "why": "Why this works for THIS audience based on data", "percentage": "% of content", "exampleTopics": ["topic 1", "topic 2", "topic 3"]},
+    {"pillar": "Pillar name", "why": "Why", "percentage": "% of content", "exampleTopics": ["topic 1", "topic 2", "topic 3"]},
+    {"pillar": "Pillar name", "why": "Why", "percentage": "% of content", "exampleTopics": ["topic 1", "topic 2", "topic 3"]},
+    {"pillar": "Pillar name", "why": "Why", "percentage": "% of content", "exampleTopics": ["topic 1", "topic 2", "topic 3"]}
+  ],
+  "roadmap": [${roadmapPostTemplate}
   ],
   "seriesIdea": {"name": "A recurring series title", "concept": "What this series is about", "why": "Why this will build a loyal returning audience"},
   "viralOpportunity": "The single highest-probability viral content idea for THIS specific audience right now — be very specific",
@@ -245,22 +305,35 @@ Respond in this EXACT JSON:
 
 RULES:
 - When real post data exists, lead with it — reference actual numbers and patterns
-- When data is missing, draw on real-world knowledge: what works on Instagram right now, current platform algorithm behaviour, proven viral content patterns in this niche, what top faith/business creators are doing — then flag it as a starting hypothesis to validate
-- Think like a data scientist AND a creative director AND someone who lives on social media — combine hard data with real-world platform intelligence
-- Never be generic. Every recommendation must be specific to this niche, this audience, and this moment in time
+- When data is missing, draw on real-world knowledge: what works on this platform right now, current algorithm behaviour, proven viral patterns in this niche — flag it as a starting hypothesis to validate
+- Think like a data scientist AND a creative director AND someone who lives on social media
+- Never be generic. Every recommendation must be specific to this niche, this audience, and this moment
 - Be outside-the-box brilliant — not just safe and predictable
+- CRITICAL: Only generate content ideas that match THIS brand's niche. No crossover between business and faith brands.
 
 Return ONLY valid JSON. Be audience-obsessed and strategically fearless.`;
 
   } else {
-    // Content generation mode
-    prompt = `You are an expert Instagram content strategist and gospel content coach specializing in Christian creators, discipleship content, and faith-based growth. You understand what makes Reels go viral: strong hooks in the first 3 seconds, emotional resonance, spiritual truth, and a compelling CTA.
+    // Content generation mode — brand-type aware
+    const cgType = brandType || 'faith';
+    const cgBrand = brandName || 'Sarah Speaks Faith';
+    const cgIsFaith = cgType === 'faith';
+    const cgIsStewardship = cgType === 'stewardship';
+    const cgIsBusiness = !cgIsFaith && !cgIsStewardship;
 
-Creator: Sarah (Sarah Speaks Faith) — a Christian content creator passionate about discipleship, spreading the gospel, saving souls, faith lifestyle, prayer, and helping women grow spiritually. Her audience are Christian women seeking real, raw, faith-filled content.
+    const cgCreatorContext = cgIsFaith
+      ? `Creator: Sarah (${cgBrand}) — a single Christian woman (no kids, not married) passionate about discipleship, spreading the gospel, saving souls, faith lifestyle, prayer, and helping women grow spiritually. Her audience are Christian women seeking real, raw, faith-filled content. NEVER include marriage or parenting references.`
+      : cgIsStewardship
+      ? `Creator: Sarah (${cgBrand}) — faith + finances podcast for Christian women. Focuses on biblical money management, stewardship, and financial freedom through faith. Creator is a single woman.`
+      : `Brand: ${cgBrand} — a business brand. This is NOT a faith brand. Generate business-focused content ideas, hooks, and captions. No religious content.${brandDesc ? `\n\nABOUT THIS BUSINESS: ${brandDesc}\n\nAll content must be specific to what this business sells and who it serves.` : ''}`;
+
+    prompt = `You are an expert content strategist who creates platform-native content that stops the scroll. You understand strong hooks, emotional resonance, and compelling CTAs.
+
+${cgCreatorContext}
 Format: ${format || '9:16 Reel'}
 Topic: ${topic}
 ${description ? `Context: ${description}` : ''}
-Niche: ${niche || 'faith/discipleship/gospel'}
+Niche: ${niche || (cgIsFaith ? 'faith/discipleship/gospel' : cgIsStewardship ? 'faith/finance/stewardship' : 'business/marketing')}
 
 Generate in valid JSON:
 {

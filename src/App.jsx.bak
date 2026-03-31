@@ -125,10 +125,10 @@ class EditorErrorBoundary extends React.Component {
     if (this.state.hasError) {
       const err = this.state.error;
       return (
-        <div className="p-6 rounded-2xl bg-violet-50 dark:bg-stone-800 border border-violet-200 dark:border-stone-600 max-w-xl">
-          <h3 className="font-bold text-rose-700 dark:text-violet-400 mb-2">Something went wrong in the editor</h3>
+        <div className="p-6 rounded-2xl bg-rose-50 dark:bg-stone-800 border border-rose-200 dark:border-stone-600 max-w-xl">
+          <h3 className="font-bold text-rose-700 dark:text-rose-400 mb-2">Something went wrong in the editor</h3>
           <p className="text-sm text-stone-600 dark:text-stone-400 mb-4">{err?.message || String(err)}</p>
-          <button onClick={() => this.setState({ hasError: false, error: null })} className="px-4 py-2 rounded-xl bg-violet-500 text-white font-bold text-sm hover:bg-violet-600">Try again (your media is safe)</button>
+          <button onClick={() => this.setState({ hasError: false, error: null })} className="px-4 py-2 rounded-xl bg-rose-500 text-white font-bold text-sm hover:bg-rose-600">Try again (your media is safe)</button>
         </div>
       );
     }
@@ -144,7 +144,7 @@ const formatFileSize = (bytes) => {
 
 const App = () => {
   const [theme, setTheme] = useState(() => {
-    try { return localStorage.getItem('kreativelync-theme') || 'system'; } catch { return 'light'; }
+    try { return localStorage.getItem('faith-studio-theme') || 'system'; } catch { return 'light'; }
   });
   const [sysDark, setSysDark] = useState(false);
   const isDark = theme === 'dark' || (theme === 'system' && sysDark);
@@ -163,7 +163,7 @@ const App = () => {
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', isDark);
-    try { localStorage.setItem('kreativelync-theme', theme); } catch (_) {}
+    try { localStorage.setItem('faith-studio-theme', theme); } catch (_) {}
   }, [theme, isDark]);
 
   const cycleTheme = () => setTheme(t => t === 'light' ? 'dark' : t === 'dark' ? 'system' : 'light');
@@ -216,7 +216,7 @@ const App = () => {
     });
   }, []);
 
-  const [activeTab, setActiveTab] = useState(() => { try { return localStorage.getItem('kreativelync-active-tab') || 'pro'; } catch { return 'pro'; } });
+  const [activeTab, setActiveTab] = useState(() => { try { return localStorage.getItem('faith-studio-active-tab') || 'pro'; } catch { return 'pro'; } });
   const assets = useEditorStore(s => Array.isArray(s?.assets) ? s.assets : []);
   const addAsset = useEditorStore(s => s.addAsset);
   const removeAsset = useEditorStore(s => s.removeAsset);
@@ -238,20 +238,20 @@ const App = () => {
     facebook: false
   });
   const [caption, setCaption] = useState('');
-  const [contactPageUrl, setContactPageUrl] = useState(() => { try { return localStorage.getItem('kreativelync-contact-url') || ''; } catch { return ''; } });
-  const [marketingGoal, setMarketingGoal] = useState(() => { try { return localStorage.getItem('kreativelync-marketing-goal') || ''; } catch { return ''; } });
+  const [contactPageUrl, setContactPageUrl] = useState(() => { try { return localStorage.getItem('faith-contact-url') || ''; } catch { return ''; } });
+  const [marketingGoal, setMarketingGoal] = useState(() => { try { return localStorage.getItem('faith-marketing-goal') || ''; } catch { return ''; } });
   const [tags, setTags] = useState([]);
   const [tagInput, setTagInput] = useState('');
 
   const [businesses, setBusinesses] = useState(() => {
     const defaults = [
-      { id: 'kreativelync', name: 'My Business', type: 'brand', color: 'violet' },
+      { id: 'sarah', name: 'Sarah Speaks Faith', type: 'faith', color: 'rose' },
       { id: 'stewardship', name: 'Her Stewardship', type: 'stewardship', color: 'emerald' },
       { id: 'stoklync', name: 'Stoklync', type: 'business', color: 'indigo' },
       { id: 'skin', name: 'Skin Products', type: 'business', color: 'amber' }
     ];
     try {
-      const raw = localStorage.getItem('kreativelync-businesses');
+      const raw = localStorage.getItem('faith-studio-businesses');
       if (raw) {
         const parsed = JSON.parse(raw);
         if (Array.isArray(parsed)) {
@@ -262,23 +262,23 @@ const App = () => {
     } catch (_) {}
     return defaults;
   });
-  const [activeBusinessId, setActiveBusinessId] = useState(() => { try { return localStorage.getItem('kreativelync-active-business') || 'kreativelync'; } catch { return 'sarah'; } });
+  const [activeBusinessId, setActiveBusinessId] = useState(() => { try { return localStorage.getItem('faith-studio-active-business') || 'sarah'; } catch { return 'sarah'; } });
   const [showAddBusiness, setShowAddBusiness] = useState(false);
 
   useEffect(() => {
-    try { localStorage.setItem('kreativelync-active-tab', activeTab); } catch (_) {}
+    try { localStorage.setItem('faith-studio-active-tab', activeTab); } catch (_) {}
   }, [activeTab]);
   useEffect(() => {
-    try { if (contactPageUrl) localStorage.setItem('kreativelync-contact-url', contactPageUrl); } catch (_) {}
+    try { if (contactPageUrl) localStorage.setItem('faith-contact-url', contactPageUrl); } catch (_) {}
   }, [contactPageUrl]);
   useEffect(() => {
-    try { if (marketingGoal) localStorage.setItem('kreativelync-marketing-goal', marketingGoal); } catch (_) {}
+    try { if (marketingGoal) localStorage.setItem('faith-marketing-goal', marketingGoal); } catch (_) {}
   }, [marketingGoal]);
   useEffect(() => {
-    try { localStorage.setItem('kreativelync-businesses', JSON.stringify(businesses)); } catch (_) {}
+    try { localStorage.setItem('faith-studio-businesses', JSON.stringify(businesses)); } catch (_) {}
   }, [businesses]);
   useEffect(() => {
-    if (activeBusinessId) localStorage.setItem('kreativelync-active-business', activeBusinessId);
+    if (activeBusinessId) localStorage.setItem('faith-studio-active-business', activeBusinessId);
   }, [activeBusinessId]);
 
   const [voiceIsolation, setVoiceIsolation] = useState(false);
@@ -293,9 +293,8 @@ const App = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
-  const [geminiKey, setGeminiKey] = useState(() => { try { return localStorage.getItem('kreativelync-gemini-api-key') || ''; } catch { return ''; } });
-  const [openaiKey, setOpenaiKey] = useState(() => { try { return localStorage.getItem('kreativelync-openai-api-key') || ''; } catch { return ''; } });
-  const [canvaKey, setCanvaKey] = useState(() => { try { return localStorage.getItem('kreativelync-canva-api-key') || ''; } catch { return ''; } });
+  const [geminiKey, setGeminiKey] = useState(() => { try { return localStorage.getItem('faith-studio-gemini-api-key') || ''; } catch { return ''; } });
+  const [openaiKey, setOpenaiKey] = useState(() => { try { return localStorage.getItem('faith-studio-openai-api-key') || ''; } catch { return ''; } });
 
   const primaryNav = [
     ['pro', Zap, 'Content Studio'],
@@ -327,7 +326,7 @@ const App = () => {
 
   const clearAllData = () => {
     if (confirm('Clear all app data? This cannot be undone.')) {
-      try { Object.keys(localStorage).filter(k => k.startsWith('kreativelync')).forEach(k => localStorage.removeItem(k)); } catch (_) {}
+      try { Object.keys(localStorage).filter(k => k.startsWith('faith-studio')).forEach(k => localStorage.removeItem(k)); } catch (_) {}
       window.location.reload();
     }
   };
@@ -444,9 +443,9 @@ const App = () => {
 
   return (
     <StudioContext.Provider value={value}>
-      <div className="flex h-screen max-h-[100dvh] bg-white dark:bg-stone-900 text-stone-800 dark:text-stone-100 font-sans selection:bg-violet-200 dark:selection:bg-rose-900/50 transition-colors overflow-hidden">
+      <div className="flex h-screen max-h-[100dvh] bg-white dark:bg-stone-900 text-stone-800 dark:text-stone-100 font-sans selection:bg-rose-200 dark:selection:bg-rose-900/50 transition-colors overflow-hidden">
         {/* ── Sidebar ── collapsible on desktop, drawer on mobile */}
-        <aside className={`fixed md:relative inset-y-0 left-0 h-full md:h-auto md:min-h-0 bg-white dark:bg-stone-900 border-r border-violet-100 dark:border-stone-800 flex flex-col justify-between overflow-y-auto overflow-x-hidden shadow-[2px_0_16px_rgba(225,29,72,0.04)] dark:shadow-none z-30 transition-all duration-200 ease-out
+        <aside className={`fixed md:relative inset-y-0 left-0 h-full md:h-auto md:min-h-0 bg-white dark:bg-stone-900 border-r border-rose-100 dark:border-stone-800 flex flex-col justify-between overflow-y-auto overflow-x-hidden shadow-[2px_0_16px_rgba(225,29,72,0.04)] dark:shadow-none z-30 transition-all duration-200 ease-out
           ${sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
           ${sidebarCollapsed ? 'md:w-[60px]' : 'md:w-[220px]'}
           w-[220px]`}>
@@ -455,12 +454,12 @@ const App = () => {
             <div className={`flex items-center border-b border-rose-50 dark:border-stone-800 ${sidebarCollapsed ? 'justify-center px-2 py-4' : 'justify-between px-4 py-4'}`}>
               {!sidebarCollapsed && (
                 <div className="min-w-0">
-                  <h1 className="text-sm font-black tracking-widest text-stone-800 dark:text-stone-100 uppercase leading-tight">KreativeLync</h1>
-                  <p className="text-[9px] text-violet-400 tracking-[0.18em] uppercase font-bold">KreativeLync Studio</p>
+                  <h1 className="text-sm font-black tracking-widest text-stone-800 dark:text-stone-100 uppercase leading-tight">Sarah Speaks</h1>
+                  <p className="text-[9px] text-rose-400 tracking-[0.18em] uppercase font-bold">Faith Studio</p>
                 </div>
               )}
               <button onClick={() => { setSidebarCollapsed(c => !c); setSidebarOpen(false); }}
-                className="p-1.5 rounded-lg text-stone-400 hover:text-violet-500 hover:bg-violet-50 dark:hover:bg-stone-800 transition-colors shrink-0 hidden md:flex"
+                className="p-1.5 rounded-lg text-stone-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-stone-800 transition-colors shrink-0 hidden md:flex"
                 title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}>
                 {sidebarCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
               </button>
@@ -473,8 +472,8 @@ const App = () => {
                   className={`w-full flex items-center rounded-xl transition-all text-sm font-medium
                     ${sidebarCollapsed ? 'justify-center px-0 py-3' : 'gap-3 px-3 py-2.5'}
                     ${activeTab === id
-                      ? 'bg-violet-500 text-white shadow-sm shadow-rose-200 dark:shadow-none'
-                      : 'text-stone-500 dark:text-stone-400 hover:bg-violet-50 dark:hover:bg-stone-800 hover:text-violet-600 dark:hover:text-violet-400'}`}>
+                      ? 'bg-rose-500 text-white shadow-sm shadow-rose-200 dark:shadow-none'
+                      : 'text-stone-500 dark:text-stone-400 hover:bg-rose-50 dark:hover:bg-stone-800 hover:text-rose-600 dark:hover:text-rose-400'}`}>
                   <Icon size={17} className="shrink-0" />
                   {!sidebarCollapsed && <span className="truncate">{label}</span>}
                 </button>
@@ -488,20 +487,20 @@ const App = () => {
               <span className="text-[9px] font-black text-stone-400 uppercase tracking-wider block px-2 mb-1">My Brands</span>
               <div className="space-y-0.5 max-h-36 overflow-y-auto">
                 {(businesses || []).filter(Boolean).map((b) => (
-                  <div key={b.id || b.name} className={`flex items-center gap-1 rounded-lg transition-colors ${activeBusinessId === b.id ? 'bg-violet-100 dark:bg-rose-900/30' : 'hover:bg-stone-100 dark:hover:bg-stone-800'}`}>
+                  <div key={b.id || b.name} className={`flex items-center gap-1 rounded-lg transition-colors ${activeBusinessId === b.id ? 'bg-rose-100 dark:bg-rose-900/30' : 'hover:bg-stone-100 dark:hover:bg-stone-800'}`}>
                     <button onClick={() => setActiveBusinessId(b.id)}
                       className={`flex-1 text-left px-2.5 py-1.5 text-xs font-medium truncate transition-colors ${activeBusinessId === b.id ? 'text-rose-700 dark:text-rose-300' : 'text-stone-500 dark:text-stone-400'}`}>
                       {b.name || 'Business'}
                     </button>
                     {b.type === 'business' && (
-                      <button onClick={() => { setEditingBrandId(b.id); setEditingBrandDesc(b.description || ''); }} title="Edit brand description for AI" className="px-1.5 py-1.5 text-stone-300 hover:text-violet-500 transition-colors flex-shrink-0" >
+                      <button onClick={() => { setEditingBrandId(b.id); setEditingBrandDesc(b.description || ''); }} title="Edit brand description for AI" className="px-1.5 py-1.5 text-stone-300 hover:text-rose-500 transition-colors flex-shrink-0" >
                         <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                       </button>
                     )}
                   </div>
                 ))}
               </div>
-              <button onClick={() => setShowAddBusiness(true)} className="w-full text-left px-2.5 py-1.5 text-xs font-bold text-violet-500 hover:text-violet-600 flex items-center gap-1">
+              <button onClick={() => setShowAddBusiness(true)} className="w-full text-left px-2.5 py-1.5 text-xs font-bold text-rose-500 hover:text-rose-600 flex items-center gap-1">
                 <Plus size={12} /> Add brand
               </button>
               <button onClick={cycleTheme} className="flex items-center gap-2 text-stone-400 hover:text-stone-700 dark:hover:text-stone-100 text-xs w-full px-2.5 py-1.5 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors">
@@ -530,8 +529,8 @@ const App = () => {
         <main className="flex-1 min-w-0 min-h-0 relative bg-white dark:bg-stone-900 transition-colors flex flex-col overflow-y-auto overflow-x-hidden">
           {/* Hide main header in Video Editor — editor has its own controls, full screen for editing */}
           {activeTab !== 'video' && (
-          <header className="bg-white/80 dark:bg-stone-900/80 backdrop-blur-md sticky top-0 border-b border-violet-100 dark:border-stone-700 px-4 md:px-10 z-10 flex justify-between items-center gap-2 transition-colors shrink-0 py-4 md:py-6">
-            <button onClick={() => setSidebarOpen(true)} className="md:hidden p-2 -ml-2 rounded-xl text-stone-600 dark:text-stone-400 hover:bg-violet-50 dark:hover:bg-stone-700" aria-label="Open menu"><Menu size={24} /></button>
+          <header className="bg-white/80 dark:bg-stone-900/80 backdrop-blur-md sticky top-0 border-b border-rose-100 dark:border-stone-700 px-4 md:px-10 z-10 flex justify-between items-center gap-2 transition-colors shrink-0 py-4 md:py-6">
+            <button onClick={() => setSidebarOpen(true)} className="md:hidden p-2 -ml-2 rounded-xl text-stone-600 dark:text-stone-400 hover:bg-rose-50 dark:hover:bg-stone-700" aria-label="Open menu"><Menu size={24} /></button>
             <h2 className="font-semibold text-stone-800 dark:text-stone-100 tracking-tight flex items-center gap-3 flex-wrap flex-1 min-w-0 truncate text-lg md:text-2xl">
               <span>
                 {activeTab === 'start' && 'Start Here'}
@@ -543,15 +542,15 @@ const App = () => {
                 {activeTab === 'analytics' && 'Analytics'}
               </span>
               {(businesses || []).find(b => b && b.id === activeBusinessId) && ['photo-edit','design','pro','social','traffic','analytics'].includes(activeTab) && (
-                <span className="text-sm font-normal text-violet-600 dark:text-violet-400 normal-case bg-violet-50 dark:bg-rose-900/20 px-3 py-1 rounded-full">Creating for: {(businesses || []).find(b => b && b.id === activeBusinessId)?.name || 'Unknown'}</span>
+                <span className="text-sm font-normal text-rose-600 dark:text-rose-400 normal-case bg-rose-50 dark:bg-rose-900/20 px-3 py-1 rounded-full">Creating for: {(businesses || []).find(b => b && b.id === activeBusinessId)?.name || 'Unknown'}</span>
               )}
             </h2>
             <div className="flex items-center gap-4">
-              <button onClick={cycleTheme} aria-label="Toggle theme" className="p-2 rounded-xl text-stone-500 dark:text-stone-400 hover:bg-violet-50 dark:hover:bg-stone-700 hover:text-violet-600 dark:hover:text-violet-400 transition-colors">
+              <button onClick={cycleTheme} aria-label="Toggle theme" className="p-2 rounded-xl text-stone-500 dark:text-stone-400 hover:bg-rose-50 dark:hover:bg-stone-700 hover:text-rose-600 dark:hover:text-rose-400 transition-colors">
                 {isDark ? <Sun size={20} /> : <Moon size={20} />}
               </button>
-              <span className="flex items-center text-xs font-semibold text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-rose-900/30 px-4 py-2 rounded-full border border-violet-100 dark:border-rose-800">
-                <span className="w-2 h-2 rounded-full bg-violet-500 mr-2 animate-pulse"></span>
+              <span className="flex items-center text-xs font-semibold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-900/30 px-4 py-2 rounded-full border border-rose-100 dark:border-rose-800">
+                <span className="w-2 h-2 rounded-full bg-rose-500 mr-2 animate-pulse"></span>
                 System Online
               </span>
             </div>
@@ -561,38 +560,28 @@ const App = () => {
           {/* Settings Modal */}
         {showSettings && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto" onClick={() => setShowSettings(false)}>
-            <div className="bg-white dark:bg-stone-800 rounded-2xl p-6 max-w-md w-full shadow-xl border border-violet-100 dark:border-stone-700 my-8" onClick={e => e.stopPropagation()}>
+            <div className="bg-white dark:bg-stone-800 rounded-2xl p-6 max-w-md w-full shadow-xl border border-rose-100 dark:border-stone-700 my-8" onClick={e => e.stopPropagation()}>
               <h3 className="text-lg font-bold text-stone-800 dark:text-stone-100 mb-4">App Settings</h3>
 
               <div className="space-y-5">
                 <section>
                   <h4 className="text-xs font-bold text-stone-400 uppercase mb-2">AI — ChatGPT (recommended)</h4>
-                  <input type="password" value={openaiKey} onChange={(e) => { setOpenaiKey(e.target.value); try { localStorage.setItem('kreativelync-openai-api-key', e.target.value); } catch (_) {} }} placeholder="sk-..." className="w-full bg-violet-50 dark:bg-stone-700 border border-violet-100 dark:border-stone-600 rounded-xl px-4 py-3 text-sm font-mono" />
-                  <p className="text-[11px] text-stone-500 dark:text-stone-400 mt-1"><a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer" className="text-violet-500 hover:underline">Get key &rarr;</a></p>
+                  <input type="password" value={openaiKey} onChange={(e) => { setOpenaiKey(e.target.value); try { localStorage.setItem('faith-studio-openai-api-key', e.target.value); } catch (_) {} }} placeholder="sk-..." className="w-full bg-rose-50 dark:bg-stone-700 border border-rose-100 dark:border-stone-600 rounded-xl px-4 py-3 text-sm font-mono" />
+                  <p className="text-[11px] text-stone-500 dark:text-stone-400 mt-1"><a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer" className="text-rose-500 hover:underline">Get key &rarr;</a></p>
                 </section>
                 <section>
                   <h4 className="text-xs font-bold text-stone-400 uppercase mb-2">AI — Gemini (free)</h4>
-                  <input type="password" value={geminiKey} onChange={(e) => { setGeminiKey(e.target.value); try { localStorage.setItem('kreativelync-gemini-api-key', e.target.value); } catch (_) {} }} placeholder="AIza..." className="w-full bg-violet-50 dark:bg-stone-700 border border-violet-100 dark:border-stone-600 rounded-xl px-4 py-3 text-sm font-mono" />
-                  <p className="text-[11px] text-stone-500 dark:text-stone-400 mt-1"><a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer" className="text-violet-500 hover:underline">Get key &rarr;</a></p>
-                </section>
-                <section>
-                  <h4 className="text-xs font-bold text-stone-400 uppercase mb-2">Canva — Design & Templates</h4>
-                  <input type="password" value={canvaKey} onChange={(e) => { setCanvaKey(e.target.value); try { localStorage.setItem('kreativelync-canva-api-key', e.target.value); } catch (_) {} }} placeholder="Canva API key..." className="w-full bg-violet-50 dark:bg-stone-700 border border-violet-100 dark:border-stone-600 rounded-xl px-4 py-3 text-sm font-mono" />
-                  <p className="text-[11px] text-stone-500 dark:text-stone-400 mt-1"><a href="https://www.canva.com/developers" target="_blank" rel="noopener noreferrer" className="text-violet-500 hover:underline">Apply at canva.com/developers &rarr;</a></p>
-                </section>
-                <section>
-                  <h4 className="text-xs font-bold text-stone-400 uppercase mb-2">DALL-E — Concept Images (OpenAI)</h4>
-                  <p className="text-[11px] text-stone-500 dark:text-stone-400 mb-1">Uses your OpenAI key above — no separate key needed.</p>
-                  <p className="text-[11px] text-violet-500">Used for inspiration only. You shoot the real version. 📸</p>
+                  <input type="password" value={geminiKey} onChange={(e) => { setGeminiKey(e.target.value); try { localStorage.setItem('faith-studio-gemini-api-key', e.target.value); } catch (_) {} }} placeholder="AIza..." className="w-full bg-rose-50 dark:bg-stone-700 border border-rose-100 dark:border-stone-600 rounded-xl px-4 py-3 text-sm font-mono" />
+                  <p className="text-[11px] text-stone-500 dark:text-stone-400 mt-1"><a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer" className="text-rose-500 hover:underline">Get key &rarr;</a></p>
                 </section>
                 <section>
                   <h4 className="text-xs font-bold text-stone-400 uppercase mb-2">Backup</h4>
                   <div className="flex flex-wrap gap-2">
                     <button onClick={() => {
                       const data = {};
-                      try { Object.keys(localStorage).filter(k => k.startsWith('kreativelync')).forEach(k => { data[k] = localStorage.getItem(k); }); } catch (_) {}
+                      try { Object.keys(localStorage).filter(k => k.startsWith('faith-studio')).forEach(k => { data[k] = localStorage.getItem(k); }); } catch (_) {}
                       const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-                      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `kreativelync-backup-${new Date().toISOString().slice(0,10)}.json`; a.click(); URL.revokeObjectURL(a.href);
+                      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `sarah-speaks-faith-backup-${new Date().toISOString().slice(0,10)}.json`; a.click(); URL.revokeObjectURL(a.href);
                     }} className="px-4 py-2 rounded-xl border border-stone-200 dark:border-stone-600 text-sm font-medium hover:bg-stone-50 dark:hover:bg-stone-700">Export backup</button>
                     <label className="px-4 py-2 rounded-xl border border-stone-200 dark:border-stone-600 text-sm font-medium hover:bg-stone-50 dark:hover:bg-stone-700 cursor-pointer">
                       Import backup
@@ -600,7 +589,7 @@ const App = () => {
                         const f = e.target.files?.[0];
                         if (!f) return;
                         const r = new FileReader();
-                        r.onload = () => { try { const d = JSON.parse(r.result); Object.entries(d).forEach(([k, v]) => { if (k.startsWith('kreativelync') && v) localStorage.setItem(k, v); }); window.location.reload(); } catch (_) { alert('Invalid backup file'); } };
+                        r.onload = () => { try { const d = JSON.parse(r.result); Object.entries(d).forEach(([k, v]) => { if (k.startsWith('faith-studio') && v) localStorage.setItem(k, v); }); window.location.reload(); } catch (_) { alert('Invalid backup file'); } };
                         r.readAsText(f);
                       }} />
                     </label>
@@ -609,7 +598,7 @@ const App = () => {
                 </section>
               </div>
 
-              <button onClick={() => setShowSettings(false)} className="mt-6 w-full py-2 rounded-xl bg-violet-500 text-white font-bold">Done</button>
+              <button onClick={() => setShowSettings(false)} className="mt-6 w-full py-2 rounded-xl bg-rose-500 text-white font-bold">Done</button>
             </div>
           </div>
         )}
@@ -617,10 +606,10 @@ const App = () => {
           {/* Add Business Modal */}
         {showAddBusiness && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white dark:bg-stone-800 rounded-2xl p-6 max-w-md w-full shadow-xl border border-violet-100 dark:border-stone-700">
+            <div className="bg-white dark:bg-stone-800 rounded-2xl p-6 max-w-md w-full shadow-xl border border-rose-100 dark:border-stone-700">
               <h3 className="text-lg font-bold text-stone-800 dark:text-stone-100 mb-1">Add Brand or Business</h3>
               <p className="text-sm text-stone-500 dark:text-stone-400 mb-4">Each brand gets its own AI coach, roadmap, notes, and chat history — completely separate.</p>
-              <input value={newBusinessName} onChange={(e) => setNewBusinessName(e.target.value)} placeholder="Brand name (e.g. Stoklync, Skin Care Co, Client Brand)" className="w-full bg-violet-50 dark:bg-stone-700 border border-violet-100 dark:border-stone-600 rounded-xl px-4 py-3 text-stone-800 dark:text-stone-100 placeholder-stone-400 mb-3" />
+              <input value={newBusinessName} onChange={(e) => setNewBusinessName(e.target.value)} placeholder="Brand name (e.g. Stoklync, Skin Care Co, Client Brand)" className="w-full bg-rose-50 dark:bg-stone-700 border border-rose-100 dark:border-stone-600 rounded-xl px-4 py-3 text-stone-800 dark:text-stone-100 placeholder-stone-400 mb-3" />
               <p className="text-xs font-bold text-stone-500 mb-2">What type is this brand?</p>
               <div className="grid grid-cols-3 gap-2 mb-3">
                 {[
@@ -628,7 +617,7 @@ const App = () => {
                   { value: 'faith', label: '✝️ Faith', desc: 'Ministry, gospel, community' },
                   { value: 'stewardship', label: '💚 Stewardship', desc: 'Faith + finances podcast' },
                 ].map(opt => (
-                  <button key={opt.value} onClick={() => setNewBusinessType(opt.value)} className={`p-3 rounded-xl border-2 text-left transition-all ${newBusinessType === opt.value ? 'border-violet-500 bg-violet-50 dark:bg-rose-900/20' : 'border-stone-200 dark:border-stone-600 hover:border-violet-300'}`}>
+                  <button key={opt.value} onClick={() => setNewBusinessType(opt.value)} className={`p-3 rounded-xl border-2 text-left transition-all ${newBusinessType === opt.value ? 'border-rose-500 bg-rose-50 dark:bg-rose-900/20' : 'border-stone-200 dark:border-stone-600 hover:border-rose-300'}`}>
                     <p className="font-bold text-xs text-stone-800 dark:text-stone-100">{opt.label}</p>
                     <p className="text-xs text-stone-400 mt-0.5">{opt.desc}</p>
                   </button>
@@ -642,7 +631,7 @@ const App = () => {
               )}
               <div className="flex gap-2">
                 <button onClick={() => { setShowAddBusiness(false); setNewBusinessName(''); setNewBusinessType('business'); setNewBusinessDesc(''); }} className="flex-1 py-2 rounded-xl border border-stone-200 dark:border-stone-600 text-stone-600 dark:text-stone-400 font-medium">Cancel</button>
-                <button onClick={addBusiness} className="flex-1 py-2 rounded-xl bg-violet-500 text-white font-bold hover:bg-violet-600">Add Brand</button>
+                <button onClick={addBusiness} className="flex-1 py-2 rounded-xl bg-rose-500 text-white font-bold hover:bg-rose-600">Add Brand</button>
               </div>
             </div>
           </div>
@@ -660,7 +649,7 @@ const App = () => {
                 <textarea value={editingBrandDesc} onChange={e => setEditingBrandDesc(e.target.value)} rows={5} placeholder={`Example: ${eb.name} sells premium skincare products targeting women aged 25-45 who struggle with acne and uneven skin tone. We focus on natural ingredients, no harsh chemicals. Our goal is to educate and sell through Instagram and TikTok. Price range $30-$80.`} className="w-full bg-stone-50 dark:bg-stone-700 border border-stone-200 dark:border-stone-600 rounded-xl px-4 py-3 text-sm text-stone-800 dark:text-stone-100 placeholder-stone-400 resize-none mb-4" />
                 <div className="flex gap-2">
                   <button onClick={() => setEditingBrandId(null)} className="flex-1 py-2 rounded-xl border border-stone-200 dark:border-stone-600 text-stone-600 dark:text-stone-400 font-medium">Cancel</button>
-                  <button onClick={() => saveBrandDesc(editingBrandId, editingBrandDesc)} className="flex-1 py-2 rounded-xl bg-violet-500 text-white font-bold hover:bg-violet-600">Save Description</button>
+                  <button onClick={() => saveBrandDesc(editingBrandId, editingBrandDesc)} className="flex-1 py-2 rounded-xl bg-rose-500 text-white font-bold hover:bg-rose-600">Save Description</button>
                 </div>
               </div>
             </div>
@@ -704,21 +693,21 @@ const StartHere = ({ setActiveTab }) => {
       </div>
       <div className="space-y-4">
         {steps.map(({ id, icon: Icon, title, desc, cta }) => (
-          <div key={id} className="bg-white dark:bg-stone-800 border border-violet-100 dark:border-stone-700 rounded-2xl p-6 flex items-start gap-4 hover:border-violet-200 dark:hover:border-stone-600 transition-colors">
-            <div className="w-12 h-12 rounded-xl bg-violet-100 dark:bg-rose-900/30 flex items-center justify-center shrink-0">
-              <Icon className="text-violet-500 dark:text-violet-400" size={24} />
+          <div key={id} className="bg-white dark:bg-stone-800 border border-rose-100 dark:border-stone-700 rounded-2xl p-6 flex items-start gap-4 hover:border-rose-200 dark:hover:border-stone-600 transition-colors">
+            <div className="w-12 h-12 rounded-xl bg-rose-100 dark:bg-rose-900/30 flex items-center justify-center shrink-0">
+              <Icon className="text-rose-500 dark:text-rose-400" size={24} />
             </div>
             <div className="flex-1 min-w-0">
               <h3 className="text-lg font-bold text-stone-800 dark:text-stone-100">{title}</h3>
               <p className="text-sm text-stone-500 dark:text-stone-400 mt-1">{desc}</p>
-              <button onClick={() => setActiveTab(id)} className="mt-4 px-4 py-2 rounded-xl bg-violet-500 text-white text-sm font-bold hover:bg-violet-600">
+              <button onClick={() => setActiveTab(id)} className="mt-4 px-4 py-2 rounded-xl bg-rose-500 text-white text-sm font-bold hover:bg-rose-600">
                 {cta} →
               </button>
             </div>
           </div>
         ))}
       </div>
-      <p className="text-center text-sm text-stone-400 dark:text-stone-500 mt-10">Need camera tips? Go to <button onClick={() => setActiveTab('camera')} className="text-violet-500 font-bold hover:underline">Camera Guide</button>. Need hooks & hashtags? Go to <button onClick={() => setActiveTab('pro')} className="text-violet-500 font-bold hover:underline">Pro Content Toolkit</button>.</p>
+      <p className="text-center text-sm text-stone-400 dark:text-stone-500 mt-10">Need camera tips? Go to <button onClick={() => setActiveTab('camera')} className="text-rose-500 font-bold hover:underline">Camera Guide</button>. Need hooks & hashtags? Go to <button onClick={() => setActiveTab('pro')} className="text-rose-500 font-bold hover:underline">Pro Content Toolkit</button>.</p>
     </div>
   );
 };
@@ -746,7 +735,7 @@ const MediaLibrary = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col md:flex-row justify-between items-center gap-4 bg-white dark:bg-stone-800 p-4 rounded-2xl border border-violet-100 dark:border-stone-700 shadow-sm transition-colors">
+      <div className="flex flex-col md:flex-row justify-between items-center gap-4 bg-white dark:bg-stone-800 p-4 rounded-2xl border border-rose-100 dark:border-stone-700 shadow-sm transition-colors">
         <div className="relative w-full md:w-96">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" size={18} />
           <input
@@ -754,7 +743,7 @@ const MediaLibrary = () => {
             value={librarySearch}
             onChange={(e) => setLibrarySearch(e.target.value)}
             placeholder="Search videos, reels, or audio..."
-            className="w-full bg-violet-50/50 dark:bg-stone-700/50 border border-violet-100 dark:border-stone-600 rounded-xl pl-10 pr-4 py-2.5 text-sm text-stone-800 dark:text-stone-100 focus:outline-none focus:border-violet-400 dark:focus:border-violet-500 transition-colors"
+            className="w-full bg-rose-50/50 dark:bg-stone-700/50 border border-rose-100 dark:border-stone-600 rounded-xl pl-10 pr-4 py-2.5 text-sm text-stone-800 dark:text-stone-100 focus:outline-none focus:border-rose-400 dark:focus:border-rose-500 transition-colors"
           />
         </div>
         <div className="flex flex-wrap gap-2">
@@ -762,7 +751,7 @@ const MediaLibrary = () => {
             <button
               key={f}
               onClick={() => setLibraryFilter(f)}
-              className={`px-4 py-2 rounded-xl text-sm font-bold transition-colors capitalize ${libraryFilter === f ? 'bg-violet-500 text-white' : 'bg-violet-50 text-stone-600 hover:bg-violet-100'}`}
+              className={`px-4 py-2 rounded-xl text-sm font-bold transition-colors capitalize ${libraryFilter === f ? 'bg-rose-500 text-white' : 'bg-rose-50 text-stone-600 hover:bg-rose-100'}`}
             >
               {f}
             </button>
@@ -770,7 +759,7 @@ const MediaLibrary = () => {
           <input ref={fileRef} type="file" multiple accept="video/*,audio/*,image/*" onChange={handleUpload} className="hidden" />
           <button
             onClick={() => fileRef.current?.click()}
-            className="px-5 py-2 rounded-xl text-sm font-bold bg-violet-500 text-white hover:bg-violet-600 flex items-center gap-2"
+            className="px-5 py-2 rounded-xl text-sm font-bold bg-rose-500 text-white hover:bg-rose-600 flex items-center gap-2"
           >
             <Upload size={16} /> Upload
           </button>
@@ -778,18 +767,18 @@ const MediaLibrary = () => {
       </div>
 
       {filteredAssets.length === 0 ? (
-        <div className="bg-white dark:bg-stone-800 border border-violet-100 dark:border-stone-700 rounded-3xl p-16 text-center transition-colors">
-          <Film className="mx-auto text-rose-200 dark:text-violet-600/40 w-16 h-16 mb-4" />
+        <div className="bg-white dark:bg-stone-800 border border-rose-100 dark:border-stone-700 rounded-3xl p-16 text-center transition-colors">
+          <Film className="mx-auto text-rose-200 dark:text-rose-600/40 w-16 h-16 mb-4" />
           <h3 className="text-xl font-semibold text-stone-800 dark:text-stone-100 mb-2">No media yet</h3>
           <p className="text-stone-500 dark:text-stone-400 mb-6">Upload videos, audio, or images to get started.</p>
-          <button onClick={() => fileRef.current?.click()} className="inline-flex items-center gap-2 bg-violet-500 text-white px-6 py-3 rounded-xl font-bold hover:bg-violet-600">
+          <button onClick={() => fileRef.current?.click()} className="inline-flex items-center gap-2 bg-rose-500 text-white px-6 py-3 rounded-xl font-bold hover:bg-rose-600">
             <Upload size={18} /> Upload Files
           </button>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredAssets.map((a) => (
-            <div key={a.id} className={`rounded-2xl overflow-hidden transition-all group ${selectedVideoId === a.id || selectedAudioId === a.id || selectedImageId === a.id ? 'ring-2 ring-violet-500 ring-offset-2 dark:ring-offset-stone-900 bg-violet-50/50 dark:bg-rose-900/20 border-2 border-violet-400 dark:border-rose-600' : 'bg-white dark:bg-stone-800 border border-violet-100 dark:border-stone-700 hover:border-violet-300 dark:hover:border-rose-700'}`}>
+            <div key={a.id} className={`rounded-2xl overflow-hidden transition-all group ${selectedVideoId === a.id || selectedAudioId === a.id || selectedImageId === a.id ? 'ring-2 ring-rose-500 ring-offset-2 dark:ring-offset-stone-900 bg-rose-50/50 dark:bg-rose-900/20 border-2 border-rose-400 dark:border-rose-600' : 'bg-white dark:bg-stone-800 border border-rose-100 dark:border-stone-700 hover:border-rose-300 dark:hover:border-rose-700'}`}>
               <div className="aspect-video bg-stone-900 dark:bg-black relative flex items-center justify-center overflow-hidden">
                 {a.type === 'video' && (
                   <video src={a.url} muted playsInline preload="auto" onLoadedMetadata={(e) => { const v = e.target; if (v.duration > 0.5) v.currentTime = 0.5; }} className="w-full h-full object-contain" />
@@ -799,7 +788,7 @@ const MediaLibrary = () => {
                   <img src={a.url} alt={a.altText || generateAltText((businesses || []).find(b => b?.id === activeBusinessId)?.name)} className="w-full h-full object-cover" />
                 )}
                 {a.type === 'video' && <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"><Play className="text-white w-14 h-14 drop-shadow-lg" /></div>}
-                <button onClick={() => removeAsset(a.id)} className="absolute top-2 right-2 p-2 bg-violet-500/90 rounded-lg text-white opacity-0 group-hover:opacity-100"><Trash2 size={16} /></button>
+                <button onClick={() => removeAsset(a.id)} className="absolute top-2 right-2 p-2 bg-rose-500/90 rounded-lg text-white opacity-0 group-hover:opacity-100"><Trash2 size={16} /></button>
               </div>
               <div className="p-4">
                 <h4 className="text-sm font-semibold text-stone-800 dark:text-stone-100 truncate">{a.name}</h4>
@@ -811,11 +800,11 @@ const MediaLibrary = () => {
                   <div className="mt-2 flex flex-wrap gap-2 items-center">
                     {selectedVideoId === a.id ? (
                       <>
-                        <span className="text-xs font-bold text-violet-600 dark:text-violet-400">✓ Source</span>
-                        <button onClick={() => setActiveTab('classic')} className="text-xs font-bold text-white bg-violet-500 hover:bg-violet-600 px-3 py-1 rounded-lg">Edit in Timeline →</button>
+                        <span className="text-xs font-bold text-rose-600 dark:text-rose-400">✓ Source</span>
+                        <button onClick={() => setActiveTab('classic')} className="text-xs font-bold text-white bg-rose-500 hover:bg-rose-600 px-3 py-1 rounded-lg">Edit in Timeline →</button>
                       </>
                     ) : (
-                      <button onClick={() => { setSelectedVideoId(a.id); setActiveTab('classic'); }} className="text-xs font-bold text-violet-600 dark:text-violet-400 hover:underline">Use as source</button>
+                      <button onClick={() => { setSelectedVideoId(a.id); setActiveTab('classic'); }} className="text-xs font-bold text-rose-600 dark:text-rose-400 hover:underline">Use as source</button>
                     )}
                     <button onClick={() => { insertClipAtPlayhead(0, a.id); setActiveTab('classic'); }} className="text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:underline" title="Insert at playhead on Main track">Insert to Timeline</button>
                     <button onClick={() => { insertClipAtPlayhead(1, a.id, { asOverlay: true }); setActiveTab('classic'); }} className="text-xs font-bold text-cyan-600 dark:text-cyan-400 hover:underline" title="Insert as PiP overlay">Add as PiP</button>
@@ -834,7 +823,7 @@ const MediaLibrary = () => {
                 {a.type === 'image' && (
                   <div className="mt-2 space-y-2">
                     <div className="flex flex-wrap gap-2">
-                      <button onClick={() => setSelectedImageId(selectedImageId === a.id ? null : a.id)} className="text-xs font-bold text-violet-600 dark:text-violet-400 hover:underline">
+                      <button onClick={() => setSelectedImageId(selectedImageId === a.id ? null : a.id)} className="text-xs font-bold text-rose-600 dark:text-rose-400 hover:underline">
                         {selectedImageId === a.id ? '× Cancel' : 'Apply filters'}
                       </button>
                       <button onClick={() => { insertClipAtPlayhead(2, a.id); setActiveTab('classic'); }} className="text-xs font-bold text-amber-600 dark:text-amber-400 hover:underline">Insert to Timeline</button>
@@ -849,7 +838,7 @@ const MediaLibrary = () => {
                             <input type="range" min="0" max="200" value={imageFilters[k] ?? 100} onChange={(e) => setImageFilters(f => ({ ...f, [k]: Number(e.target.value) }))} className="flex-1 h-1.5 bg-stone-200 dark:bg-stone-600 rounded" />
                           </div>
                         ))}
-                        <button onClick={async () => { if (applyingFilters) return; setApplyingFilters(true); try { const { blob, url } = await processImage(a.id, imageFilters); updateAssetBlob(a.id, blob); revoke(url); } finally { setApplyingFilters(false); } }} disabled={applyingFilters} className="mt-1 text-xs font-bold bg-violet-500 text-white px-2 py-1 rounded disabled:opacity-50">{applyingFilters ? 'Applying…' : 'Apply'}</button>
+                        <button onClick={async () => { if (applyingFilters) return; setApplyingFilters(true); try { const { blob, url } = await processImage(a.id, imageFilters); updateAssetBlob(a.id, blob); revoke(url); } finally { setApplyingFilters(false); } }} disabled={applyingFilters} className="mt-1 text-xs font-bold bg-rose-500 text-white px-2 py-1 rounded disabled:opacity-50">{applyingFilters ? 'Applying…' : 'Apply'}</button>
                       </div>
                     )}
                   </div>
@@ -869,7 +858,7 @@ const PhotoPlanner = () => {
   const { generateAltText } = useMarketingStore();
   const igRef = useRef(null);
   const pinRef = useRef(null);
-  const businessName = (businesses || []).find(b => b?.id === activeBusinessId)?.name || 'KreativeLync';
+  const businessName = (businesses || []).find(b => b?.id === activeBusinessId)?.name || 'Sarah Speaks Faith';
 
   const handleIgUpload = (e) => {
     const files = Array.from(e.target.files || []);
@@ -891,7 +880,7 @@ const PhotoPlanner = () => {
     e.target.value = '';
   };
 
-  const colorMap = { rose: 'bg-violet-50 text-violet-600 dark:bg-rose-900/30 dark:text-violet-400', emerald: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400', indigo: 'bg-indigo-50 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400', amber: 'bg-amber-50 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400', stone: 'bg-stone-100 text-stone-700 dark:bg-stone-700 dark:text-stone-300' };
+  const colorMap = { rose: 'bg-rose-50 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400', emerald: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400', indigo: 'bg-indigo-50 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400', amber: 'bg-amber-50 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400', stone: 'bg-stone-100 text-stone-700 dark:bg-stone-700 dark:text-stone-300' };
 
   return (
     <div className="space-y-8">
@@ -909,38 +898,38 @@ const PhotoPlanner = () => {
       <PostFlyerCreator businesses={businesses} activeBusinessId={activeBusinessId} setIgPosts={setIgPosts} setPinterestPins={setPinterestPins} businessName={businessName} />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <div className="bg-white dark:bg-stone-800 border border-violet-100 dark:border-stone-700 rounded-3xl p-8 shadow-sm transition-colors">
+        <div className="bg-white dark:bg-stone-800 border border-rose-100 dark:border-stone-700 rounded-3xl p-8 shadow-sm transition-colors">
           <div className="flex justify-between items-center mb-6">
             <div>
               <h3 className="text-xl font-semibold text-stone-800 flex items-center">
-                <Instagram className="mr-2 text-violet-400" size={24} />
+                <Instagram className="mr-2 text-rose-400" size={24} />
                 Instagram Grid
               </h3>
               <p className="text-sm text-stone-500 mt-1">Upload and plan your layout.</p>
             </div>
             <input ref={igRef} type="file" multiple accept="image/*" onChange={handleIgUpload} className="hidden" />
-            <button onClick={() => igRef.current?.click()} className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-violet-500 hover:bg-violet-600">
+            <button onClick={() => igRef.current?.click()} className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-rose-500 hover:bg-rose-600">
               + New Post
             </button>
           </div>
           <div className="grid grid-cols-3 gap-3">
             {igPosts.length === 0 && (
-              <div className="col-span-3 aspect-square rounded-2xl border-2 border-dashed border-violet-200 flex flex-col items-center justify-center text-stone-400 cursor-pointer hover:border-violet-400 hover:bg-violet-50/50" onClick={() => igRef.current?.click()}>
+              <div className="col-span-3 aspect-square rounded-2xl border-2 border-dashed border-rose-200 flex flex-col items-center justify-center text-stone-400 cursor-pointer hover:border-rose-400 hover:bg-rose-50/50" onClick={() => igRef.current?.click()}>
                 <ImageIcon size={32} className="mb-2" />
                 <span className="text-sm font-medium">Upload images</span>
               </div>
             )}
             {igPosts.slice(0, 9).map((p) => (
-              <div key={p.id} className="aspect-square rounded-2xl border border-violet-100 overflow-hidden relative group">
+              <div key={p.id} className="aspect-square rounded-2xl border border-rose-100 overflow-hidden relative group">
                 <img src={p.url} alt={p.altText || generateAltText(businessName)} className="w-full h-full object-cover" />
                 <input value={p.altText || ''} onChange={(e) => setIgPosts(prev => prev.map(x => x.id === p.id ? { ...x, altText: e.target.value } : x))} placeholder="Alt text for SEO" className="absolute bottom-0 left-0 right-0 text-[10px] px-2 py-1 bg-black/70 text-white placeholder-stone-400 opacity-0 group-hover:opacity-100 transition-opacity" />
-                <button onClick={() => setIgPosts(prev => prev.filter(x => x.id !== p.id))} className="absolute top-1 right-1 p-1.5 bg-violet-500/90 rounded-lg text-white opacity-0 group-hover:opacity-100"><Trash2 size={14} /></button>
+                <button onClick={() => setIgPosts(prev => prev.filter(x => x.id !== p.id))} className="absolute top-1 right-1 p-1.5 bg-rose-500/90 rounded-lg text-white opacity-0 group-hover:opacity-100"><Trash2 size={14} /></button>
               </div>
             ))}
           </div>
         </div>
 
-        <div className="bg-white dark:bg-stone-800 border border-violet-100 dark:border-stone-700 rounded-3xl p-8 shadow-sm transition-colors">
+        <div className="bg-white dark:bg-stone-800 border border-rose-100 dark:border-stone-700 rounded-3xl p-8 shadow-sm transition-colors">
           <div className="flex justify-between items-center mb-6">
             <div>
               <h3 className="text-xl font-semibold text-stone-800 flex items-center">
@@ -952,25 +941,25 @@ const PhotoPlanner = () => {
               <p className="text-sm text-stone-500 mt-1">Upload pins for your boards.</p>
             </div>
             <input ref={pinRef} type="file" multiple accept="image/*" onChange={handlePinUpload} className="hidden" />
-            <button onClick={() => pinRef.current?.click()} className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-violet-500 hover:bg-violet-600">
+            <button onClick={() => pinRef.current?.click()} className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-rose-500 hover:bg-rose-600">
               + New Pin
             </button>
           </div>
           <div className="space-y-4">
             {pinterestPins.length === 0 && (
-              <div className="p-8 rounded-2xl border-2 border-dashed border-violet-200 text-center text-stone-400 cursor-pointer hover:border-violet-400 hover:bg-violet-50/50" onClick={() => pinRef.current?.click()}>
+              <div className="p-8 rounded-2xl border-2 border-dashed border-rose-200 text-center text-stone-400 cursor-pointer hover:border-rose-400 hover:bg-rose-50/50" onClick={() => pinRef.current?.click()}>
                 <ImageIcon size={32} className="mx-auto mb-2" />
                 <span className="text-sm font-medium">Upload pin images</span>
               </div>
             )}
             {pinterestPins.map((p) => (
-              <div key={p.id} className="flex gap-4 p-4 rounded-2xl border border-violet-100 bg-violet-50/50 group">
-                <div className="w-20 h-28 rounded-xl flex-shrink-0 overflow-hidden bg-violet-100">
+              <div key={p.id} className="flex gap-4 p-4 rounded-2xl border border-rose-100 bg-rose-50/50 group">
+                <div className="w-20 h-28 rounded-xl flex-shrink-0 overflow-hidden bg-rose-100">
                   <img src={p.url} alt={p.altText || generateAltText(businessName)} className="w-full h-full object-cover" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <input value={p.title || ''} onChange={(e) => setPinterestPins(prev => prev.map(x => x.id === p.id ? { ...x, title: e.target.value } : x))} placeholder="Pin title" className="w-full text-sm font-bold text-stone-800 dark:text-stone-100 bg-transparent border-b border-transparent hover:border-violet-200 focus:border-violet-400 focus:outline-none mb-1" />
-                  <input value={p.altText || ''} onChange={(e) => setPinterestPins(prev => prev.map(x => x.id === p.id ? { ...x, altText: e.target.value } : x))} placeholder="Alt text (SEO)" className="w-full text-xs text-stone-500 dark:text-stone-400 bg-transparent border-b border-transparent hover:border-violet-200 focus:border-violet-400 focus:outline-none mb-1" />
+                  <input value={p.title || ''} onChange={(e) => setPinterestPins(prev => prev.map(x => x.id === p.id ? { ...x, title: e.target.value } : x))} placeholder="Pin title" className="w-full text-sm font-bold text-stone-800 dark:text-stone-100 bg-transparent border-b border-transparent hover:border-rose-200 focus:border-rose-400 focus:outline-none mb-1" />
+                  <input value={p.altText || ''} onChange={(e) => setPinterestPins(prev => prev.map(x => x.id === p.id ? { ...x, altText: e.target.value } : x))} placeholder="Alt text (SEO)" className="w-full text-xs text-stone-500 dark:text-stone-400 bg-transparent border-b border-transparent hover:border-rose-200 focus:border-rose-400 focus:outline-none mb-1" />
                   <input value={p.board || ''} onChange={(e) => setPinterestPins(prev => prev.map(x => x.id === p.id ? { ...x, board: e.target.value } : x))} placeholder="Board name" className="w-full text-xs text-stone-500 dark:text-stone-400 bg-transparent border-none focus:outline-none" />
                 </div>
                 <button onClick={() => setPinterestPins(prev => prev.filter(x => x.id !== p.id))} className="text-stone-400 hover:text-red-500 self-start"><Trash2 size={16} /></button>
@@ -1101,7 +1090,7 @@ const PlannerSavesList = ({ saves, togglePin, deleteItem, accentColor = 'rose' }
           <p className="text-xs text-stone-600 dark:text-stone-300 whitespace-pre-wrap leading-relaxed mb-3 line-clamp-4">{s.body}</p>
           <div className="flex gap-3 pt-2 border-t border-stone-100 dark:border-stone-700">
             <button onClick={() => togglePin(s.id)} className={`text-xs font-bold ${s.pinned ? 'text-amber-500' : 'text-stone-400 hover:text-amber-500'}`}>{s.pinned ? '📌 Pinned' : 'Pin'}</button>
-            <button onClick={() => { navigator.clipboard.writeText(s.body); setCopiedId(s.id); setTimeout(()=>setCopiedId(null),2000); }} className="text-xs text-stone-400 hover:text-violet-500 font-bold">{copiedId===s.id ? '✓ Copied' : 'Copy'}</button>
+            <button onClick={() => { navigator.clipboard.writeText(s.body); setCopiedId(s.id); setTimeout(()=>setCopiedId(null),2000); }} className="text-xs text-stone-400 hover:text-rose-500 font-bold">{copiedId===s.id ? '✓ Copied' : 'Copy'}</button>
             <button onClick={() => { if(confirm('Delete?')) deleteItem(s.id); }} className="text-xs text-stone-400 hover:text-red-500 font-bold">Delete</button>
           </div>
         </div>
@@ -1118,7 +1107,7 @@ const PollEngagementCreator = ({ bizName, bizType, bizDesc }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [copied, setCopied] = useState(false);
-  const { sorted: saves, saveItem, togglePin, deleteItem } = usePlannerSaves(`kreativelync-planner-polls-${bizName}`);
+  const { sorted: saves, saveItem, togglePin, deleteItem } = usePlannerSaves(`faith-planner-polls-${bizName}`);
 
   const pollTypes = [
     { id: 'poll', label: '📊 Instagram Poll', desc: 'Yes/No or A vs B poll for Stories' },
@@ -1205,7 +1194,7 @@ Make it specific to ${bizName}'s audience and niche. Not generic — this should
       <p className="text-xs text-stone-400">Create polls, quizzes, debate posts, and carousels that drive real engagement — not just likes.</p>
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
         {pollTypes.map(pt => (
-          <button key={pt.id} onClick={() => setPollType(pt.id)} className={`p-3 rounded-xl border-2 text-left transition-all ${pollType === pt.id ? 'border-violet-500 bg-violet-50 dark:bg-rose-900/20' : 'border-stone-200 dark:border-stone-600 hover:border-violet-300'}`}>
+          <button key={pt.id} onClick={() => setPollType(pt.id)} className={`p-3 rounded-xl border-2 text-left transition-all ${pollType === pt.id ? 'border-rose-500 bg-rose-50 dark:bg-rose-900/20' : 'border-stone-200 dark:border-stone-600 hover:border-rose-300'}`}>
             <p className="font-bold text-xs text-stone-800 dark:text-stone-100">{pt.label}</p>
             <p className="text-xs text-stone-400 mt-0.5">{pt.desc}</p>
           </button>
@@ -1213,7 +1202,7 @@ Make it specific to ${bizName}'s audience and niche. Not generic — this should
       </div>
       <div className="flex gap-2">
         <input value={topic} onChange={e => setTopic(e.target.value)} onKeyDown={e => e.key === 'Enter' && generate()} placeholder={`Topic for your ${pollTypes.find(p=>p.id===pollType)?.label}…`} className="flex-1 bg-stone-50 dark:bg-stone-700 border border-stone-200 dark:border-stone-600 rounded-xl px-4 py-2 text-sm" />
-        <button onClick={generate} disabled={loading || !topic.trim()} className="px-5 py-2 bg-violet-500 text-white rounded-xl font-bold text-sm disabled:opacity-50 hover:bg-violet-600 whitespace-nowrap">
+        <button onClick={generate} disabled={loading || !topic.trim()} className="px-5 py-2 bg-rose-500 text-white rounded-xl font-bold text-sm disabled:opacity-50 hover:bg-rose-600 whitespace-nowrap">
           {loading ? <Loader2 size={14} className="animate-spin" /> : 'Generate ✨'}
         </button>
       </div>
@@ -1221,10 +1210,10 @@ Make it specific to ${bizName}'s audience and niche. Not generic — this should
       {result && (
         <div className="p-4 rounded-2xl bg-stone-50 dark:bg-stone-700/40 border border-stone-200 dark:border-stone-600 space-y-2">
           <div className="flex items-center justify-between flex-wrap gap-2">
-            <p className="text-xs font-bold text-violet-500 uppercase">Your {pollTypes.find(p=>p.id===pollType)?.label}</p>
+            <p className="text-xs font-bold text-rose-500 uppercase">Your {pollTypes.find(p=>p.id===pollType)?.label}</p>
             <div className="flex gap-2">
               <button onClick={() => saveItem(`${pollTypes.find(p=>p.id===pollType)?.label}: ${topic}`, result)} className="text-xs text-violet-500 font-bold hover:text-violet-700">📌 Save</button>
-              <button onClick={() => { navigator.clipboard.writeText(result); setCopied(true); setTimeout(()=>setCopied(false),2000); }} className="text-xs text-violet-500 font-bold">{copied ? '✓ Copied' : 'Copy all'}</button>
+              <button onClick={() => { navigator.clipboard.writeText(result); setCopied(true); setTimeout(()=>setCopied(false),2000); }} className="text-xs text-rose-500 font-bold">{copied ? '✓ Copied' : 'Copy all'}</button>
             </div>
           </div>
           <p className="text-sm text-stone-700 dark:text-stone-200 whitespace-pre-wrap leading-relaxed">{result}</p>
@@ -1243,7 +1232,7 @@ const PodcastPlanner = ({ bizName, bizType, bizDesc }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [copied, setCopied] = useState(false);
-  const { sorted: saves, saveItem, togglePin, deleteItem } = usePlannerSaves(`kreativelync-planner-podcast-${bizName}`);
+  const { sorted: saves, saveItem, togglePin, deleteItem } = usePlannerSaves(`faith-planner-podcast-${bizName}`);
 
   const modes = [
     { id: 'episode', label: '🎙️ Episode Plan', desc: 'Full episode structure & talking points' },
@@ -1278,7 +1267,7 @@ SEGMENT 1 — [title]: [talking points and key ideas]
 SEGMENT 2 — [title]: [talking points and key ideas]
 SEGMENT 3 — [title]: [talking points and key ideas]
 LISTENER ACTION (CTA): [what you want listeners to do by end of episode]
-OUTRO: [how to close — subscribe ask, next episode tease, closing CTA]
+OUTRO: [how to close — subscribe ask, next episode tease, prayer/blessing if faith-based]
 GUEST ANGLE: [would a guest work? Who type? What questions to ask?]
 EPISODE LENGTH SUGGESTION: [recommended runtime and why]` :
 
@@ -1367,7 +1356,7 @@ YOUTUBE DESCRIPTION INTRO: [first 3 sentences for YouTube description]`
             <p className="text-xs font-bold text-emerald-600 uppercase">{modes.find(m=>m.id===planMode)?.label}</p>
             <div className="flex gap-2">
               <button onClick={() => saveItem(`${modes.find(m=>m.id===planMode)?.label}: ${topic}`, result)} className="text-xs text-violet-500 font-bold hover:text-violet-700">📌 Save</button>
-              <button onClick={() => { navigator.clipboard.writeText(result); setCopied(true); setTimeout(()=>setCopied(false),2000); }} className="text-xs text-violet-500 font-bold">{copied ? '✓ Copied' : 'Copy all'}</button>
+              <button onClick={() => { navigator.clipboard.writeText(result); setCopied(true); setTimeout(()=>setCopied(false),2000); }} className="text-xs text-rose-500 font-bold">{copied ? '✓ Copied' : 'Copy all'}</button>
             </div>
           </div>
           <p className="text-sm text-stone-700 dark:text-stone-200 whitespace-pre-wrap leading-relaxed">{result}</p>
@@ -1386,7 +1375,7 @@ const SEOPlanner = ({ bizName, bizType, bizDesc }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [copied, setCopied] = useState(false);
-  const { sorted: saves, saveItem, togglePin, deleteItem } = usePlannerSaves(`kreativelync-planner-seo-${bizName}`);
+  const { sorted: saves, saveItem, togglePin, deleteItem } = usePlannerSaves(`faith-planner-seo-${bizName}`);
 
   const modes = [
     { id: 'keywords', label: '🔑 Keywords', desc: 'Find what your audience is searching for' },
@@ -1523,7 +1512,7 @@ CONTENT TO CREATE FIRST:
       </div>
       <p className="text-xs text-stone-400">{modes.find(m=>m.id===seoMode)?.desc}</p>
       <div className="flex gap-2">
-        <input value={topic} onChange={e => setTopic(e.target.value)} onKeyDown={e => e.key === 'Enter' && generate()} placeholder={seoMode === 'competitor' ? 'Your niche/market (e.g. "small business coaching")' : 'Topic or keyword to research…'} className="flex-1 bg-stone-50 dark:bg-stone-700 border border-stone-200 dark:border-stone-600 rounded-xl px-4 py-2 text-sm" />
+        <input value={topic} onChange={e => setTopic(e.target.value)} onKeyDown={e => e.key === 'Enter' && generate()} placeholder={seoMode === 'competitor' ? 'Your niche/market (e.g. "faith-based financial coaching")' : 'Topic or keyword to research…'} className="flex-1 bg-stone-50 dark:bg-stone-700 border border-stone-200 dark:border-stone-600 rounded-xl px-4 py-2 text-sm" />
         <button onClick={generate} disabled={loading || !topic.trim()} className="px-5 py-2 bg-indigo-500 text-white rounded-xl font-bold text-sm disabled:opacity-50 hover:bg-indigo-600 whitespace-nowrap">
           {loading ? <Loader2 size={14} className="animate-spin" /> : 'Analyse ✨'}
         </button>
@@ -1535,7 +1524,7 @@ CONTENT TO CREATE FIRST:
             <p className="text-xs font-bold text-indigo-600 uppercase">{modes.find(m=>m.id===seoMode)?.label} Results</p>
             <div className="flex gap-2">
               <button onClick={() => saveItem(`${modes.find(m=>m.id===seoMode)?.label}: ${topic}`, result)} className="text-xs text-violet-500 font-bold hover:text-violet-700">📌 Save</button>
-              <button onClick={() => { navigator.clipboard.writeText(result); setCopied(true); setTimeout(()=>setCopied(false),2000); }} className="text-xs text-violet-500 font-bold">{copied ? '✓ Copied' : 'Copy all'}</button>
+              <button onClick={() => { navigator.clipboard.writeText(result); setCopied(true); setTimeout(()=>setCopied(false),2000); }} className="text-xs text-rose-500 font-bold">{copied ? '✓ Copied' : 'Copy all'}</button>
             </div>
           </div>
           <p className="text-sm text-stone-700 dark:text-stone-200 whitespace-pre-wrap leading-relaxed">{result}</p>
@@ -1555,7 +1544,7 @@ const VideoPlanner = ({ bizName, bizType, bizDesc }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [copied, setCopied] = useState(false);
-  const { sorted: saves, saveItem, togglePin, deleteItem } = usePlannerSaves(`kreativelync-planner-video-${bizName}`);
+  const { sorted: saves, saveItem, togglePin, deleteItem } = usePlannerSaves(`faith-planner-video-${bizName}`);
 
   const modes = [
     { id: 'plan', label: '🎬 Full Video Plan', desc: 'Shot list, talking points, B-roll, hook, outfit, setup' },
@@ -1702,7 +1691,7 @@ QUICK CHECKLIST BEFORE FILMING:
       </div>
       <div className="flex gap-2 flex-wrap">
         {modes.map(m => (
-          <button key={m.id} onClick={() => { setVideoMode(m.id); setResult(null); }} className={`px-3 py-1.5 rounded-xl text-sm font-bold border transition-all ${videoMode === m.id ? 'bg-violet-500 text-white border-violet-500' : 'bg-stone-50 dark:bg-stone-700 border-stone-200 dark:border-stone-600 text-stone-600 dark:text-stone-300 hover:border-violet-300'}`}>{m.label}</button>
+          <button key={m.id} onClick={() => { setVideoMode(m.id); setResult(null); }} className={`px-3 py-1.5 rounded-xl text-sm font-bold border transition-all ${videoMode === m.id ? 'bg-rose-500 text-white border-rose-500' : 'bg-stone-50 dark:bg-stone-700 border-stone-200 dark:border-stone-600 text-stone-600 dark:text-stone-300 hover:border-rose-300'}`}>{m.label}</button>
         ))}
       </div>
       <p className="text-xs text-stone-400">{modes.find(m=>m.id===videoMode)?.desc}</p>
@@ -1714,7 +1703,7 @@ QUICK CHECKLIST BEFORE FILMING:
       </div>
       <div className="flex gap-2">
         <input value={topic} onChange={e => setTopic(e.target.value)} onKeyDown={e => e.key === 'Enter' && generate()} placeholder="What is this video about? (e.g. 'trusting God through financial stress')" className="flex-1 bg-stone-50 dark:bg-stone-700 border border-stone-200 dark:border-stone-600 rounded-xl px-4 py-2 text-sm" />
-        <button onClick={generate} disabled={loading || !topic.trim()} className="px-5 py-2 bg-violet-500 text-white rounded-xl font-bold text-sm disabled:opacity-50 hover:bg-violet-600 whitespace-nowrap">
+        <button onClick={generate} disabled={loading || !topic.trim()} className="px-5 py-2 bg-rose-500 text-white rounded-xl font-bold text-sm disabled:opacity-50 hover:bg-rose-600 whitespace-nowrap">
           {loading ? <Loader2 size={14} className="animate-spin" /> : 'Plan It ✨'}
         </button>
       </div>
@@ -1722,10 +1711,10 @@ QUICK CHECKLIST BEFORE FILMING:
       {result && (
         <div className="p-4 rounded-2xl bg-stone-50 dark:bg-stone-700/40 border border-stone-200 dark:border-stone-600 space-y-2">
           <div className="flex items-center justify-between flex-wrap gap-2">
-            <p className="text-xs font-bold text-violet-600 uppercase">{modes.find(m=>m.id===videoMode)?.label} — {platforms.find(p=>p.id===platform)?.label}</p>
+            <p className="text-xs font-bold text-rose-600 uppercase">{modes.find(m=>m.id===videoMode)?.label} — {platforms.find(p=>p.id===platform)?.label}</p>
             <div className="flex gap-2">
               <button onClick={() => saveItem(`${modes.find(m=>m.id===videoMode)?.label}: ${topic}`, result)} className="text-xs text-violet-500 font-bold hover:text-violet-700">📌 Save</button>
-              <button onClick={() => { navigator.clipboard.writeText(result); setCopied(true); setTimeout(()=>setCopied(false),2000); }} className="text-xs text-violet-500 font-bold">{copied ? '✓ Copied' : 'Copy all'}</button>
+              <button onClick={() => { navigator.clipboard.writeText(result); setCopied(true); setTimeout(()=>setCopied(false),2000); }} className="text-xs text-rose-500 font-bold">{copied ? '✓ Copied' : 'Copy all'}</button>
             </div>
           </div>
           <p className="text-sm text-stone-700 dark:text-stone-200 whitespace-pre-wrap leading-relaxed">{result}</p>
@@ -1755,7 +1744,7 @@ const ProContentToolkit = () => {
 
   // Per-brand chat history, persisted to localStorage
   const [chatHistories, setChatHistories] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('kreativelync-chat-histories') || '{}'); } catch { return {}; }
+    try { return JSON.parse(localStorage.getItem('faith-studio-chat-histories') || '{}'); } catch { return {}; }
   });
   const chatHistory = chatHistories[activeBusinessId] || [];
   const setChatHistory = (updater) => {
@@ -1763,7 +1752,7 @@ const ProContentToolkit = () => {
       const current = prev[activeBusinessId] || [];
       const next = typeof updater === 'function' ? updater(current) : updater;
       const updated = { ...prev, [activeBusinessId]: next };
-      try { localStorage.setItem('kreativelync-chat-histories', JSON.stringify(updated)); } catch (_) {}
+      try { localStorage.setItem('faith-studio-chat-histories', JSON.stringify(updated)); } catch (_) {}
       return updated;
     });
   };
@@ -1775,12 +1764,12 @@ const ProContentToolkit = () => {
 
   // Notes — saved per brand
   const [notes, setNotes] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('kreativelync-notes') || '{}'); } catch { return {}; }
+    try { return JSON.parse(localStorage.getItem('faith-studio-notes') || '{}'); } catch { return {}; }
   });
   const brandNotes = (notes[activeBusinessId] || []).sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0) || b.createdAt - a.createdAt);
   const saveNotes = (updatedMap) => {
     setNotes(updatedMap);
-    try { localStorage.setItem('kreativelync-notes', JSON.stringify(updatedMap)); } catch (_) {}
+    try { localStorage.setItem('faith-studio-notes', JSON.stringify(updatedMap)); } catch (_) {}
   };
   const addNote = (note) => {
     const list = notes[activeBusinessId] || [];
@@ -1810,9 +1799,9 @@ const ProContentToolkit = () => {
   // Reload roadmap + history from localStorage whenever the active brand changes
   useEffect(() => {
     try {
-      const saved = localStorage.getItem(`kreativelync-roadmap-${activeBusinessId}`);
+      const saved = localStorage.getItem(`faith-roadmap-${activeBusinessId}`);
       setRoadmapResult(saved ? JSON.parse(saved) : null);
-      const hist = localStorage.getItem(`kreativelync-roadmap-history-${activeBusinessId}`);
+      const hist = localStorage.getItem(`faith-roadmap-history-${activeBusinessId}`);
       setRoadmapHistory(hist ? JSON.parse(hist) : []);
     } catch { setRoadmapResult(null); setRoadmapHistory([]); }
     setRoadmapError('');
@@ -1825,8 +1814,8 @@ const ProContentToolkit = () => {
     const hist = [...roadmapHistory, dataWithDate].slice(-5);
     setRoadmapHistory(hist);
     try {
-      localStorage.setItem(`kreativelync-roadmap-${activeBusinessId}`, JSON.stringify(dataWithDate));
-      localStorage.setItem(`kreativelync-roadmap-history-${activeBusinessId}`, JSON.stringify(hist));
+      localStorage.setItem(`faith-roadmap-${activeBusinessId}`, JSON.stringify(dataWithDate));
+      localStorage.setItem(`faith-roadmap-history-${activeBusinessId}`, JSON.stringify(hist));
     } catch (_) {}
   };
 
@@ -1907,7 +1896,7 @@ const ProContentToolkit = () => {
       <BrandKitReminder compact />
 
       {/* Header */}
-      <div className="bg-gradient-to-br from-violet-50 to-amber-50 dark:from-stone-800 dark:to-stone-800 border-2 border-violet-200 dark:border-rose-800 rounded-3xl p-6">
+      <div className="bg-gradient-to-br from-rose-50 to-amber-50 dark:from-stone-800 dark:to-stone-800 border-2 border-rose-200 dark:border-rose-800 rounded-3xl p-6">
         <h2 className="text-2xl font-bold text-stone-800 dark:text-stone-100 mb-1">✨ AI Content Studio</h2>
         <p className="text-stone-500 dark:text-stone-400 text-sm">Your personal content coach. Get scripts, ideas, captions, and a weekly plan — powered by AI.</p>
       </div>
@@ -1915,18 +1904,18 @@ const ProContentToolkit = () => {
       {/* Mode tabs */}
       <div className="flex gap-2 flex-wrap">
         {[['roadmap','🗺️ Roadmap'],['ideas','💡 Ideas'],['script','🎬 Script'],['caption','✍️ Caption'],['calendar','📅 Weekly Plan'],['video-planner','🎥 Video Planner'],['poll','📊 Polls & Engagement'],['podcast','🎙️ Podcast Planner'],['seo','🔍 SEO & Keywords'],['review','✅ Review Before Post'],['chat','💬 Ask AI'],['notes','📌 Notes & Journal'],['guides','🎓 App Guides']].map(([mode, label]) => (
-          <button key={mode} onClick={() => { setAiMode(mode); setAiResult(null); setAiError(''); }} className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${aiMode === mode ? 'bg-violet-500 text-white shadow' : 'bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 text-stone-600 dark:text-stone-300 hover:border-violet-300'}`}>{label}</button>
+          <button key={mode} onClick={() => { setAiMode(mode); setAiResult(null); setAiError(''); }} className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${aiMode === mode ? 'bg-rose-500 text-white shadow' : 'bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 text-stone-600 dark:text-stone-300 hover:border-rose-300'}`}>{label}</button>
         ))}
       </div>
 
       {/* Review mode */}
       {aiMode === 'review' && (
-        <div className="bg-white dark:bg-stone-800 border border-violet-100 dark:border-stone-700 rounded-3xl p-6 space-y-4">
-          <h3 className="font-bold text-stone-800 dark:text-stone-100 flex items-center gap-2"><Search size={18} className="text-violet-400" /> Review before you post</h3>
+        <div className="bg-white dark:bg-stone-800 border border-rose-100 dark:border-stone-700 rounded-3xl p-6 space-y-4">
+          <h3 className="font-bold text-stone-800 dark:text-stone-100 flex items-center gap-2"><Search size={18} className="text-rose-400" /> Review before you post</h3>
           <p className="text-xs text-stone-500">AI will score your content, find weaknesses, and tell you exactly what to fix before you hit publish.</p>
           <div className="flex gap-2 flex-wrap">
             {[['caption','📝 Caption'],['script','🎬 Script'],['idea','💡 Idea'],['thumbnail','🖼️ Image/Thumbnail'],['video','🎬 Video (frame)']].map(([t,l]) => (
-              <button key={t} onClick={() => { setTopic(t); setAiResult(null); setAiError(''); }} className={`px-3 py-1.5 rounded-xl text-sm font-bold border transition-all ${topic===t ? 'bg-violet-500 text-white border-violet-500' : 'bg-stone-50 dark:bg-stone-700 border-stone-200 dark:border-stone-600 text-stone-600 dark:text-stone-300'}`}>{l}</button>
+              <button key={t} onClick={() => { setTopic(t); setAiResult(null); setAiError(''); }} className={`px-3 py-1.5 rounded-xl text-sm font-bold border transition-all ${topic===t ? 'bg-rose-500 text-white border-rose-500' : 'bg-stone-50 dark:bg-stone-700 border-stone-200 dark:border-stone-600 text-stone-600 dark:text-stone-300'}`}>{l}</button>
             ))}
           </div>
           {topic === 'thumbnail' ? (
@@ -2007,7 +1996,7 @@ const ProContentToolkit = () => {
                   if (data.error) throw new Error(data.error);
                   setAiResult(data);
                 } catch (err) { setAiError(err.message); } finally { setAiLoading(false); }
-              }} disabled={aiLoading || !chatInput.trim()} className="px-5 py-2 bg-violet-500 text-white rounded-xl font-bold text-sm disabled:opacity-50 hover:bg-violet-600">
+              }} disabled={aiLoading || !chatInput.trim()} className="px-5 py-2 bg-rose-500 text-white rounded-xl font-bold text-sm disabled:opacity-50 hover:bg-rose-600">
                 {aiLoading ? <><Loader2 size={14} className="animate-spin inline mr-1" />Reviewing…</> : '🔍 Review My Content'}
               </button>
             </div>
@@ -2048,7 +2037,7 @@ const ProContentToolkit = () => {
               )}
               {aiResult.rewrite && (
                 <div className="p-3 rounded-xl bg-violet-50 dark:bg-violet-900/20 border border-violet-200 dark:border-violet-800">
-                  <div className="flex justify-between mb-1"><p className="font-bold text-violet-700 dark:text-violet-400 text-xs">✍️ Improved version</p><button onClick={() => { navigator.clipboard.writeText(aiResult.rewrite); }} className="text-xs text-violet-500">Copy</button></div>
+                  <div className="flex justify-between mb-1"><p className="font-bold text-violet-700 dark:text-violet-400 text-xs">✍️ Improved version</p><button onClick={() => { navigator.clipboard.writeText(aiResult.rewrite); }} className="text-xs text-rose-500">Copy</button></div>
                   <p className="text-xs text-stone-600 dark:text-stone-300 whitespace-pre-wrap">{aiResult.rewrite}</p>
                 </div>
               )}
@@ -2078,9 +2067,9 @@ const ProContentToolkit = () => {
 
       {/* Chat mode */}
       {aiMode === 'chat' && (
-        <div className="bg-white dark:bg-stone-800 border border-violet-100 dark:border-stone-700 rounded-3xl p-6 space-y-4">
+        <div className="bg-white dark:bg-stone-800 border border-rose-100 dark:border-stone-700 rounded-3xl p-6 space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="font-bold text-stone-800 dark:text-stone-100 flex items-center gap-2"><Bot size={18} className="text-violet-400" /> Ask your AI content coach — {bizName}</h3>
+            <h3 className="font-bold text-stone-800 dark:text-stone-100 flex items-center gap-2"><Bot size={18} className="text-rose-400" /> Ask your AI content coach — {bizName}</h3>
             {chatHistory.length > 0 && <button onClick={() => setChatHistory([])} className="text-xs text-stone-400 hover:text-red-400">Clear chat</button>}
           </div>
           <p className="text-xs text-stone-500">Ask anything — "What should I post this week?", "Write me a hook about faith", "How do I grow faster?", "Give me a 30-day content plan"</p>
@@ -2088,7 +2077,7 @@ const ProContentToolkit = () => {
             {chatHistory.length === 0 && <p className="text-center text-stone-400 text-sm pt-8">Start a conversation with your AI coach</p>}
             {chatHistory.map((msg, i) => (
               <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                <div className={`max-w-[85%] px-4 py-2 rounded-2xl text-sm ${msg.role === 'user' ? 'bg-violet-500 text-white' : 'bg-white dark:bg-stone-600 text-stone-700 dark:text-stone-200 border border-stone-200 dark:border-stone-500'}`}>
+                <div className={`max-w-[85%] px-4 py-2 rounded-2xl text-sm ${msg.role === 'user' ? 'bg-rose-500 text-white' : 'bg-white dark:bg-stone-600 text-stone-700 dark:text-stone-200 border border-stone-200 dark:border-stone-500'}`}>
                   {msg.text}
                 </div>
               </div>
@@ -2097,11 +2086,11 @@ const ProContentToolkit = () => {
           </div>
           <div className="flex gap-2">
             <input value={chatInput} onChange={e => setChatInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && !e.shiftKey && sendChat()} placeholder="Ask your AI coach anything…" className="flex-1 bg-stone-50 dark:bg-stone-700 border border-stone-200 dark:border-stone-600 rounded-xl px-4 py-2 text-sm" />
-            <button onClick={sendChat} disabled={aiLoading || !chatInput.trim()} className="px-4 py-2 bg-violet-500 text-white rounded-xl font-bold text-sm disabled:opacity-50 hover:bg-violet-600">Send</button>
+            <button onClick={sendChat} disabled={aiLoading || !chatInput.trim()} className="px-4 py-2 bg-rose-500 text-white rounded-xl font-bold text-sm disabled:opacity-50 hover:bg-rose-600">Send</button>
           </div>
           <div className="flex flex-wrap gap-2">
             {['What should I post this week?','Give me 5 faith Reel ideas','Write a hook about overcoming fear','How do I get more saves?','Give me a 30-day content plan'].map(q => (
-              <button key={q} onClick={() => { setChatInput(q); }} className="text-xs px-3 py-1 bg-violet-50 dark:bg-rose-900/20 text-violet-600 dark:text-violet-400 rounded-lg border border-violet-200 dark:border-rose-800 hover:bg-violet-100">{q}</button>
+              <button key={q} onClick={() => { setChatInput(q); }} className="text-xs px-3 py-1 bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400 rounded-lg border border-rose-200 dark:border-rose-800 hover:bg-rose-100">{q}</button>
             ))}
           </div>
         </div>
@@ -2111,17 +2100,17 @@ const ProContentToolkit = () => {
       {/* Roadmap */}
       {aiMode === 'roadmap' && (
         <div className="space-y-4">
-          <div className="bg-gradient-to-br from-violet-50 to-violet-50 dark:from-stone-800 dark:to-stone-800 border-2 border-violet-200 dark:border-violet-800 rounded-3xl p-6 space-y-3">
+          <div className="bg-gradient-to-br from-violet-50 to-rose-50 dark:from-stone-800 dark:to-stone-800 border-2 border-violet-200 dark:border-violet-800 rounded-3xl p-6 space-y-3">
             <h3 className="text-xl font-bold text-stone-800 dark:text-stone-100">🗺️ Audience-First Content Roadmap</h3>
             <p className="text-sm text-stone-500 dark:text-stone-400">The AI studies your audience data — who they are, what they want, what makes them stop scrolling — then builds a 30-day roadmap around <em>them</em>, not your mood.</p>
             <button onClick={async () => {
               setRoadmapLoading(true); setRoadmapError('');
               try {
                 const brandKey = `brand-${activeBusinessId}`;
-                const igProfileMap = JSON.parse(localStorage.getItem('kreativelync-ig-profile-map') || '{}');
-                const igGrowthMap = JSON.parse(localStorage.getItem('kreativelync-ig-growth-map') || '{}');
-                const igAudienceMap = JSON.parse(localStorage.getItem('kreativelync-ig-audience-map') || '{}');
-                const allPosts = JSON.parse(localStorage.getItem('kreativelync-posts') || '[]');
+                const igProfileMap = JSON.parse(localStorage.getItem('faith-studio-ig-profile-map') || '{}');
+                const igGrowthMap = JSON.parse(localStorage.getItem('faith-studio-ig-growth-map') || '{}');
+                const igAudienceMap = JSON.parse(localStorage.getItem('faith-studio-ig-audience-map') || '{}');
+                const allPosts = JSON.parse(localStorage.getItem('faith-studio-posts') || '[]');
                 const bizPosts = allPosts.filter(p => p.businessId === activeBusinessId || p.source === 'instagram_api');
                 // Build history summary for the AI to learn from
                 const prevHistory = roadmapHistory.slice(-3).map((r, i) => ({
@@ -2154,7 +2143,7 @@ const ProContentToolkit = () => {
                 saveRoadmap(data);
               } catch (e) { setRoadmapError(e.message || 'Failed to generate roadmap'); }
               finally { setRoadmapLoading(false); }
-            }} data-roadmap-generate disabled={roadmapLoading} className="px-6 py-3 bg-gradient-to-r from-violet-500 to-violet-500 text-white rounded-2xl font-bold text-sm hover:opacity-90 disabled:opacity-50 flex items-center gap-2">
+            }} data-roadmap-generate disabled={roadmapLoading} className="px-6 py-3 bg-gradient-to-r from-violet-500 to-rose-500 text-white rounded-2xl font-bold text-sm hover:opacity-90 disabled:opacity-50 flex items-center gap-2">
               {roadmapLoading ? <><Loader2 size={16} className="animate-spin" /> Building your roadmap…</> : roadmapResult ? '🔄 Regenerate with latest data' : '✨ Build My 30-Day Roadmap'}
             </button>
             {roadmapError && <p className="text-sm text-red-500">{roadmapError}</p>}
@@ -2185,7 +2174,7 @@ const ProContentToolkit = () => {
               {roadmapResult.audiencePersona && (
                 <div className="bg-white dark:bg-stone-800 border border-stone-100 dark:border-stone-700 rounded-2xl p-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <p className="text-xs font-bold text-violet-500 uppercase mb-1">Who they are</p>
+                    <p className="text-xs font-bold text-rose-500 uppercase mb-1">Who they are</p>
                     <p className="text-xs text-stone-600 dark:text-stone-300">{roadmapResult.audiencePersona.who}</p>
                   </div>
                   <div>
@@ -2215,7 +2204,7 @@ const ProContentToolkit = () => {
                           <span className="text-xs font-bold text-violet-500">{p.percentage}</span>
                         </div>
                         <p className="text-xs text-stone-500 dark:text-stone-400 mb-2">{p.why}</p>
-                        <div className="flex flex-wrap gap-1">{(p.exampleTopics||[]).map((t,j) => <span key={j} className="text-xs px-2 py-0.5 bg-violet-50 dark:bg-rose-900/20 text-violet-600 dark:text-violet-400 rounded-lg">{t}</span>)}</div>
+                        <div className="flex flex-wrap gap-1">{(p.exampleTopics||[]).map((t,j) => <span key={j} className="text-xs px-2 py-0.5 bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400 rounded-lg">{t}</span>)}</div>
                       </div>
                     ))}
                   </div>
@@ -2285,12 +2274,12 @@ ${bizType === 'business' ? '8. SALES/MARKETING ANGLE (how this post moves people
                           return (
                           <div key={pi} className={`rounded-xl border ${isHS ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800' : 'bg-stone-50 dark:bg-stone-700/40 border-stone-200 dark:border-stone-600'}`}>
                             <div className="flex gap-3 p-3">
-                              <span className="text-xs font-bold text-violet-500 w-8 shrink-0 pt-0.5">{post.day}</span>
+                              <span className="text-xs font-bold text-rose-500 w-8 shrink-0 pt-0.5">{post.day}</span>
                               <div className="flex-1">
                                 <div className="flex items-center gap-2 mb-0.5 flex-wrap">
                                   <span className="text-xs font-bold text-stone-700 dark:text-stone-200">{post.topic}</span>
                                   <span className="text-xs text-stone-400 bg-stone-100 dark:bg-stone-600 px-2 py-0.5 rounded-full">{post.type}</span>
-                                  {post.brand && <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${isHS ? 'bg-emerald-100 dark:bg-emerald-800 text-emerald-700 dark:text-emerald-300' : 'bg-violet-100 dark:bg-rose-900 text-violet-600 dark:text-rose-300'}`}>{post.brand}</span>}
+                                  {post.brand && <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${isHS ? 'bg-emerald-100 dark:bg-emerald-800 text-emerald-700 dark:text-emerald-300' : 'bg-rose-100 dark:bg-rose-900 text-rose-600 dark:text-rose-300'}`}>{post.brand}</span>}
                                 </div>
                                 <p className="text-xs text-amber-600 dark:text-amber-400 mb-1">Hook: "{post.hook}"</p>
                                 <p className="text-xs text-stone-500 dark:text-stone-400 mb-2">Why it works: {post.audienceWhy}</p>
@@ -2303,7 +2292,7 @@ ${bizType === 'business' ? '8. SALES/MARKETING ANGLE (how this post moves people
                               <div className="border-t border-stone-200 dark:border-stone-600 p-4 space-y-2">
                                 <div className="flex items-center justify-between mb-2">
                                   <p className="text-xs font-bold text-violet-600 uppercase">Full Content Brief</p>
-                                  <button onClick={() => navigator.clipboard.writeText(brief)} className="text-xs text-violet-500 font-bold">Copy all</button>
+                                  <button onClick={() => navigator.clipboard.writeText(brief)} className="text-xs text-rose-500 font-bold">Copy all</button>
                                 </div>
                                 <p className="text-xs text-stone-700 dark:text-stone-200 whitespace-pre-wrap leading-relaxed">{brief}</p>
                               </div>
@@ -2328,16 +2317,16 @@ ${bizType === 'business' ? '8. SALES/MARKETING ANGLE (how this post moves people
                   </div>
                 )}
                 {roadmapResult.viralOpportunity && (
-                  <div className="bg-violet-50 dark:bg-rose-900/20 border border-violet-200 dark:border-rose-800 rounded-2xl p-4">
-                    <p className="text-xs font-bold text-violet-600 uppercase mb-1">🔥 Highest Viral Opportunity Now</p>
+                  <div className="bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800 rounded-2xl p-4">
+                    <p className="text-xs font-bold text-rose-600 uppercase mb-1">🔥 Highest Viral Opportunity Now</p>
                     <p className="text-sm text-stone-700 dark:text-stone-200">{roadmapResult.viralOpportunity}</p>
                   </div>
                 )}
               </div>
 
               <div className="flex items-center gap-3 pt-2">
-                <button onClick={() => document.querySelector('[data-roadmap-generate]')?.click()} className="px-4 py-2 bg-gradient-to-r from-violet-500 to-violet-500 text-white rounded-xl font-bold text-sm hover:opacity-90">🔄 Regenerate with latest data</button>
-                <button onClick={() => { setRoadmapResult(null); localStorage.removeItem(`kreativelync-roadmap-${activeBusinessId}`); }} className="text-xs text-stone-400 hover:text-red-400">Clear roadmap</button>
+                <button onClick={() => document.querySelector('[data-roadmap-generate]')?.click()} className="px-4 py-2 bg-gradient-to-r from-violet-500 to-rose-500 text-white rounded-xl font-bold text-sm hover:opacity-90">🔄 Regenerate with latest data</button>
+                <button onClick={() => { setRoadmapResult(null); localStorage.removeItem(`faith-roadmap-${activeBusinessId}`); }} className="text-xs text-stone-400 hover:text-red-400">Clear roadmap</button>
               </div>
             </div>
           )}
@@ -2348,7 +2337,7 @@ ${bizType === 'business' ? '8. SALES/MARKETING ANGLE (how this post moves people
       {aiMode === 'notes' && (
         <div className="space-y-4">
           {/* New note form */}
-          <div className="bg-white dark:bg-stone-800 border border-violet-100 dark:border-stone-700 rounded-3xl p-6 space-y-3">
+          <div className="bg-white dark:bg-stone-800 border border-rose-100 dark:border-stone-700 rounded-3xl p-6 space-y-3">
             <h3 className="font-bold text-stone-800 dark:text-stone-100 flex items-center gap-2">📌 New Note — {bizName}</h3>
             <p className="text-xs text-stone-400">Journal your ideas, track what worked, plan your next video. Pinned notes stay at the top.</p>
             <input value={newNoteTitle} onChange={e => setNewNoteTitle(e.target.value)} placeholder="Title (e.g. 'Reel idea — faith over fear')" className="w-full bg-stone-50 dark:bg-stone-700 border border-stone-200 dark:border-stone-600 rounded-xl px-4 py-2 text-sm" />
@@ -2358,7 +2347,7 @@ ${bizType === 'business' ? '8. SALES/MARKETING ANGLE (how this post moves people
               if (!newNoteBody.trim() && !newNoteTitle.trim()) return;
               addNote({ id: Date.now().toString(), title: newNoteTitle.trim(), body: newNoteBody.trim(), video: newNoteVideo.trim(), pinned: false, createdAt: Date.now() });
               setNewNoteTitle(''); setNewNoteBody(''); setNewNoteVideo('');
-            }} className="px-5 py-2 bg-violet-500 text-white rounded-xl font-bold text-sm hover:bg-violet-600">Save Note</button>
+            }} className="px-5 py-2 bg-rose-500 text-white rounded-xl font-bold text-sm hover:bg-rose-600">Save Note</button>
           </div>
 
           {/* Notes list */}
@@ -2380,7 +2369,7 @@ ${bizType === 'business' ? '8. SALES/MARKETING ANGLE (how this post moves people
                         video: document.getElementById(`edit-video-${note.id}`).value,
                       });
                       setEditingNoteId(null);
-                    }} className="px-4 py-1.5 bg-violet-500 text-white rounded-xl text-xs font-bold hover:bg-violet-600">Save</button>
+                    }} className="px-4 py-1.5 bg-rose-500 text-white rounded-xl text-xs font-bold hover:bg-rose-600">Save</button>
                     <button onClick={() => setEditingNoteId(null)} className="px-4 py-1.5 bg-stone-100 dark:bg-stone-700 text-stone-600 dark:text-stone-300 rounded-xl text-xs font-bold">Cancel</button>
                   </div>
                 </div>
@@ -2390,14 +2379,14 @@ ${bizType === 'business' ? '8. SALES/MARKETING ANGLE (how this post moves people
                     <div>
                       {note.pinned && <span className="text-xs text-amber-500 font-bold mr-2">📌 Pinned</span>}
                       {note.title && <span className="font-bold text-stone-800 dark:text-stone-100">{note.title}</span>}
-                      {note.video && <p className="text-xs text-violet-400 mt-0.5">🎬 {note.video}</p>}
+                      {note.video && <p className="text-xs text-rose-400 mt-0.5">🎬 {note.video}</p>}
                     </div>
                     <p className="text-xs text-stone-400 shrink-0">{new Date(note.createdAt).toLocaleDateString()}</p>
                   </div>
                   <p className="text-sm text-stone-600 dark:text-stone-300 whitespace-pre-wrap">{note.body}</p>
                   <div className="flex gap-3 mt-3 pt-3 border-t border-stone-100 dark:border-stone-700">
                     <button onClick={() => updateNote(note.id, { pinned: !note.pinned })} className={`text-xs font-bold ${note.pinned ? 'text-amber-500' : 'text-stone-400 hover:text-amber-500'}`}>{note.pinned ? 'Unpin' : '📌 Pin'}</button>
-                    <button onClick={() => setEditingNoteId(note.id)} className="text-xs text-stone-400 hover:text-violet-500 font-bold">Edit</button>
+                    <button onClick={() => setEditingNoteId(note.id)} className="text-xs text-stone-400 hover:text-rose-500 font-bold">Edit</button>
                     <button onClick={() => { if (confirm('Delete this note?')) deleteNote(note.id); }} className="text-xs text-stone-400 hover:text-red-500 font-bold">Delete</button>
                   </div>
                 </>
@@ -2412,7 +2401,7 @@ ${bizType === 'business' ? '8. SALES/MARKETING ANGLE (how this post moves people
         <div className="space-y-4">
           <div className="bg-gradient-to-br from-indigo-50 to-violet-50 dark:from-stone-800 dark:to-stone-800 border-2 border-indigo-200 dark:border-indigo-800 rounded-3xl p-6">
             <h3 className="text-xl font-bold text-stone-800 dark:text-stone-100 mb-1">🎓 Creator Tools Quick Guide</h3>
-            <p className="text-sm text-stone-500">Your cheat sheet for CapCut, Lightroom & Canva. Ask the AI coach anything more specific.</p>
+            <p className="text-sm text-stone-500">Your cheat sheet for DaVinci Resolve, Lightroom & Canva. Ask the AI coach anything more specific.</p>
           </div>
 
           {/* DaVinci Resolve */}
@@ -2462,7 +2451,7 @@ ${bizType === 'business' ? '8. SALES/MARKETING ANGLE (how this post moves people
                 { step: '8. Export for Instagram', detail: 'Tap Share → Export as JPEG → Quality 100% → Color Space sRGB → Long Edge 1080px (portrait: 1080x1350). This is the perfect Instagram size.' },
               ].map((item, i) => (
                 <div key={i} className="flex gap-3 p-3 rounded-xl bg-stone-50 dark:bg-stone-700/40">
-                  <span className="text-xs font-bold text-violet-400 shrink-0 pt-0.5 w-4">{i+1}</span>
+                  <span className="text-xs font-bold text-rose-400 shrink-0 pt-0.5 w-4">{i+1}</span>
                   <div>
                     <p className="font-semibold text-stone-800 dark:text-stone-100 text-sm">{item.step}</p>
                     <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5">{item.detail}</p>
@@ -2496,8 +2485,8 @@ ${bizType === 'business' ? '8. SALES/MARKETING ANGLE (how this post moves people
             </div>
           </div>
 
-          <div className="bg-violet-50 dark:bg-rose-900/20 border border-violet-200 dark:border-rose-800 rounded-2xl p-4">
-            <p className="text-sm font-bold text-violet-600 dark:text-violet-400 mb-1">💬 Ask the AI anything more specific</p>
+          <div className="bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800 rounded-2xl p-4">
+            <p className="text-sm font-bold text-rose-600 dark:text-rose-400 mb-1">💬 Ask the AI anything more specific</p>
             <p className="text-xs text-stone-500">Go to Ask AI tab and say things like: "How do I add subtitles in DaVinci?", "How do I make my skin look natural in Lightroom?", "How do I create a Reel cover template in Canva?" — it will walk you through it step by step.</p>
           </div>
         </div>
@@ -2524,12 +2513,12 @@ ${bizType === 'business' ? '8. SALES/MARKETING ANGLE (how this post moves people
       )}
 
       {aiMode !== 'chat' && aiMode !== 'notes' && aiMode !== 'roadmap' && aiMode !== 'guides' && aiMode !== 'poll' && aiMode !== 'podcast' && aiMode !== 'seo' && aiMode !== 'video-planner' && (
-        <div className="bg-white dark:bg-stone-800 border border-violet-100 dark:border-stone-700 rounded-3xl p-6 space-y-4">
+        <div className="bg-white dark:bg-stone-800 border border-rose-100 dark:border-stone-700 rounded-3xl p-6 space-y-4">
           {aiMode === 'ideas' && <>
             <h3 className="font-bold text-stone-800 dark:text-stone-100">💡 Content Ideas Generator</h3>
             <p className="text-xs text-stone-500">Enter a topic or pick one below — get hooks, caption, hashtags, and posting tips instantly.</p>
             <div className="flex flex-wrap gap-2">
-              {QUICK_IDEAS.map(q => <button key={q} onClick={() => setTopic(q)} className={`text-xs px-3 py-1 rounded-lg border transition-all ${topic===q ? 'bg-violet-500 text-white border-violet-500' : 'bg-violet-50 dark:bg-rose-900/20 text-violet-600 dark:text-violet-400 border-violet-200 dark:border-rose-800 hover:bg-violet-100'}`}>{q}</button>)}
+              {QUICK_IDEAS.map(q => <button key={q} onClick={() => setTopic(q)} className={`text-xs px-3 py-1 rounded-lg border transition-all ${topic===q ? 'bg-rose-500 text-white border-rose-500' : 'bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400 border-rose-200 dark:border-rose-800 hover:bg-rose-100'}`}>{q}</button>)}
             </div>
           </>}
           {aiMode === 'script' && <>
@@ -2549,13 +2538,13 @@ ${bizType === 'business' ? '8. SALES/MARKETING ANGLE (how this post moves people
             <input value={topic} onChange={e => setTopic(e.target.value)} placeholder={aiMode === 'calendar' ? 'Optional: focus theme (e.g. "prayer", "faith & money")' : 'Enter your topic or idea…'} className="flex-1 bg-stone-50 dark:bg-stone-700 border border-stone-200 dark:border-stone-600 rounded-xl px-4 py-2 text-sm" />
             <button onClick={() => {
               const modeDescriptions = {
-                ideas: `Generate content ideas for this topic for a business Instagram creator. Give hooks, caption, hashtags, and posting tip.`,
-                script: `Write a complete Reel script for a business creator with: 1) A strong hook (first 3 seconds), 2) The main story/teaching (30-60 seconds), 3) A clear CTA at the end. Format as: HOOK: ...\n\nSTORY: ...\n\nCTA: ... Put the full script in the "caption" field and tips in "postingTip".`,
-                caption: `Write an Instagram caption with hashtags for this post topic for a small business creator.`,
-                calendar: `Create a 7-day content calendar for a business Instagram creator${topic ? ` focused on: ${topic}` : ''}. For each day give a post idea and hook. Put the full calendar in the "caption" field.`,
+                ideas: `Generate content ideas for this topic for a faith-based Instagram creator. Give hooks, caption, hashtags, and posting tip.`,
+                script: `Write a complete Reel script for a faith-based creator with: 1) A strong hook (first 3 seconds), 2) The main story/teaching (30-60 seconds), 3) A clear CTA at the end. Format as: HOOK: ...\n\nSTORY: ...\n\nCTA: ... Put the full script in the "caption" field and tips in "postingTip".`,
+                caption: `Write an Instagram caption with hashtags for this post topic for a faith-based lifestyle creator.`,
+                calendar: `Create a 7-day content calendar for a faith-based Instagram creator${topic ? ` focused on: ${topic}` : ''}. For each day give a post idea and hook. Put the full calendar in the "caption" field.`,
               };
               callAI(topic || `${aiMode} for ${bizName}`, modeDescriptions[aiMode], aiMode === 'script' ? 'Reel script' : '9:16 Reel');
-            }} disabled={aiLoading} className="px-5 py-2 bg-violet-500 text-white rounded-xl font-bold text-sm disabled:opacity-50 hover:bg-violet-600 whitespace-nowrap">
+            }} disabled={aiLoading} className="px-5 py-2 bg-rose-500 text-white rounded-xl font-bold text-sm disabled:opacity-50 hover:bg-rose-600 whitespace-nowrap">
               {aiLoading ? <Loader2 size={14} className="animate-spin" /> : 'Generate ✨'}
             </button>
           </div>
@@ -2569,20 +2558,20 @@ ${bizType === 'business' ? '8. SALES/MARKETING ANGLE (how this post moves people
                   {aiResult.hooks.map((h, i) => (
                     <div key={i} className="flex items-start justify-between gap-2 mb-2">
                       <p className="text-stone-700 dark:text-stone-200 text-sm flex-1">"{h}"</p>
-                      <button onClick={() => copyText(h, `hook-${i}`)} className="text-xs text-violet-500 shrink-0">{copiedId===`hook-${i}` ? '✓' : 'Copy'}</button>
+                      <button onClick={() => copyText(h, `hook-${i}`)} className="text-xs text-rose-500 shrink-0">{copiedId===`hook-${i}` ? '✓' : 'Copy'}</button>
                     </div>
                   ))}
                 </div>
               )}
               {aiResult.caption && (
                 <div className="p-4 rounded-xl bg-stone-50 dark:bg-stone-700/40 border border-stone-200 dark:border-stone-600">
-                  <div className="flex justify-between mb-2"><p className="font-bold text-stone-700 dark:text-stone-200 text-xs uppercase">📝 Caption / Script</p><button onClick={() => copyText(aiResult.caption, 'cap')} className="text-xs text-violet-500">{copiedId==='cap' ? '✓ Copied' : 'Copy'}</button></div>
+                  <div className="flex justify-between mb-2"><p className="font-bold text-stone-700 dark:text-stone-200 text-xs uppercase">📝 Caption / Script</p><button onClick={() => copyText(aiResult.caption, 'cap')} className="text-xs text-rose-500">{copiedId==='cap' ? '✓ Copied' : 'Copy'}</button></div>
                   <p className="text-stone-600 dark:text-stone-300 text-sm whitespace-pre-wrap">{aiResult.caption}</p>
                 </div>
               )}
               {aiResult.hashtags?.length > 0 && (
                 <div className="p-3 rounded-xl bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
-                  <div className="flex justify-between mb-1"><p className="font-bold text-blue-700 dark:text-blue-400 text-xs uppercase"># Hashtags</p><button onClick={() => copyText(aiResult.hashtags.map(h=>`#${h}`).join(' '), 'tags')} className="text-xs text-violet-500">{copiedId==='tags' ? '✓ Copied' : 'Copy all'}</button></div>
+                  <div className="flex justify-between mb-1"><p className="font-bold text-blue-700 dark:text-blue-400 text-xs uppercase"># Hashtags</p><button onClick={() => copyText(aiResult.hashtags.map(h=>`#${h}`).join(' '), 'tags')} className="text-xs text-rose-500">{copiedId==='tags' ? '✓ Copied' : 'Copy all'}</button></div>
                   <p className="text-blue-600 dark:text-blue-300 text-sm">{aiResult.hashtags.map(h=>`#${h}`).join(' ')}</p>
                 </div>
               )}
@@ -2721,9 +2710,9 @@ const SocialPublisher = () => {
     try {
       const firstPlatform = enabled[0] || 'instagram';
       const title = caption?.split('\n')[0]?.slice(0, 60) || (selectedVideo?.name?.replace(/\.[^.]+$/, '')) || 'Post';
-      const existing = JSON.parse(localStorage.getItem('kreativelync-post-analytics') || '[]');
+      const existing = JSON.parse(localStorage.getItem('faith-studio-post-analytics') || '[]');
       existing.push({ id: 'p' + Date.now(), businessId: activeBusinessId, title, platform: firstPlatform, postedAt: new Date().toISOString().slice(0, 10), views: 0, likes: 0, comments: 0, shares: 0, saves: 0, notes: '', autoLogged: true });
-      localStorage.setItem('kreativelync-post-analytics', JSON.stringify(existing));
+      localStorage.setItem('faith-studio-post-analytics', JSON.stringify(existing));
     } catch (_) {}
     setTimeout(() => setPublishStatus(null), 3000);
   };
@@ -2740,9 +2729,9 @@ const SocialPublisher = () => {
       )}
       <div className="lg:col-span-12"><BrandKitReminder compact /></div>
       <div className="lg:col-span-7 space-y-6">
-        <div className="bg-white dark:bg-stone-800 border border-violet-100 dark:border-stone-700 rounded-3xl p-8 shadow-sm transition-colors">
+        <div className="bg-white dark:bg-stone-800 border border-rose-100 dark:border-stone-700 rounded-3xl p-8 shadow-sm transition-colors">
           <h3 className="text-xl font-semibold text-stone-800 flex items-center mb-6">
-            <Share2 className="mr-2 text-violet-400" size={24} />
+            <Share2 className="mr-2 text-rose-400" size={24} />
             Distribution Networks
           </h3>
           <div className="space-y-4">
@@ -2753,7 +2742,7 @@ const SocialPublisher = () => {
               { key: 'tiktok', Icon: Smartphone, bg: '#e5e7eb', fg: '#374151', label: 'TikTok', desc: 'Hands-free algorithmic growth.' },
               { key: 'facebook', Icon: Facebook, bg: '#dbeafe', fg: '#2563eb', label: 'Facebook Page', desc: 'Auto-crossposts your Reel.' }
             ].map(({ key, Icon, bg, fg, label, desc }) => (
-              <label key={key} className="flex items-center justify-between p-4 rounded-2xl border border-violet-100 hover:border-violet-300 transition-all cursor-pointer bg-violet-50/30 hover:bg-violet-50/50">
+              <label key={key} className="flex items-center justify-between p-4 rounded-2xl border border-rose-100 hover:border-rose-300 transition-all cursor-pointer bg-rose-50/30 hover:bg-rose-50/50">
                 <div className="flex items-center gap-4">
                   <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: bg, color: fg }}>
                     <Icon size={20} />
@@ -2763,7 +2752,7 @@ const SocialPublisher = () => {
                     <span className="text-xs text-stone-500 block mt-0.5">{desc}</span>
                   </div>
                 </div>
-                <div onClick={(e) => { e.preventDefault(); togglePlatform(key); }} className={`relative inline-block w-12 h-6 rounded-full transition-colors cursor-pointer ${platforms[key] ? 'bg-violet-400' : 'bg-violet-200'}`}>
+                <div onClick={(e) => { e.preventDefault(); togglePlatform(key); }} className={`relative inline-block w-12 h-6 rounded-full transition-colors cursor-pointer ${platforms[key] ? 'bg-rose-400' : 'bg-rose-200'}`}>
                   <span className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform shadow-sm ${platforms[key] ? 'translate-x-7' : 'translate-x-1'}`}></span>
                 </div>
               </label>
@@ -2772,23 +2761,23 @@ const SocialPublisher = () => {
         </div>
       </div>
       <div className="lg:col-span-5 space-y-6">
-        <div className="bg-white dark:bg-stone-800 border border-violet-100 dark:border-stone-700 rounded-3xl p-8 shadow-sm transition-colors">
+        <div className="bg-white dark:bg-stone-800 border border-rose-100 dark:border-stone-700 rounded-3xl p-8 shadow-sm transition-colors">
           <h3 className="text-xl font-semibold text-stone-800 flex items-center mb-6">
-            <Wand2 className="mr-2 text-violet-400" size={24} />
+            <Wand2 className="mr-2 text-rose-400" size={24} />
             Smart Caption & SEO
           </h3>
           <div className="space-y-5">
             <div>
-              <div className="mb-4 p-3 rounded-xl bg-violet-50 dark:bg-stone-700/50 border border-violet-100 dark:border-stone-600 text-sm">
+              <div className="mb-4 p-3 rounded-xl bg-rose-50 dark:bg-stone-700/50 border border-rose-100 dark:border-stone-600 text-sm">
                 <span className="text-[10px] font-bold text-stone-400 uppercase">Publishing</span>
-                {selectedVideo ? <p className="font-medium text-stone-800 dark:text-stone-100 mt-1">Video: {selectedVideo.name}</p> : <p className="text-stone-500 dark:text-stone-400 mt-1">No video selected. <button type="button" onClick={() => setActiveTab('library')} className="text-violet-600 dark:text-violet-400 font-bold hover:underline">Select in Media Library</button></p>}
+                {selectedVideo ? <p className="font-medium text-stone-800 dark:text-stone-100 mt-1">Video: {selectedVideo.name}</p> : <p className="text-stone-500 dark:text-stone-400 mt-1">No video selected. <button type="button" onClick={() => setActiveTab('library')} className="text-rose-600 dark:text-rose-400 font-bold hover:underline">Select in Media Library</button></p>}
                 {selectedAudio ? <p className="font-medium text-stone-800 dark:text-stone-100 mt-0.5">Audio: {selectedAudio.name}</p> : <p className="text-stone-500 dark:text-stone-400 mt-0.5 text-xs">Optional: add music/voiceover from Media Library.</p>}
               </div>
               <label className="block text-xs font-bold text-stone-400 mb-2 uppercase tracking-widest">Master Caption</label>
               {/* AI Write Caption */}
               <div className="mb-4">
                 <div className="flex gap-2">
-                  <button onClick={() => { setAiOpen(o => !o); setRepOpen(false); }} className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-violet-100 hover:bg-violet-200 text-rose-700 text-xs font-bold transition-colors">
+                  <button onClick={() => { setAiOpen(o => !o); setRepOpen(false); }} className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-rose-100 hover:bg-rose-200 text-rose-700 text-xs font-bold transition-colors">
                     <Sparkles size={13} /> AI Write Caption
                   </button>
                   <button onClick={() => { setRepOpen(o => !o); setAiOpen(false); }} className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-indigo-100 hover:bg-indigo-200 text-indigo-700 text-xs font-bold transition-colors">
@@ -2797,19 +2786,19 @@ const SocialPublisher = () => {
                 </div>
 
                 {aiOpen && (
-                  <div className="mt-3 bg-violet-50 border border-violet-200 rounded-2xl p-4 space-y-3">
+                  <div className="mt-3 bg-rose-50 border border-rose-200 rounded-2xl p-4 space-y-3">
                     <p className="text-xs font-bold text-stone-700">Write with AI</p>
-                    <textarea value={aiTopic} onChange={e => setAiTopic(e.target.value)} placeholder="What's your video about? Paste your script or describe your topic..." rows={3} className="w-full bg-white border border-violet-200 rounded-xl p-3 text-sm text-stone-700 resize-none focus:outline-none focus:border-violet-400" />
+                    <textarea value={aiTopic} onChange={e => setAiTopic(e.target.value)} placeholder="What's your video about? Paste your script or describe your topic..." rows={3} className="w-full bg-white border border-rose-200 rounded-xl p-3 text-sm text-stone-700 resize-none focus:outline-none focus:border-rose-400" />
                     <div className="flex gap-2 flex-wrap">
                       {['instagram','tiktok','youtube','facebook'].map(p => (
-                        <button key={p} onClick={() => setAiPlatform(p)} className={`px-3 py-1.5 rounded-xl text-xs font-bold capitalize border transition-colors ${aiPlatform === p ? 'bg-violet-500 border-violet-500 text-white' : 'bg-white border-violet-200 text-stone-600 hover:border-violet-400'}`}>{p}</button>
+                        <button key={p} onClick={() => setAiPlatform(p)} className={`px-3 py-1.5 rounded-xl text-xs font-bold capitalize border transition-colors ${aiPlatform === p ? 'bg-rose-500 border-rose-500 text-white' : 'bg-white border-rose-200 text-stone-600 hover:border-rose-400'}`}>{p}</button>
                       ))}
                     </div>
-                    <button onClick={writeCaption} disabled={aiLoading || !aiTopic.trim()} className="w-full py-2.5 rounded-xl bg-violet-500 hover:bg-violet-600 text-white text-sm font-bold disabled:opacity-50 transition-all">
+                    <button onClick={writeCaption} disabled={aiLoading || !aiTopic.trim()} className="w-full py-2.5 rounded-xl bg-rose-500 hover:bg-rose-600 text-white text-sm font-bold disabled:opacity-50 transition-all">
                       {aiLoading ? 'Writing...' : 'Generate Caption + Hashtags'}
                     </button>
                     {aiResult && (
-                      <div className="bg-white border border-violet-200 rounded-xl p-3 text-xs text-stone-700 whitespace-pre-wrap max-h-48 overflow-y-auto">{aiResult}</div>
+                      <div className="bg-white border border-rose-200 rounded-xl p-3 text-xs text-stone-700 whitespace-pre-wrap max-h-48 overflow-y-auto">{aiResult}</div>
                     )}
                     {aiResult && (
                       <button onClick={applyAiCaption} className="w-full py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-bold transition-all">
@@ -2841,30 +2830,30 @@ const SocialPublisher = () => {
                 )}
               </div>
 
-              <textarea rows="5" value={caption} onChange={(e) => setCaption(e.target.value)} placeholder="Write your message..." className="w-full bg-violet-50/50 border border-violet-100 rounded-2xl p-4 text-sm text-stone-700 focus:outline-none focus:border-violet-400 focus:ring-4 focus:ring-violet-50 transition-all resize-none" />
+              <textarea rows="5" value={caption} onChange={(e) => setCaption(e.target.value)} placeholder="Write your message..." className="w-full bg-rose-50/50 border border-rose-100 rounded-2xl p-4 text-sm text-stone-700 focus:outline-none focus:border-rose-400 focus:ring-4 focus:ring-rose-50 transition-all resize-none" />
             </div>
             <div>
               <label className="block text-xs font-bold text-stone-400 mb-2 uppercase tracking-widest">Tags</label>
-              <div className="flex flex-wrap gap-2 p-4 bg-violet-50/50 rounded-2xl border border-violet-100 mb-2">
+              <div className="flex flex-wrap gap-2 p-4 bg-rose-50/50 rounded-2xl border border-rose-100 mb-2">
                 {tags.map((t) => (
-                  <span key={t} className="text-xs bg-white text-violet-500 font-medium px-3 py-1.5 rounded-lg border border-violet-200 flex items-center gap-1">
+                  <span key={t} className="text-xs bg-white text-rose-500 font-medium px-3 py-1.5 rounded-lg border border-rose-200 flex items-center gap-1">
                     #{t} <button type="button" onClick={() => removeTag(t)} className="text-stone-400 hover:text-red-500">&times;</button>
                   </span>
                 ))}
               </div>
               <div className="flex gap-2">
-                <input value={tagInput} onChange={(e) => setTagInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && addTag()} placeholder="Add tag (e.g. FaithJourney)" className="flex-1 bg-violet-50/50 border border-violet-100 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-violet-400" />
-                <button onClick={addTag} className="px-4 py-2 rounded-xl bg-violet-100 text-violet-600 font-bold text-sm hover:bg-violet-200">Add</button>
+                <input value={tagInput} onChange={(e) => setTagInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && addTag()} placeholder="Add tag (e.g. FaithJourney)" className="flex-1 bg-rose-50/50 border border-rose-100 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-rose-400" />
+                <button onClick={addTag} className="px-4 py-2 rounded-xl bg-rose-100 text-rose-600 font-bold text-sm hover:bg-rose-200">Add</button>
               </div>
               <div className="mt-2 flex flex-wrap gap-2">
                 <span className="text-[10px] font-bold text-stone-400 uppercase">Tag Bundles:</span>
-                <button onClick={() => applyTagBundle(TAG_BUNDLES.ministry)} className="px-3 py-1 rounded-lg text-xs font-bold bg-violet-100 text-violet-600 hover:bg-violet-200">Ministry</button>
+                <button onClick={() => applyTagBundle(TAG_BUNDLES.ministry)} className="px-3 py-1 rounded-lg text-xs font-bold bg-rose-100 text-rose-600 hover:bg-rose-200">Ministry</button>
                 <button onClick={() => applyTagBundle(TAG_BUNDLES.business)} className="px-3 py-1 rounded-lg text-xs font-bold bg-indigo-100 text-indigo-600 hover:bg-indigo-200">Business</button>
               </div>
             </div>
             <div>
               <label className="block text-xs font-bold text-stone-400 mb-2 uppercase tracking-widest">Marketing Goal</label>
-              <select value={marketingGoal || ''} onChange={(e) => setMarketingGoal(e.target.value)} className="w-full bg-violet-50/50 border border-violet-100 rounded-xl px-4 py-2 text-sm text-stone-700 focus:outline-none focus:border-violet-400">
+              <select value={marketingGoal || ''} onChange={(e) => setMarketingGoal(e.target.value)} className="w-full bg-rose-50/50 border border-rose-100 rounded-xl px-4 py-2 text-sm text-stone-700 focus:outline-none focus:border-rose-400">
                 <option value="">None</option>
                 <option value="growth">Growth (Contact)</option>
                 <option value="sales">Sales (Stoklync)</option>
@@ -2873,10 +2862,10 @@ const SocialPublisher = () => {
             </div>
             <div>
               <label className="block text-xs font-bold text-stone-400 mb-2 uppercase tracking-widest">Contact Page (for QR overlay)</label>
-              <input type="url" value={contactPageUrl || ''} onChange={(e) => setContactPageUrl(e.target.value)} placeholder="https://linktr.ee/... or Google Form for prayer requests" className="w-full bg-violet-50/50 border border-violet-100 rounded-xl px-4 py-2 text-sm text-stone-700 focus:outline-none focus:border-violet-400" />
+              <input type="url" value={contactPageUrl || ''} onChange={(e) => setContactPageUrl(e.target.value)} placeholder="https://linktr.ee/... or Google Form for prayer requests" className="w-full bg-rose-50/50 border border-rose-100 rounded-xl px-4 py-2 text-sm text-stone-700 focus:outline-none focus:border-rose-400" />
               <p className="text-[10px] text-stone-500 mt-1">Link to Linktree, Google Form, or Her Stewardship signup. Used for QR overlay in Reels.</p>
             </div>
-            <button onClick={handlePublish} className="w-full bg-violet-500 hover:bg-violet-600 text-white px-4 py-4 rounded-2xl text-sm font-bold shadow-lg flex items-center justify-center mt-4">
+            <button onClick={handlePublish} className="w-full bg-rose-500 hover:bg-rose-600 text-white px-4 py-4 rounded-2xl text-sm font-bold shadow-lg flex items-center justify-center mt-4">
               <Share2 size={18} className="mr-2" /> Publish to All Selected
             </button>
             {publishStatus && (
@@ -2902,30 +2891,30 @@ const NoMouseEditor = () => {
 
   return (
     <div className="max-w-4xl mx-auto">
-      <div className="bg-white dark:bg-stone-800 border border-violet-100 dark:border-stone-700 rounded-3xl p-8 shadow-sm transition-colors">
+      <div className="bg-white dark:bg-stone-800 border border-rose-100 dark:border-stone-700 rounded-3xl p-8 shadow-sm transition-colors">
         <div className="flex justify-between items-center mb-8">
           <div>
             <h3 className="text-xl font-semibold text-stone-800 flex items-center">
-              <Video className="mr-2 text-violet-400" size={24} />
+              <Video className="mr-2 text-rose-400" size={24} />
               Source: {selectedVideo ? selectedVideo.name : 'Select a video'}
             </h3>
             <p className="text-sm text-stone-500 mt-2">Define exact times to cut. No timeline scrubbing required.</p>
           </div>
           {videos.length > 0 && !selectedVideo && (
-            <select onChange={(e) => setSelectedVideoId(Number(e.target.value))} className="bg-violet-50/50 border border-violet-100 rounded-xl px-4 py-2 text-sm">
+            <select onChange={(e) => setSelectedVideoId(Number(e.target.value))} className="bg-rose-50/50 border border-rose-100 rounded-xl px-4 py-2 text-sm">
               <option value="">Choose video...</option>
               {videos.map(v => <option key={v.id} value={v.id}>{v.name}</option>)}
             </select>
           )}
           {selectedVideo && (
-            <button onClick={() => setSelectedVideoId(null)} className="text-sm text-violet-600 hover:underline">Change source</button>
+            <button onClick={() => setSelectedVideoId(null)} className="text-sm text-rose-600 hover:underline">Change source</button>
           )}
         </div>
 
         {!selectedVideo && videos.length === 0 && (
           <div className="py-12 text-center text-stone-500">
             <p>Upload a video in Media Library first, then select it here.</p>
-            <button onClick={() => studio.setActiveTab('library')} className="mt-4 text-violet-600 font-bold hover:underline">Go to Media Library</button>
+            <button onClick={() => studio.setActiveTab('library')} className="mt-4 text-rose-600 font-bold hover:underline">Go to Media Library</button>
           </div>
         )}
 
@@ -2939,12 +2928,12 @@ const NoMouseEditor = () => {
                 <div className="col-span-1 text-right">Actions</div>
               </div>
               {cuts.map((cut) => (
-                <div key={cut.id} className="grid grid-cols-12 gap-4 items-center bg-violet-50/50 p-3 rounded-2xl border border-violet-100">
+                <div key={cut.id} className="grid grid-cols-12 gap-4 items-center bg-rose-50/50 p-3 rounded-2xl border border-rose-100">
                   <div className="col-span-3">
-                    <input value={cut.start} onChange={(e) => updateCut(cut.id, 'start', e.target.value)} className="w-full bg-white border border-violet-200 rounded-xl px-4 py-2.5 text-sm text-violet-600 font-mono font-bold focus:outline-none focus:border-violet-400" placeholder="MM:SS.MS" />
+                    <input value={cut.start} onChange={(e) => updateCut(cut.id, 'start', e.target.value)} className="w-full bg-white border border-rose-200 rounded-xl px-4 py-2.5 text-sm text-rose-600 font-mono font-bold focus:outline-none focus:border-rose-400" placeholder="MM:SS.MS" />
                   </div>
                   <div className="col-span-3">
-                    <input value={cut.end} onChange={(e) => updateCut(cut.id, 'end', e.target.value)} className="w-full bg-white border border-violet-200 rounded-xl px-4 py-2.5 text-sm text-violet-600 font-mono font-bold focus:outline-none focus:border-violet-400" placeholder="MM:SS.MS" />
+                    <input value={cut.end} onChange={(e) => updateCut(cut.id, 'end', e.target.value)} className="w-full bg-white border border-rose-200 rounded-xl px-4 py-2.5 text-sm text-rose-600 font-mono font-bold focus:outline-none focus:border-rose-400" placeholder="MM:SS.MS" />
                   </div>
                   <div className="col-span-5">
                     <input value={cut.note} onChange={(e) => updateCut(cut.id, 'note', e.target.value)} className="w-full bg-transparent border-none px-3 py-2 text-sm text-stone-700 font-medium focus:outline-none" placeholder="Scene notes..." />
@@ -2955,8 +2944,8 @@ const NoMouseEditor = () => {
                 </div>
               ))}
             </div>
-            <div className="mt-8 flex justify-between items-center pt-8 border-t border-violet-100">
-              <button onClick={addCut} className="text-sm font-bold text-violet-600 hover:text-violet-700 flex items-center bg-violet-50 px-5 py-2.5 rounded-xl border border-violet-100">
+            <div className="mt-8 flex justify-between items-center pt-8 border-t border-rose-100">
+              <button onClick={addCut} className="text-sm font-bold text-rose-600 hover:text-rose-700 flex items-center bg-rose-50 px-5 py-2.5 rounded-xl border border-rose-100">
                 <Plus size={16} className="mr-2" /> Add Time Range
               </button>
               <button
@@ -2968,7 +2957,7 @@ const NoMouseEditor = () => {
                     studio.setActiveTab('classic');
                   } catch {}
                 }}
-                className="bg-violet-500 hover:bg-violet-600 text-white px-8 py-3 rounded-xl text-sm font-bold shadow-lg flex items-center"
+                className="bg-rose-500 hover:bg-rose-600 text-white px-8 py-3 rounded-xl text-sm font-bold shadow-lg flex items-center"
               >
                 <Scissors size={18} className="mr-2" /> Compile Final Cut
               </button>
@@ -2981,7 +2970,7 @@ const NoMouseEditor = () => {
                 Filler removal (ums, ahs, pauses)
               </h4>
               <p className="text-sm text-stone-600 dark:text-stone-400 mt-2">Use <strong>Classic Timeline</strong> to split and delete filler: type the exact time (e.g. 0:12) in the toolbar, hit <strong>Split at time</strong>, then delete the small segment. AI auto-detection coming soon.</p>
-              <button type="button" onClick={() => setActiveTab('classic')} className="mt-4 text-sm font-bold text-violet-600 dark:text-violet-400 hover:underline flex items-center gap-2">
+              <button type="button" onClick={() => setActiveTab('classic')} className="mt-4 text-sm font-bold text-rose-600 dark:text-rose-400 hover:underline flex items-center gap-2">
                 Open Classic Timeline → <Scissors size={14} />
               </button>
             </div>
@@ -3115,14 +3104,14 @@ const TIMELINE_TRANSITIONS = [
   { id: 'wipe', label: 'Wipe', icon: '🔲', cat: 'motion', seamless: false, when: 'Same subject, different angle. Modern and purposeful feel.' },
 ];
 
-/** KreativeLync brand kit — Ministry Brand Identity
+/** Sarah Speaks Faith brand kit — Ministry Brand Identity
  * Terracotta (Warmth, Humanity, Blood of Jesus), Sage (Spiritual Growth, Peace), Cream (Purity, Light), Charcoal (The Word, Truth), Gold (The King, Glory)
  * Typography: Playfair Display (headings), Inter (body)
  */
 const BRAND_PRESETS = {
   sarah: {
     tagline: 'A woman like that, first.',
-    color: 'violet',
+    color: 'rose',
     font: 'serif',
     headingFont: 'Playfair Display',
     bodyFont: 'Inter',
@@ -3156,7 +3145,7 @@ const BrandKitReminder = ({ compact = false }) => {
 
   if (compact) {
     return (
-      <div className="flex items-center gap-3 flex-wrap p-3 rounded-xl bg-violet-50/50 dark:bg-stone-700/30 border border-violet-100 dark:border-stone-600">
+      <div className="flex items-center gap-3 flex-wrap p-3 rounded-xl bg-rose-50/50 dark:bg-stone-700/30 border border-rose-100 dark:border-stone-600">
         <span className="text-xs font-bold text-stone-500 dark:text-stone-400 uppercase">Brand: {businessName}</span>
         <div className="flex gap-1.5">
           {colors.slice(0, 5).map((hex, i) => (
@@ -3170,9 +3159,9 @@ const BrandKitReminder = ({ compact = false }) => {
     );
   }
   return (
-    <div className="bg-white dark:bg-stone-800 border border-violet-100 dark:border-stone-700 rounded-2xl p-6 shadow-sm">
+    <div className="bg-white dark:bg-stone-800 border border-rose-100 dark:border-stone-700 rounded-2xl p-6 shadow-sm">
       <h4 className="text-sm font-bold text-stone-600 dark:text-stone-400 uppercase tracking-wider mb-3 flex items-center gap-2">
-        <Package size={16} className="text-violet-400" /> Brand Kit — {businessName}
+        <Package size={16} className="text-rose-400" /> Brand Kit — {businessName}
       </h4>
       <div className="flex flex-wrap gap-4">
         <div>
@@ -3281,9 +3270,9 @@ const PostFlyerCreator = ({ businesses, activeBusinessId, setIgPosts, setPintere
   };
 
   return (
-    <div className="bg-white dark:bg-stone-800 border border-violet-100 dark:border-stone-700 rounded-3xl p-8 shadow-sm">
+    <div className="bg-white dark:bg-stone-800 border border-rose-100 dark:border-stone-700 rounded-3xl p-8 shadow-sm">
       <h3 className="text-xl font-bold text-stone-800 dark:text-stone-100 flex items-center gap-2 mb-4">
-        <ImageIcon size={24} className="text-violet-400" />
+        <ImageIcon size={24} className="text-rose-400" />
         Create Post & Flyer
       </h3>
       <p className="text-sm text-stone-500 dark:text-stone-400 mb-6">Use your brand kit to make cool graphics. Headline, subhead, colors—all from your brand.</p>
@@ -3293,23 +3282,23 @@ const PostFlyerCreator = ({ businesses, activeBusinessId, setIgPosts, setPintere
             <label className="text-xs font-bold text-stone-500 uppercase block mb-2">Size</label>
             <div className="flex gap-2">
               {POST_SIZES.map((s) => (
-                <button key={s.id} onClick={() => setSize(s.id)} className={`px-3 py-2 rounded-xl text-sm font-medium ${size === s.id ? 'bg-violet-500 text-white' : 'bg-stone-100 dark:bg-stone-700 text-stone-600 dark:text-stone-400'}`}>{s.label}</button>
+                <button key={s.id} onClick={() => setSize(s.id)} className={`px-3 py-2 rounded-xl text-sm font-medium ${size === s.id ? 'bg-rose-500 text-white' : 'bg-stone-100 dark:bg-stone-700 text-stone-600 dark:text-stone-400'}`}>{s.label}</button>
               ))}
             </div>
           </div>
           <div>
             <label className="text-xs font-bold text-stone-500 uppercase block mb-2">Headline</label>
-            <input value={headline} onChange={(e) => setHeadline(e.target.value)} placeholder="Your main message" className="w-full px-4 py-3 rounded-xl bg-violet-50 dark:bg-stone-700 border border-violet-100 dark:border-stone-600 text-stone-800 dark:text-stone-100 placeholder-stone-400" style={{ fontFamily: `"${headingFont}", serif` }} />
+            <input value={headline} onChange={(e) => setHeadline(e.target.value)} placeholder="Your main message" className="w-full px-4 py-3 rounded-xl bg-rose-50 dark:bg-stone-700 border border-rose-100 dark:border-stone-600 text-stone-800 dark:text-stone-100 placeholder-stone-400" style={{ fontFamily: `"${headingFont}", serif` }} />
           </div>
           <div>
             <label className="text-xs font-bold text-stone-500 uppercase block mb-2">Subhead</label>
-            <input value={subhead} onChange={(e) => setSubhead(e.target.value)} placeholder="Optional tagline" className="w-full px-4 py-3 rounded-xl bg-violet-50 dark:bg-stone-700 border border-violet-100 dark:border-stone-600 text-stone-800 dark:text-stone-100 placeholder-stone-400" />
+            <input value={subhead} onChange={(e) => setSubhead(e.target.value)} placeholder="Optional tagline" className="w-full px-4 py-3 rounded-xl bg-rose-50 dark:bg-stone-700 border border-rose-100 dark:border-stone-600 text-stone-800 dark:text-stone-100 placeholder-stone-400" />
           </div>
           <div>
             <label className="text-xs font-bold text-stone-500 uppercase block mb-2">Background</label>
             <div className="flex gap-2 flex-wrap">
               {colors.map((hex, i) => (
-                <button key={i} onClick={() => setBgColor(hex)} title={colorNames[i]} className={`w-10 h-10 rounded-xl border-2 ${bgColor === hex ? 'border-violet-500 ring-2 ring-violet-300' : 'border-transparent'} transition-all`} style={{ backgroundColor: hex }} />
+                <button key={i} onClick={() => setBgColor(hex)} title={colorNames[i]} className={`w-10 h-10 rounded-xl border-2 ${bgColor === hex ? 'border-rose-500 ring-2 ring-rose-300' : 'border-transparent'} transition-all`} style={{ backgroundColor: hex }} />
               ))}
             </div>
           </div>
@@ -3317,14 +3306,14 @@ const PostFlyerCreator = ({ businesses, activeBusinessId, setIgPosts, setPintere
             <label className="text-xs font-bold text-stone-500 uppercase block mb-2">Text color</label>
             <div className="flex gap-2 flex-wrap">
               {colors.map((hex, i) => (
-                <button key={i} onClick={() => setTextColor(hex)} title={colorNames[i]} className={`w-10 h-10 rounded-xl border-2 ${textColor === hex ? 'border-violet-500 ring-2 ring-violet-300' : 'border-transparent'} transition-all`} style={{ backgroundColor: hex }} />
+                <button key={i} onClick={() => setTextColor(hex)} title={colorNames[i]} className={`w-10 h-10 rounded-xl border-2 ${textColor === hex ? 'border-rose-500 ring-2 ring-rose-300' : 'border-transparent'} transition-all`} style={{ backgroundColor: hex }} />
               ))}
             </div>
           </div>
           <div className="flex flex-wrap gap-2 pt-2">
-            <button onClick={exportPng} className="px-4 py-2.5 rounded-xl bg-violet-500 text-white font-bold text-sm hover:bg-violet-600">Download PNG</button>
-            <button onClick={addToIg} className="px-4 py-2.5 rounded-xl border border-violet-200 dark:border-stone-600 text-violet-600 dark:text-violet-400 font-bold text-sm hover:bg-violet-50 dark:hover:bg-stone-700">Add to IG Grid</button>
-            <button onClick={addToPins} className="px-4 py-2.5 rounded-xl border border-violet-200 dark:border-stone-600 text-violet-600 dark:text-violet-400 font-bold text-sm hover:bg-violet-50 dark:hover:bg-stone-700">Add to Pins</button>
+            <button onClick={exportPng} className="px-4 py-2.5 rounded-xl bg-rose-500 text-white font-bold text-sm hover:bg-rose-600">Download PNG</button>
+            <button onClick={addToIg} className="px-4 py-2.5 rounded-xl border border-rose-200 dark:border-stone-600 text-rose-600 dark:text-rose-400 font-bold text-sm hover:bg-rose-50 dark:hover:bg-stone-700">Add to IG Grid</button>
+            <button onClick={addToPins} className="px-4 py-2.5 rounded-xl border border-rose-200 dark:border-stone-600 text-rose-600 dark:text-rose-400 font-bold text-sm hover:bg-rose-50 dark:hover:bg-stone-700">Add to Pins</button>
           </div>
         </div>
         <div className="flex-1 flex items-center justify-center bg-stone-100 dark:bg-stone-800/50 rounded-2xl p-6 min-h-[320px]">
@@ -3430,27 +3419,27 @@ const ScriptureFinder = ({ onInsert }) => {
 
   return (
     <div className="space-y-2">
-      <input value={query} onChange={e => setQuery(e.target.value)} placeholder="Search verses by keyword..." className="w-full bg-stone-800 border border-stone-700 rounded-xl px-3 py-2 text-xs text-stone-100 focus:outline-none focus:border-violet-500" />
+      <input value={query} onChange={e => setQuery(e.target.value)} placeholder="Search verses by keyword..." className="w-full bg-stone-800 border border-stone-700 rounded-xl px-3 py-2 text-xs text-stone-100 focus:outline-none focus:border-rose-500" />
       <div className="max-h-48 overflow-y-auto space-y-1 pr-0.5">
         {filtered.map(v => (
           <button key={v.ref} onClick={() => onInsert(v.ref, v.text)}
             className="w-full text-left bg-stone-800 border border-stone-700 hover:border-rose-600 rounded-xl px-3 py-2 transition-colors group">
-            <span className="text-[10px] font-black text-violet-400 block">{v.ref}</span>
+            <span className="text-[10px] font-black text-rose-400 block">{v.ref}</span>
             <span className="text-[10px] text-stone-400 group-hover:text-stone-200 transition-colors line-clamp-2">{v.text}</span>
           </button>
         ))}
         {filtered.length === 0 && <p className="text-[10px] text-stone-600 text-center py-2">No matches — try a custom lookup below</p>}
       </div>
       <div className="flex gap-1.5">
-        <input value={lookupRef} onChange={e => setLookupRef(e.target.value)} onKeyDown={e => e.key === 'Enter' && lookupVerse()} placeholder="Any verse... e.g. Romans 8:1" className="flex-1 bg-stone-800 border border-stone-700 rounded-xl px-3 py-1.5 text-xs text-stone-100 focus:outline-none focus:border-violet-500" />
-        <button onClick={lookupVerse} disabled={lookupLoading} className="px-3 py-1.5 bg-violet-600 hover:bg-violet-500 text-white rounded-xl text-xs font-bold disabled:opacity-50">{lookupLoading ? '...' : 'Find'}</button>
+        <input value={lookupRef} onChange={e => setLookupRef(e.target.value)} onKeyDown={e => e.key === 'Enter' && lookupVerse()} placeholder="Any verse... e.g. Romans 8:1" className="flex-1 bg-stone-800 border border-stone-700 rounded-xl px-3 py-1.5 text-xs text-stone-100 focus:outline-none focus:border-rose-500" />
+        <button onClick={lookupVerse} disabled={lookupLoading} className="px-3 py-1.5 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-bold disabled:opacity-50">{lookupLoading ? '...' : 'Find'}</button>
       </div>
-      {lookupError && <p className="text-[10px] text-violet-400">{lookupError}</p>}
+      {lookupError && <p className="text-[10px] text-rose-400">{lookupError}</p>}
       {lookupResult && (
-        <button onClick={() => onInsert(lookupResult.ref, lookupResult.text)} className="w-full text-left bg-rose-950/40 border border-rose-700 rounded-xl px-3 py-2 hover:border-violet-500 transition-colors">
-          <span className="text-[10px] font-black text-violet-400 block">{lookupResult.ref}</span>
+        <button onClick={() => onInsert(lookupResult.ref, lookupResult.text)} className="w-full text-left bg-rose-950/40 border border-rose-700 rounded-xl px-3 py-2 hover:border-rose-500 transition-colors">
+          <span className="text-[10px] font-black text-rose-400 block">{lookupResult.ref}</span>
           <span className="text-[10px] text-stone-300 line-clamp-3">{lookupResult.text}</span>
-          <span className="text-[10px] text-violet-500 font-bold mt-1 block">Tap to insert as overlay</span>
+          <span className="text-[10px] text-rose-500 font-bold mt-1 block">Tap to insert as overlay</span>
         </button>
       )}
     </div>
@@ -3461,19 +3450,19 @@ const ScriptureFinder = ({ onInsert }) => {
 const AnimatedCharacter = ({ anim }) => (
   <div className={`char-entrance char-body-${anim} relative select-none`} style={{ width: 56, height: 92, filter: 'drop-shadow(0 6px 18px rgba(0,0,0,0.6))' }}>
     {/* Head */}
-    <div className="absolute top-0 left-1/2 -translate-x-1/2 w-11 h-11 rounded-full bg-gradient-to-br from-violet-200 to-violet-400 border-2 border-violet-500 flex items-center justify-center">
+    <div className="absolute top-0 left-1/2 -translate-x-1/2 w-11 h-11 rounded-full bg-gradient-to-br from-rose-200 to-rose-400 border-2 border-rose-500 flex items-center justify-center">
       <span className="text-lg leading-none">😊</span>
     </div>
     {/* Body */}
-    <div className="absolute top-10 left-1/2 -translate-x-1/2 w-8 h-11 rounded-xl bg-gradient-to-b from-violet-400 to-violet-600" />
+    <div className="absolute top-10 left-1/2 -translate-x-1/2 w-8 h-11 rounded-xl bg-gradient-to-b from-rose-400 to-rose-600" />
     {/* Left arm */}
-    <div className={`absolute top-12 left-0 w-6 h-2.5 rounded-full bg-violet-400 origin-right ${anim === 'wave' ? 'char-arm-wave' : anim === 'point' ? 'char-arm-point' : ''}`}
+    <div className={`absolute top-12 left-0 w-6 h-2.5 rounded-full bg-rose-400 origin-right ${anim === 'wave' ? 'char-arm-wave' : anim === 'point' ? 'char-arm-point' : ''}`}
       style={{ transform: anim === 'point' ? 'rotate(-55deg)' : 'rotate(22deg)' }} />
     {/* Right arm */}
-    <div className="absolute top-12 right-0 w-6 h-2.5 rounded-full bg-violet-400" style={{ transform: 'rotate(-22deg)' }} />
+    <div className="absolute top-12 right-0 w-6 h-2.5 rounded-full bg-rose-400" style={{ transform: 'rotate(-22deg)' }} />
     {/* Legs */}
-    <div className="absolute bottom-0 left-3 w-2.5 h-8 rounded-full bg-violet-500" style={{ transform: 'rotate(6deg)' }} />
-    <div className="absolute bottom-0 right-3 w-2.5 h-8 rounded-full bg-violet-500" style={{ transform: 'rotate(-6deg)' }} />
+    <div className="absolute bottom-0 left-3 w-2.5 h-8 rounded-full bg-rose-500" style={{ transform: 'rotate(6deg)' }} />
+    <div className="absolute bottom-0 right-3 w-2.5 h-8 rounded-full bg-rose-500" style={{ transform: 'rotate(-6deg)' }} />
   </div>
 );
 
@@ -3485,11 +3474,11 @@ const OverlayEditor = ({ overlay, onChange, onDelete }) => {
       <div className="flex items-center gap-2 px-3 py-2 cursor-pointer" onClick={() => setExpanded(e => !e)}>
         <span className="text-[11px] font-bold text-stone-300 flex-1 truncate">{overlay.content || 'New overlay'}</span>
         <span className="text-[10px] text-stone-500 shrink-0">{overlay.startTime}s · {overlay.animStyle}</span>
-        <button onPointerDown={e => { e.stopPropagation(); onDelete(); }} className="text-stone-600 hover:text-violet-400 shrink-0"><X size={12} /></button>
+        <button onPointerDown={e => { e.stopPropagation(); onDelete(); }} className="text-stone-600 hover:text-rose-400 shrink-0"><X size={12} /></button>
       </div>
       {expanded && (
         <div className="px-3 pb-3 space-y-2 border-t border-stone-700 pt-2">
-          <input value={overlay.content} onChange={e => onChange({ ...overlay, content: e.target.value })} placeholder="Text content" className="w-full bg-stone-900 border border-stone-700 rounded-lg px-2 py-1.5 text-xs text-stone-100 focus:outline-none focus:border-violet-500" />
+          <input value={overlay.content} onChange={e => onChange({ ...overlay, content: e.target.value })} placeholder="Text content" className="w-full bg-stone-900 border border-stone-700 rounded-lg px-2 py-1.5 text-xs text-stone-100 focus:outline-none focus:border-rose-500" />
           <div className="grid grid-cols-2 gap-1.5">
             <div>
               <p className="text-[10px] text-stone-500 mb-0.5">Start (s)</p>
@@ -3504,7 +3493,7 @@ const OverlayEditor = ({ overlay, onChange, onDelete }) => {
             <p className="text-[10px] text-stone-500 mb-1">Position</p>
             <div className="flex flex-wrap gap-1">
               {['upper','center','lower','left','right'].map(p => (
-                <button key={p} onClick={() => onChange({ ...overlay, position: p })} className={`px-2 py-1 rounded-lg text-[10px] font-bold border capitalize transition-colors ${overlay.position === p ? 'bg-violet-600 border-rose-600 text-white' : 'bg-stone-900 border-stone-700 text-stone-400 hover:border-stone-500'}`}>{p}</button>
+                <button key={p} onClick={() => onChange({ ...overlay, position: p })} className={`px-2 py-1 rounded-lg text-[10px] font-bold border capitalize transition-colors ${overlay.position === p ? 'bg-rose-600 border-rose-600 text-white' : 'bg-stone-900 border-stone-700 text-stone-400 hover:border-stone-500'}`}>{p}</button>
               ))}
             </div>
           </div>
@@ -3512,7 +3501,7 @@ const OverlayEditor = ({ overlay, onChange, onDelete }) => {
             <p className="text-[10px] text-stone-500 mb-1">Animation</p>
             <div className="flex flex-wrap gap-1">
               {['fade','slide-up','slide-right','zoom','bounce','typewriter'].map(a => (
-                <button key={a} onClick={() => onChange({ ...overlay, animStyle: a })} className={`px-2 py-1 rounded-lg text-[10px] font-bold border transition-colors ${overlay.animStyle === a ? 'bg-violet-600 border-rose-600 text-white' : 'bg-stone-900 border-stone-700 text-stone-400 hover:border-stone-500'}`}>{a}</button>
+                <button key={a} onClick={() => onChange({ ...overlay, animStyle: a })} className={`px-2 py-1 rounded-lg text-[10px] font-bold border transition-colors ${overlay.animStyle === a ? 'bg-rose-600 border-rose-600 text-white' : 'bg-stone-900 border-stone-700 text-stone-400 hover:border-stone-500'}`}>{a}</button>
               ))}
             </div>
           </div>
@@ -3587,7 +3576,7 @@ const ClassicEditor = () => {
   const setSelectedAudioSegmentId = useEditorStore(s => s.setSelectedAudioSegmentId);
   const [splitTimeInput, setSplitTimeInput] = useState('');
   const history = useEditorStore(s => s.history);
-  const [markers, setMarkers] = useState(() => JSON.parse(localStorage.getItem('kreativelync-markers') || '[]'));
+  const [markers, setMarkers] = useState(() => JSON.parse(localStorage.getItem('faith-studio-markers') || '[]'));
   const [timelineZoom, setTimelineZoom] = useState(1);
   const [snapEnabled, setSnapEnabled] = useState(true);
   const [trackHeights, setTrackHeights] = useState({ text: 36, video: 100, audio: 64, extra: 48 });
@@ -3732,9 +3721,9 @@ const ClassicEditor = () => {
   const [autoCaptionError, setAutoCaptionError] = useState('');
 
   // Animate tab state
-  const [animOverlays, setAnimOverlays] = useState(() => { try { return JSON.parse(localStorage.getItem('kreativelync-anim-overlays') || '[]'); } catch { return []; } });
+  const [animOverlays, setAnimOverlays] = useState(() => { try { return JSON.parse(localStorage.getItem('faith-studio-anim-overlays') || '[]'); } catch { return []; } });
   const animOverlaysRef = useRef(animOverlays);
-  useEffect(() => { animOverlaysRef.current = animOverlays; localStorage.setItem('kreativelync-anim-overlays', JSON.stringify(animOverlays)); }, [animOverlays]);
+  useEffect(() => { animOverlaysRef.current = animOverlays; localStorage.setItem('faith-studio-anim-overlays', JSON.stringify(animOverlays)); }, [animOverlays]);
   // Image/GIF/sticker overlays — uploaded by user, shown on stage at set time
   const [imageOverlays, setImageOverlays] = useState([]);
   const stickerUploadRef = useRef(null);
@@ -3809,7 +3798,7 @@ const ClassicEditor = () => {
     if (v) next ? v.play().catch(() => {}) : v.pause();
   }, [videoForPreview, editorTogglePlay]);
 
-  useEffect(() => { localStorage.setItem('kreativelync-markers', JSON.stringify(markers)); }, [markers]);
+  useEffect(() => { localStorage.setItem('faith-studio-markers', JSON.stringify(markers)); }, [markers]);
 
   // When Main and Audio come from the same video, keep them in sync (CapCut-style)
   // Skip sync when user explicitly split only Main (to leave Audio continuous)
@@ -3970,7 +3959,7 @@ const ClassicEditor = () => {
   const setTextClips = useEditorStore(s => s.setTextClips);
   useEffect(() => {
     try {
-      const raw = JSON.parse(localStorage.getItem('kreativelync-timeline-text') || '[]');
+      const raw = JSON.parse(localStorage.getItem('faith-studio-timeline-text') || '[]');
       const parsed = raw.map(c => {
         const end = c.end ?? (c.start + ((c.width ?? 10) * 90 / 100));
         return { ...c, start: c.start ?? 0, end, x: c.x ?? (c.position === 'center' ? 50 : c.position === 'bottom' ? 50 : 50), y: c.y ?? (c.position === 'center' ? 50 : c.position === 'bottom' ? 85 : 15) };
@@ -3978,7 +3967,7 @@ const ClassicEditor = () => {
       if (parsed.length > 0) setTextClips(parsed);
     } catch (_) {}
   }, []);
-  useEffect(() => { localStorage.setItem('kreativelync-timeline-text', JSON.stringify(textClips)); }, [textClips]);
+  useEffect(() => { localStorage.setItem('faith-studio-timeline-text', JSON.stringify(textClips)); }, [textClips]);
 
   const [draggingTextId, setDraggingTextId] = useState(null);
   const canvasRef = useRef(null);
@@ -4967,8 +4956,8 @@ const ClassicEditor = () => {
     const baseName = (selectedVideo.name || 'export').replace(/\.[^.]+$/, '');
     const fmtSuffix = exportFormat !== 'source' ? `-${exportFormat.replace(':', 'x')}` : '';
     const metadata = {
-      title: caption?.slice(0, 60) || businesses.find(b => b.id === activeBusinessId)?.name || 'KreativeLync',
-      tags: [...(tags || []), 'KreativeLync', 'Ministry', businesses.find(b => b.id === activeBusinessId)?.name].filter(Boolean),
+      title: caption?.slice(0, 60) || businesses.find(b => b.id === activeBusinessId)?.name || 'Sarah Speaks Faith',
+      tags: [...(tags || []), 'Sarah Speaks Faith', 'Ministry', businesses.find(b => b.id === activeBusinessId)?.name].filter(Boolean),
       appendContactUrl: appendContactUrlToMetadata && !!contactPageUrl?.trim(),
       contactUrl: contactPageUrl?.trim() || '',
     };
@@ -4984,7 +4973,7 @@ const ClassicEditor = () => {
         const end = segs.length > 0 ? Math.max(...segs.map(s => s.end)) : duration;
         const { blob } = await processVideo(selectedVideo.id, start, end);
         const mp4Blob = await encodeToMp4WithMetadata(blob, metadata);
-        await saveToDevice(mp4Blob, baseName + fmtSuffix + '-kreativelync.mp4');
+        await saveToDevice(mp4Blob, baseName + fmtSuffix + '-sarah-speaks-faith.mp4');
       } else if (!hasText && exportFormat === 'source') {
         const segs = (mainSegments || []).filter(s => s && typeof s?.start === 'number' && typeof s?.end === 'number');
         const start = segs.length > 0 ? Math.min(...segs.map(s => s.start)) : 0;
@@ -4993,7 +4982,7 @@ const ClassicEditor = () => {
         const res = await fetch(url);
         const blob = await res.blob();
         const mp4Blob = await encodeToMp4WithMetadata(blob, metadata);
-        await saveToDevice(mp4Blob, baseName + '-kreativelync.mp4');
+        await saveToDevice(mp4Blob, baseName + '-sarah-speaks-faith.mp4');
         revoke(url);
       } else {
         const v = document.createElement('video');
@@ -5144,13 +5133,13 @@ const ClassicEditor = () => {
         setExportProgress(0.6);
         const mp4Blob = await encodeToMp4WithMetadata(webmBlob, metadata);
         setExportProgress(1);
-        await saveToDevice(mp4Blob, baseName + fmtSuffix + '-kreativelync.mp4');
+        await saveToDevice(mp4Blob, baseName + fmtSuffix + '-sarah-speaks-faith.mp4');
       }
       // Auto-log this post to analytics
       try {
-        const existing = JSON.parse(localStorage.getItem('kreativelync-post-analytics') || '[]');
+        const existing = JSON.parse(localStorage.getItem('faith-studio-post-analytics') || '[]');
         existing.push({ id: 'p' + Date.now(), businessId: activeBusinessId, title: baseName, platform: exportFormat.startsWith('9') ? 'instagram' : exportFormat.startsWith('16') ? 'youtube' : 'instagram', postedAt: new Date().toISOString().slice(0, 10), views: 0, likes: 0, comments: 0, shares: 0, saves: 0, notes: '', autoLogged: true });
-        localStorage.setItem('kreativelync-post-analytics', JSON.stringify(existing));
+        localStorage.setItem('faith-studio-post-analytics', JSON.stringify(existing));
       } catch (_) {}
     } catch (err) {
       console.error(err);
@@ -5189,7 +5178,7 @@ const ClassicEditor = () => {
         {/* Header */}
         <div className="shrink-0 flex items-center justify-between px-3 py-2.5 border-b border-stone-700/50 bg-stone-900">
           <span className="text-[11px] font-bold text-stone-400 uppercase tracking-widest">Media</span>
-          <label className="cursor-pointer flex items-center gap-1 px-2.5 py-1 rounded-lg bg-violet-600 hover:bg-violet-500 text-white text-[10px] font-bold transition-colors">
+          <label className="cursor-pointer flex items-center gap-1 px-2.5 py-1 rounded-lg bg-rose-600 hover:bg-rose-500 text-white text-[10px] font-bold transition-colors">
             <Plus size={11} /> Import
             <input type="file" accept="video/*,audio/*,image/*" multiple className="hidden" onChange={(e) => handleInlineUpload(e)} />
           </label>
@@ -5197,7 +5186,7 @@ const ClassicEditor = () => {
         {/* Clip grid */}
         <div className="flex-1 overflow-y-auto p-2 space-y-3">
           {videos.length === 0 ? (
-            <label className="cursor-pointer flex flex-col items-center gap-3 p-5 rounded-xl border-2 border-dashed border-stone-700 hover:border-rose-600 hover:bg-violet-950/20 transition-all text-center mt-2">
+            <label className="cursor-pointer flex flex-col items-center gap-3 p-5 rounded-xl border-2 border-dashed border-stone-700 hover:border-rose-600 hover:bg-rose-950/20 transition-all text-center mt-2">
               <div className="w-12 h-12 rounded-2xl bg-stone-800 flex items-center justify-center">
                 <Upload size={22} className="text-stone-500" />
               </div>
@@ -5217,7 +5206,7 @@ const ClassicEditor = () => {
                       draggable
                       onDragStart={e => { e.dataTransfer.setData('assetId', v.id); e.dataTransfer.setData('assetType', 'video'); }}
                       onClick={() => { insertClipAtPlayhead(0, v.id); setSelectedVideoId(v.id); }}
-                      className={`relative rounded-lg overflow-hidden aspect-video border-2 transition-all group ${selectedVideo?.id === v.id ? 'border-violet-500 ring-1 ring-violet-500/50' : 'border-stone-700 hover:border-stone-500'}`}
+                      className={`relative rounded-lg overflow-hidden aspect-video border-2 transition-all group ${selectedVideo?.id === v.id ? 'border-rose-500 ring-1 ring-rose-500/50' : 'border-stone-700 hover:border-stone-500'}`}
                       title={`Add "${v.name?.replace(/\.[^.]+$/, '') || 'Clip'}" to timeline`}>
                       <video src={v.url} muted playsInline preload="metadata" className="w-full h-full object-cover"
                         onLoadedMetadata={e => { e.target.currentTime = 0.5; }} />
@@ -5227,13 +5216,13 @@ const ClassicEditor = () => {
                           {v.name?.replace(/\.[^.]+$/, '').slice(0, 16) || 'Clip'}
                         </span>
                       </div>
-                      <div className="absolute top-1 right-1 w-5 h-5 rounded-full bg-violet-600/90 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow">
+                      <div className="absolute top-1 right-1 w-5 h-5 rounded-full bg-rose-600/90 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow">
                         <Plus size={10} className="text-white" />
                       </div>
                     </button>
                   ))}
-                  <label className="cursor-pointer aspect-video rounded-lg border-2 border-dashed border-stone-700 hover:border-rose-600 flex items-center justify-center bg-stone-900/50 hover:bg-violet-950/20 transition-all">
-                    <Plus size={16} className="text-stone-600 hover:text-violet-400" />
+                  <label className="cursor-pointer aspect-video rounded-lg border-2 border-dashed border-stone-700 hover:border-rose-600 flex items-center justify-center bg-stone-900/50 hover:bg-rose-950/20 transition-all">
+                    <Plus size={16} className="text-stone-600 hover:text-rose-400" />
                     <input type="file" accept="video/*" multiple className="hidden" onChange={(e) => handleInlineUpload(e)} />
                   </label>
                 </div>
@@ -5391,7 +5380,7 @@ const ClassicEditor = () => {
                 return (
                   <div
                     key={`${c.id}-${animStyle}`}
-                    className={`absolute transform -translate-x-1/2 -translate-y-1/2 select-none ${animClass} ${noAnimBase ? `${fontMap[c.font] || fontMap.sans} ${colorClass} ${c.bold ? 'font-bold' : 'font-normal'}` : ''} ${isSelected || draggingTextId === c.id ? 'ring-2 ring-violet-400 ring-offset-2 cursor-move' : 'cursor-move'} ${hasBgBox && noAnimBase ? 'bg-black/60 px-3 py-1.5 rounded-lg' : (c.lowerThird && !animStyle ? 'bg-black/55 px-6 py-2 rounded' : '')}`}
+                    className={`absolute transform -translate-x-1/2 -translate-y-1/2 select-none ${animClass} ${noAnimBase ? `${fontMap[c.font] || fontMap.sans} ${colorClass} ${c.bold ? 'font-bold' : 'font-normal'}` : ''} ${isSelected || draggingTextId === c.id ? 'ring-2 ring-rose-400 ring-offset-2 cursor-move' : 'cursor-move'} ${hasBgBox && noAnimBase ? 'bg-black/60 px-3 py-1.5 rounded-lg' : (c.lowerThird && !animStyle ? 'bg-black/55 px-6 py-2 rounded' : '')}`}
                     style={{ left: `${x}%`, top: `${y}%`, zIndex: 20, opacity: textOpacity, ...(noAnimBase ? colorStyle : {}), ...(noAnimBase && c.font === 'serif' ? { fontFamily: '"Playfair Display", Georgia, serif' } : {}) }}
                     onMouseDown={(e) => handleTextDragStart(e, c)}
                     onClick={(e) => { e.stopPropagation(); setEditingClipId(c.id); }}
@@ -5414,15 +5403,15 @@ const ClassicEditor = () => {
                   <div className="flex flex-row gap-2 flex-wrap justify-center w-full max-w-sm">
                     {videos.map(v => (
                       <button key={v.id} onClick={() => { setSelectedVideoId(v.id); setTimeout(() => insertClipAtPlayhead(0, v.id), 80); }}
-                        className="group relative rounded-lg overflow-hidden border-2 border-stone-700 hover:border-violet-500 transition-all bg-stone-800 flex items-center gap-2 px-2 py-1.5">
+                        className="group relative rounded-lg overflow-hidden border-2 border-stone-700 hover:border-rose-500 transition-all bg-stone-800 flex items-center gap-2 px-2 py-1.5">
                         <div className="relative w-14 h-9 rounded overflow-hidden shrink-0">
                           <video src={v.url} className="absolute inset-0 w-full h-full object-cover" muted playsInline preload="metadata" />
-                          <Play size={14} className="absolute inset-0 m-auto text-white/90 group-hover:text-violet-400 transition-colors" />
+                          <Play size={14} className="absolute inset-0 m-auto text-white/90 group-hover:text-rose-400 transition-colors" />
                         </div>
                         <span className="text-[10px] text-white font-bold truncate max-w-[80px]">{v.name?.replace(/\.[^.]+$/, '') || 'Clip'}</span>
                       </button>
                     ))}
-                    <label className="cursor-pointer flex items-center gap-1 text-xs text-violet-400 font-bold hover:text-violet-300 transition-colors px-2 py-1.5 border-2 border-dashed border-rose-900 hover:border-violet-500 rounded-lg">
+                    <label className="cursor-pointer flex items-center gap-1 text-xs text-rose-400 font-bold hover:text-rose-300 transition-colors px-2 py-1.5 border-2 border-dashed border-rose-900 hover:border-rose-500 rounded-lg">
                       <Plus size={13} /> Add clip
                       <input type="file" accept="video/*" multiple className="hidden" onChange={e => { Array.from(e.target.files || []).forEach(f => { const id = addAsset(f, 'video'); if (id) setTimeout(() => insertClipAtPlayhead(0, id), 80); }); e.target.value = ''; }} />
                     </label>
@@ -5432,10 +5421,10 @@ const ClassicEditor = () => {
                 <label className="cursor-pointer flex flex-col items-center gap-4 text-center group w-full max-w-xs">
                   {/* Upload icon with glow */}
                   <div className="relative">
-                    <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-violet-900/60 to-stone-800 border-2 border-dashed border-stone-600 group-hover:border-violet-500 flex items-center justify-center transition-all group-hover:scale-105 shadow-lg group-hover:shadow-rose-900/30">
-                      <Upload size={32} className="text-stone-500 group-hover:text-violet-400 transition-colors" />
+                    <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-rose-900/60 to-stone-800 border-2 border-dashed border-stone-600 group-hover:border-rose-500 flex items-center justify-center transition-all group-hover:scale-105 shadow-lg group-hover:shadow-rose-900/30">
+                      <Upload size={32} className="text-stone-500 group-hover:text-rose-400 transition-colors" />
                     </div>
-                    <div className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-violet-600 group-hover:bg-violet-500 flex items-center justify-center shadow-lg transition-colors">
+                    <div className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-rose-600 group-hover:bg-rose-500 flex items-center justify-center shadow-lg transition-colors">
                       <Plus size={14} className="text-white" />
                     </div>
                   </div>
@@ -5473,7 +5462,7 @@ const ClassicEditor = () => {
             <button
               key={tab.id}
               onClick={() => setInspectorTab(tab.id)}
-              className={`flex-1 min-w-[44px] flex flex-col items-center justify-center gap-0.5 py-2.5 text-[10px] font-bold transition-colors border-b-2 ${inspectorTab === tab.id ? 'border-violet-500 text-violet-400 bg-rose-950/30' : 'border-transparent text-stone-500 hover:text-stone-300'}`}
+              className={`flex-1 min-w-[44px] flex flex-col items-center justify-center gap-0.5 py-2.5 text-[10px] font-bold transition-colors border-b-2 ${inspectorTab === tab.id ? 'border-rose-500 text-rose-400 bg-rose-950/30' : 'border-transparent text-stone-500 hover:text-stone-300'}`}
             >
               {tab.icon}
               {tab.label}
@@ -5483,7 +5472,7 @@ const ClassicEditor = () => {
 
         {/* Playback row — always visible above tabs */}
         <div className="flex items-center gap-2 px-3 py-2 border-b border-stone-700/40 shrink-0 bg-stone-900">
-          <button onClick={togglePlayPause} disabled={!videoForPreview} className="w-8 h-8 rounded-full flex items-center justify-center bg-violet-500 hover:bg-violet-400 disabled:opacity-40 text-white shrink-0" title="Play / Pause (Space)">
+          <button onClick={togglePlayPause} disabled={!videoForPreview} className="w-8 h-8 rounded-full flex items-center justify-center bg-rose-500 hover:bg-rose-400 disabled:opacity-40 text-white shrink-0" title="Play / Pause (Space)">
             {!playing ? <Play size={13} fill="currentColor" /> : <Pause size={13} />}
           </button>
           <span className="font-mono text-sm font-bold text-rose-300 tabular-nums">{secToTimecode(playhead)}</span>
@@ -5492,7 +5481,7 @@ const ClassicEditor = () => {
           {/* Format quick-switch */}
           <div className="flex gap-1">
             {[{ id: '9:16', label: '9:16' }, { id: '16:9', label: '16:9' }, { id: '1:1', label: '1:1' }].map(f => (
-              <button key={f.id} onClick={() => setExportFormat(f.id)} className={`px-1.5 py-1 rounded text-[10px] font-bold border transition-colors ${exportFormat === f.id ? 'bg-violet-500 border-violet-500 text-white' : 'bg-stone-800 border-stone-700 text-stone-500 hover:text-stone-300'}`}>{f.label}</button>
+              <button key={f.id} onClick={() => setExportFormat(f.id)} className={`px-1.5 py-1 rounded text-[10px] font-bold border transition-colors ${exportFormat === f.id ? 'bg-rose-500 border-rose-500 text-white' : 'bg-stone-800 border-stone-700 text-stone-500 hover:text-stone-300'}`}>{f.label}</button>
             ))}
           </div>
           <button onClick={undoAll} disabled={history.length === 0} className="p-1.5 text-stone-600 hover:text-white disabled:opacity-30" title="Undo"><RotateCcw size={12} /></button>
@@ -5507,7 +5496,7 @@ const ClassicEditor = () => {
               {/* Selection status */}
               {(selectedSegmentId || selectedAudioSegmentId) ? (
                 <div className="flex items-center gap-2 px-3 py-2 bg-rose-950/40 border border-rose-700/50 rounded-xl text-[11px] text-rose-300 font-bold">
-                  <span className="w-2 h-2 rounded-full bg-violet-500 shrink-0" />
+                  <span className="w-2 h-2 rounded-full bg-rose-500 shrink-0" />
                   {selectedSegmentId ? 'Video clip selected' : 'Audio clip selected'} — ready to edit
                 </div>
               ) : videoForPreview ? (
@@ -5516,7 +5505,7 @@ const ClassicEditor = () => {
 
               {/* Primary edit actions — big buttons */}
               <div className="grid grid-cols-2 gap-2">
-                <button onClick={splitAtPlayhead} disabled={!videoForPreview} className="flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold bg-rose-900/50 border border-rose-700/60 text-rose-300 hover:bg-violet-800/60 active:scale-95 disabled:opacity-40 transition-all" title="Split clip at playhead (S)">
+                <button onClick={splitAtPlayhead} disabled={!videoForPreview} className="flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold bg-rose-900/50 border border-rose-700/60 text-rose-300 hover:bg-rose-800/60 active:scale-95 disabled:opacity-40 transition-all" title="Split clip at playhead (S)">
                   <Scissors size={16} /> Split Here
                 </button>
                 <button
@@ -5542,7 +5531,7 @@ const ClassicEditor = () => {
                 <button onClick={addMarker} disabled={!videoForPreview} className="p-2 rounded-lg bg-stone-800 border border-stone-700 text-amber-400 hover:bg-stone-700 disabled:opacity-40" title="Add marker"><MapPin size={13} /></button>
                 <button onClick={goToPrevMarker} disabled={!markers.filter(m => m.time < playhead - 0.01).length} className="p-2 rounded-lg bg-stone-800 border border-stone-700 text-stone-400 hover:bg-stone-700 disabled:opacity-40"><ChevronLeft size={13} /></button>
                 <button onClick={goToNextMarker} disabled={!markers.filter(m => m.time > playhead + 0.01).length} className="p-2 rounded-lg bg-stone-800 border border-stone-700 text-stone-400 hover:bg-stone-700 disabled:opacity-40"><ChevronRight size={13} /></button>
-                <button onClick={() => setSnapEnabled(s => !s)} className={`p-2 rounded-lg border ${snapEnabled ? 'bg-rose-900/40 border-rose-800/50 text-violet-400' : 'bg-stone-800 border-stone-700 text-stone-500'}`} title={`Snap ${snapEnabled ? 'on' : 'off'}`}><Magnet size={13} /></button>
+                <button onClick={() => setSnapEnabled(s => !s)} className={`p-2 rounded-lg border ${snapEnabled ? 'bg-rose-900/40 border-rose-800/50 text-rose-400' : 'bg-stone-800 border-stone-700 text-stone-500'}`} title={`Snap ${snapEnabled ? 'on' : 'off'}`}><Magnet size={13} /></button>
               </div>
 
               {/* Selected clip details */}
@@ -5589,7 +5578,7 @@ const ClassicEditor = () => {
                       <p className="text-[10px] text-stone-500 uppercase font-bold mb-1.5">Speed</p>
                       <div className="flex gap-1.5 flex-wrap">
                         {[0.25, 0.5, 0.75, 1, 1.5, 2, 3].map(sp => (
-                          <button key={sp} onClick={() => setSpeed(sp)} className={`px-2.5 py-1.5 rounded-lg text-xs font-bold border transition-colors ${currSpeed === sp ? 'bg-violet-500 border-violet-500 text-white' : 'bg-stone-700 border-stone-600 text-stone-300 hover:bg-stone-600'}`}>{sp}x</button>
+                          <button key={sp} onClick={() => setSpeed(sp)} className={`px-2.5 py-1.5 rounded-lg text-xs font-bold border transition-colors ${currSpeed === sp ? 'bg-rose-500 border-rose-500 text-white' : 'bg-stone-700 border-stone-600 text-stone-300 hover:bg-stone-600'}`}>{sp}x</button>
                         ))}
                       </div>
                     </div>
@@ -5619,7 +5608,7 @@ const ClassicEditor = () => {
                 <div className="flex items-center justify-between">
                   <p className="text-[10px] font-bold text-stone-400 uppercase tracking-wider">Transform</p>
                   {(transformRotation !== 0 || transformFlipH || transformFlipV || transformScale !== 100 || transformPanX !== 0 || transformPanY !== 0) && (
-                    <button onClick={resetTransform} className="text-[10px] text-violet-400 hover:text-violet-300">Reset</button>
+                    <button onClick={resetTransform} className="text-[10px] text-rose-400 hover:text-rose-300">Reset</button>
                   )}
                 </div>
 
@@ -5635,7 +5624,7 @@ const ClassicEditor = () => {
                       { id: '4:5',  label: '4:5'  },
                     ].map(a => (
                       <button key={a.id} onClick={() => setCropAspect(a.id)}
-                        className={`py-1.5 rounded-lg text-[10px] font-bold border transition-colors ${cropAspect === a.id ? 'bg-violet-600 border-violet-500 text-white' : 'bg-stone-800 border-stone-700 text-stone-400 hover:border-stone-500'}`}>
+                        className={`py-1.5 rounded-lg text-[10px] font-bold border transition-colors ${cropAspect === a.id ? 'bg-rose-600 border-rose-500 text-white' : 'bg-stone-800 border-stone-700 text-stone-400 hover:border-stone-500'}`}>
                         {a.label}
                       </button>
                     ))}
@@ -5653,11 +5642,11 @@ const ClassicEditor = () => {
                       title="Rotate 90° clockwise"
                       className="flex-1 py-2 rounded-xl bg-stone-800 border border-stone-700 text-stone-300 hover:bg-stone-700 text-xs font-bold transition-colors active:scale-95">↻ 90°</button>
                     <button onClick={() => setTransformFlipH(f => !f)} title="Flip horizontal — mirror left/right"
-                      className={`flex-1 py-2 rounded-xl border text-xs font-bold transition-colors active:scale-95 ${transformFlipH ? 'bg-violet-600 border-violet-500 text-white' : 'bg-stone-800 border-stone-700 text-stone-300 hover:bg-stone-700'}`}>
+                      className={`flex-1 py-2 rounded-xl border text-xs font-bold transition-colors active:scale-95 ${transformFlipH ? 'bg-rose-600 border-rose-500 text-white' : 'bg-stone-800 border-stone-700 text-stone-300 hover:bg-stone-700'}`}>
                       ↔ Flip H
                     </button>
                     <button onClick={() => setTransformFlipV(f => !f)} title="Flip vertical — mirror top/bottom"
-                      className={`flex-1 py-2 rounded-xl border text-xs font-bold transition-colors active:scale-95 ${transformFlipV ? 'bg-violet-600 border-violet-500 text-white' : 'bg-stone-800 border-stone-700 text-stone-300 hover:bg-stone-700'}`}>
+                      className={`flex-1 py-2 rounded-xl border text-xs font-bold transition-colors active:scale-95 ${transformFlipV ? 'bg-rose-600 border-rose-500 text-white' : 'bg-stone-800 border-stone-700 text-stone-300 hover:bg-stone-700'}`}>
                       ↕ Flip V
                     </button>
                   </div>
@@ -5718,7 +5707,7 @@ const ClassicEditor = () => {
                 </button>
               </div>
               {speechSupported && (
-                <button onClick={isListening ? stopSpeech : startSpeech} className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all active:scale-95 ${isListening ? 'bg-violet-500 text-white' : 'bg-stone-800 border border-stone-700 text-violet-400 hover:bg-stone-700'}`}>
+                <button onClick={isListening ? stopSpeech : startSpeech} className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all active:scale-95 ${isListening ? 'bg-rose-500 text-white' : 'bg-stone-800 border border-stone-700 text-rose-400 hover:bg-stone-700'}`}>
                   <Mic size={16} className={isListening ? 'animate-pulse' : ''} />
                   {isListening ? 'Stop Auto-Caption' : 'Auto-Caption (Voice)'}
                 </button>
@@ -5730,7 +5719,7 @@ const ClassicEditor = () => {
                   <div className="space-y-1">
                     {textClips.map(c => (
                       <button key={c.id} onClick={() => setEditingClipId(editingClipId === c.id ? null : c.id)}
-                        className={`w-full text-left px-3 py-2 rounded-lg border text-xs transition-colors ${editingClipId === c.id ? 'border-violet-500 bg-rose-950/40 text-rose-300' : 'border-stone-700 bg-stone-800 text-stone-300 hover:border-stone-600'}`}>
+                        className={`w-full text-left px-3 py-2 rounded-lg border text-xs transition-colors ${editingClipId === c.id ? 'border-rose-500 bg-rose-950/40 text-rose-300' : 'border-stone-700 bg-stone-800 text-stone-300 hover:border-stone-600'}`}>
                         <span className="font-bold">{secToTimecode(c.start ?? 0)}</span>
                         <span className="text-stone-500 mx-1.5">→</span>
                         <span className="text-stone-400 truncate">{c.text || '(empty — tap to edit)'}</span>
@@ -5751,7 +5740,7 @@ const ClassicEditor = () => {
                   <textarea value={editingClip.text || ''} rows={2}
                     onChange={e => updateTextClip(editingClipId, { text: e.target.value })}
                     placeholder="Caption text…"
-                    className="w-full bg-stone-900 border border-stone-600 rounded-lg px-3 py-2 text-xs text-stone-100 resize-none focus:outline-none focus:border-violet-500 placeholder-stone-600" />
+                    className="w-full bg-stone-900 border border-stone-600 rounded-lg px-3 py-2 text-xs text-stone-100 resize-none focus:outline-none focus:border-rose-500 placeholder-stone-600" />
                   {/* Timing */}
                   <div className="grid grid-cols-2 gap-2">
                     <div>
@@ -5779,7 +5768,7 @@ const ClassicEditor = () => {
                       ].map(s => (
                         <button key={s.id} onClick={() => updateTextClip(editingClipId, { animStyle: s.id })}
                           title={s.desc}
-                          className={`py-1.5 rounded-lg border text-[10px] font-bold transition-colors ${editingClip.animStyle === s.id ? 'bg-violet-600 border-rose-600 text-white' : 'border-stone-600 text-stone-400 hover:border-stone-500'}`}>
+                          className={`py-1.5 rounded-lg border text-[10px] font-bold transition-colors ${editingClip.animStyle === s.id ? 'bg-rose-600 border-rose-600 text-white' : 'border-stone-600 text-stone-400 hover:border-stone-500'}`}>
                           {s.label}
                         </button>
                       ))}
@@ -5791,7 +5780,7 @@ const ClassicEditor = () => {
                     <div className="grid grid-cols-3 gap-1">
                       {[['sans','Sans'],['serif','Serif'],['mono','Mono']].map(([id, lbl]) => (
                         <button key={id} onClick={() => updateTextClip(editingClipId, { font: id })}
-                          className={`py-1.5 rounded-lg border text-[10px] font-bold transition-colors ${editingClip.font === id ? 'bg-violet-600 border-rose-600 text-white' : 'border-stone-600 text-stone-400 hover:border-stone-500'}`}>
+                          className={`py-1.5 rounded-lg border text-[10px] font-bold transition-colors ${editingClip.font === id ? 'bg-rose-600 border-rose-600 text-white' : 'border-stone-600 text-stone-400 hover:border-stone-500'}`}>
                           {lbl}
                         </button>
                       ))}
@@ -5820,7 +5809,7 @@ const ClassicEditor = () => {
                     <div className="flex gap-1.5">
                       {[['sm','Small'],['md','Med'],['lg','Large'],['xl','XL']].map(([id, lbl]) => (
                         <button key={id} onClick={() => updateTextClip(editingClipId, { size: id })}
-                          className={`flex-1 py-1.5 rounded-lg border text-[10px] font-bold transition-colors ${editingClip.size === id ? 'bg-violet-600 border-rose-600 text-white' : 'border-stone-600 text-stone-400 hover:border-stone-500'}`}>
+                          className={`flex-1 py-1.5 rounded-lg border text-[10px] font-bold transition-colors ${editingClip.size === id ? 'bg-rose-600 border-rose-600 text-white' : 'border-stone-600 text-stone-400 hover:border-stone-500'}`}>
                           {lbl}
                         </button>
                       ))}
@@ -5866,21 +5855,21 @@ const ClassicEditor = () => {
                   <div className="grid grid-cols-3 gap-2">
                     <label className="flex flex-col items-center gap-1 cursor-pointer">
                       <button onClick={() => updateTextClip(editingClipId, { bold: !editingClip.bold })}
-                        className={`relative w-10 h-5 rounded-full transition-colors ${editingClip.bold ? 'bg-violet-500' : 'bg-stone-600'}`}>
+                        className={`relative w-10 h-5 rounded-full transition-colors ${editingClip.bold ? 'bg-rose-500' : 'bg-stone-600'}`}>
                         <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-transform ${editingClip.bold ? 'translate-x-5' : 'translate-x-0.5'}`} />
                       </button>
                       <span className="text-[9px] text-stone-500">Bold</span>
                     </label>
                     <label className="flex flex-col items-center gap-1 cursor-pointer">
                       <button onClick={() => updateTextClip(editingClipId, { shadow: !editingClip.shadow })}
-                        className={`relative w-10 h-5 rounded-full transition-colors ${editingClip.shadow ? 'bg-violet-500' : 'bg-stone-600'}`}>
+                        className={`relative w-10 h-5 rounded-full transition-colors ${editingClip.shadow ? 'bg-rose-500' : 'bg-stone-600'}`}>
                         <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-transform ${editingClip.shadow ? 'translate-x-5' : 'translate-x-0.5'}`} />
                       </button>
                       <span className="text-[9px] text-stone-500">Shadow</span>
                     </label>
                     <label className="flex flex-col items-center gap-1 cursor-pointer">
                       <button onClick={() => updateTextClip(editingClipId, { bgBox: !editingClip.bgBox })}
-                        className={`relative w-10 h-5 rounded-full transition-colors ${editingClip.bgBox ? 'bg-violet-500' : 'bg-stone-600'}`}>
+                        className={`relative w-10 h-5 rounded-full transition-colors ${editingClip.bgBox ? 'bg-rose-500' : 'bg-stone-600'}`}>
                         <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-transform ${editingClip.bgBox ? 'translate-x-5' : 'translate-x-0.5'}`} />
                       </button>
                       <span className="text-[9px] text-stone-500">BG Box</span>
@@ -5923,7 +5912,7 @@ const ClassicEditor = () => {
                     <span className="text-xs font-bold text-stone-200">Voice Isolation</span>
                     <span className="text-[10px] text-stone-500 block">Remove background noise on export</span>
                   </div>
-                  <button onClick={() => setVoiceIsolation(!voiceIsolation)} className={`relative w-10 h-5 rounded-full transition-colors ${voiceIsolation ? 'bg-violet-500' : 'bg-stone-600'}`}>
+                  <button onClick={() => setVoiceIsolation(!voiceIsolation)} className={`relative w-10 h-5 rounded-full transition-colors ${voiceIsolation ? 'bg-rose-500' : 'bg-stone-600'}`}>
                     <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-transform ${voiceIsolation ? 'translate-x-5' : 'translate-x-0.5'}`} />
                   </button>
                 </label>
@@ -5932,7 +5921,7 @@ const ClassicEditor = () => {
                     <span className="text-xs font-bold text-stone-200">De-Reverb</span>
                     <span className="text-[10px] text-stone-500 block">Remove room echo</span>
                   </div>
-                  <button onClick={() => setDeReverb(!deReverb)} className={`relative w-10 h-5 rounded-full transition-colors ${deReverb ? 'bg-violet-500' : 'bg-stone-600'}`}>
+                  <button onClick={() => setDeReverb(!deReverb)} className={`relative w-10 h-5 rounded-full transition-colors ${deReverb ? 'bg-rose-500' : 'bg-stone-600'}`}>
                     <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-transform ${deReverb ? 'translate-x-5' : 'translate-x-0.5'}`} />
                   </button>
                 </label>
@@ -5946,10 +5935,10 @@ const ClassicEditor = () => {
               <div className="flex items-center gap-3 px-3 py-3 bg-stone-800 border border-stone-700 rounded-xl">
                 <Volume2 size={16} className="text-stone-400 shrink-0" />
                 <input type="range" min="0" max="1" step="0.05" defaultValue="1" onChange={(e) => { const v = videoRef.current; if (v) v.volume = Number(e.target.value); }} className="flex-1 accent-rose-500" title="Volume" />
-                <button type="button" onClick={() => setUserMuted(m => !m)} className={`text-xs font-bold px-2.5 py-1 rounded-lg transition-colors ${userMuted ? 'text-violet-400 bg-rose-900/40' : 'text-stone-500 hover:text-violet-400'}`}>{userMuted ? 'Unmute' : 'Mute'}</button>
+                <button type="button" onClick={() => setUserMuted(m => !m)} className={`text-xs font-bold px-2.5 py-1 rounded-lg transition-colors ${userMuted ? 'text-rose-400 bg-rose-900/40' : 'text-stone-500 hover:text-rose-400'}`}>{userMuted ? 'Unmute' : 'Mute'}</button>
               </div>
               {/* Recording */}
-              <button onClick={isRecording ? stopRecord : () => startRecord(true, true)} disabled={!!recordError} className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all active:scale-95 ${isRecording ? 'bg-red-500 text-white' : 'bg-stone-800 border border-stone-700 text-violet-400 hover:bg-stone-700'} disabled:opacity-40`}>
+              <button onClick={isRecording ? stopRecord : () => startRecord(true, true)} disabled={!!recordError} className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all active:scale-95 ${isRecording ? 'bg-red-500 text-white' : 'bg-stone-800 border border-stone-700 text-rose-400 hover:bg-stone-700'} disabled:opacity-40`}>
                 <Camera size={16} className={isRecording ? 'animate-pulse' : ''} />
                 {isRecording ? 'Stop Recording' : 'Record Video'}
               </button>
@@ -5964,7 +5953,7 @@ const ClassicEditor = () => {
                           <Music size={12} className="shrink-0 text-emerald-400" />
                           <span className="flex-1 text-xs text-stone-300 font-mono truncate">{secToTimecode(seg.start)} – {secToTimecode(seg.end)}</span>
                           <span className="text-[10px] text-stone-500">{((seg.end - seg.start)).toFixed(1)}s</span>
-                          <button onClick={(e) => { e.stopPropagation(); setSelectedAudioSegmentId(seg.id); deleteSelectedAudioSegment(); }} className="text-stone-600 hover:text-violet-400 ml-1"><X size={12} /></button>
+                          <button onClick={(e) => { e.stopPropagation(); setSelectedAudioSegmentId(seg.id); deleteSelectedAudioSegment(); }} className="text-stone-600 hover:text-rose-400 ml-1"><X size={12} /></button>
                         </div>
                         {/* Expanded controls when selected */}
                         {seg.id === selectedAudioSegmentId && (
@@ -6010,18 +5999,18 @@ const ClassicEditor = () => {
 
               {/* ─ AI Voice ─ */}
               <div className="bg-stone-800/60 border border-stone-700 rounded-xl p-3 space-y-2">
-                <p className="text-[10px] font-bold text-stone-300 uppercase tracking-wider flex items-center gap-1.5"><Mic size={11} className="text-violet-400" /> AI Voice Over</p>
+                <p className="text-[10px] font-bold text-stone-300 uppercase tracking-wider flex items-center gap-1.5"><Mic size={11} className="text-rose-400" /> AI Voice Over</p>
                 <textarea
                   value={ttsScript}
                   onChange={e => setTtsScript(e.target.value)}
                   placeholder="Write your script here — AI speaks it in the voice you pick. Perfect for narration, intros, or voiceovers."
                   rows={3}
-                  className="w-full bg-stone-900 border border-stone-600 rounded-lg px-3 py-2 text-xs text-stone-100 resize-none focus:outline-none focus:border-violet-500 placeholder-stone-600"
+                  className="w-full bg-stone-900 border border-stone-600 rounded-lg px-3 py-2 text-xs text-stone-100 resize-none focus:outline-none focus:border-rose-500 placeholder-stone-600"
                 />
                 <div className="grid grid-cols-3 gap-1">
                   {TTS_VOICES.map(v => (
                     <button key={v.id} onClick={() => setTtsVoice(v.id)}
-                      className={`py-1.5 rounded-lg border text-center transition-colors ${ttsVoice === v.id ? 'bg-rose-900/60 border-violet-500 text-rose-200' : 'bg-stone-900 border-stone-600 text-stone-400 hover:border-stone-500'}`}>
+                      className={`py-1.5 rounded-lg border text-center transition-colors ${ttsVoice === v.id ? 'bg-rose-900/60 border-rose-500 text-rose-200' : 'bg-stone-900 border-stone-600 text-stone-400 hover:border-stone-500'}`}>
                       <span className="text-[10px] font-bold block">{v.name}</span>
                       <span className="text-[9px] text-stone-500 truncate block">{v.desc}</span>
                     </button>
@@ -6032,9 +6021,9 @@ const ClassicEditor = () => {
                   <input type="range" min="0.5" max="2" step="0.25" value={ttsSpeed} onChange={e => setTtsSpeed(Number(e.target.value))} className="flex-1 accent-rose-500 h-1" />
                   <span className="text-[10px] text-stone-400 font-mono w-8 text-right shrink-0">{ttsSpeed}x</span>
                 </div>
-                {ttsError && <p className="text-[10px] text-violet-400">{ttsError}</p>}
+                {ttsError && <p className="text-[10px] text-rose-400">{ttsError}</p>}
                 <button onClick={generateVoice} disabled={ttsLoading || !ttsScript.trim()}
-                  className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-bold bg-violet-600 hover:bg-violet-500 text-white disabled:opacity-40 transition-all active:scale-95">
+                  className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-bold bg-rose-600 hover:bg-rose-500 text-white disabled:opacity-40 transition-all active:scale-95">
                   {ttsLoading ? <><span className="animate-spin inline-block">⏳</span> Generating…</> : <><Mic size={14} /> Generate Voice</>}
                 </button>
                 {!hasOpenAIKey() && <p className="text-[9px] text-stone-600 text-center">Add OpenAI key in Settings to enable</p>}
@@ -6048,7 +6037,7 @@ const ClassicEditor = () => {
                   className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-bold bg-stone-700 hover:bg-stone-600 text-stone-100 disabled:opacity-40 transition-all active:scale-95 border border-stone-600">
                   {autoCaptionLoading ? <><span className="animate-spin inline-block">⏳</span> Transcribing…</> : <>Auto-Caption My Video</>}
                 </button>
-                {autoCaptionError && <p className="text-[10px] text-violet-400">{autoCaptionError}</p>}
+                {autoCaptionError && <p className="text-[10px] text-rose-400">{autoCaptionError}</p>}
                 {!selectedVideo && <p className="text-[9px] text-stone-600 text-center">Select a video first</p>}
                 {!hasOpenAIKey() && <p className="text-[9px] text-stone-600 text-center">Requires OpenAI key in Settings</p>}
               </div>
@@ -6090,7 +6079,7 @@ const ClassicEditor = () => {
                         <div className="flex items-center gap-2">
                           <img src={ov.url} alt="" className="w-8 h-8 rounded object-contain bg-stone-800 shrink-0" />
                           <span className="flex-1 text-[10px] text-stone-300 truncate">{ov.name?.replace(/\.[^.]+$/, '') || 'Sticker'}</span>
-                          <button onClick={() => setImageOverlays(prev => prev.filter(o => o.id !== ov.id))} className="text-stone-600 hover:text-violet-400"><X size={12} /></button>
+                          <button onClick={() => setImageOverlays(prev => prev.filter(o => o.id !== ov.id))} className="text-stone-600 hover:text-rose-400"><X size={12} /></button>
                         </div>
                         <div className="grid grid-cols-2 gap-1.5">
                           <div>
@@ -6199,12 +6188,12 @@ const ClassicEditor = () => {
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <p className="text-[10px] font-bold text-stone-400 uppercase tracking-wider">Cinematic Looks</p>
-                  {filterPreset !== 'none' && <button onClick={resetAllFilters} className="text-[10px] text-violet-400 hover:text-violet-300">Reset</button>}
+                  {filterPreset !== 'none' && <button onClick={resetAllFilters} className="text-[10px] text-rose-400 hover:text-rose-300">Reset</button>}
                 </div>
                 <div className="grid grid-cols-5 gap-1">
                   {FILTER_PRESETS.map(fp => (
                     <button key={fp.id} onClick={() => applyFilterPreset(fp)}
-                      className={`flex flex-col items-center py-2 rounded-xl border text-[9px] font-bold transition-all active:scale-95 ${filterPreset === fp.id ? 'bg-rose-900/60 border-violet-500 text-rose-300' : 'bg-stone-800 border-stone-700 text-stone-400 hover:border-stone-500'}`}>
+                      className={`flex flex-col items-center py-2 rounded-xl border text-[9px] font-bold transition-all active:scale-95 ${filterPreset === fp.id ? 'bg-rose-900/60 border-rose-500 text-rose-300' : 'bg-stone-800 border-stone-700 text-stone-400 hover:border-stone-500'}`}>
                       <span className="text-sm leading-none mb-0.5">{fp.emoji}</span>
                       <span className="leading-tight text-center">{fp.label}</span>
                     </button>
@@ -6284,17 +6273,17 @@ const ClassicEditor = () => {
                 ].map(({ label, badge, desc, val, set }) => (
                   <label key={label} className="flex items-center justify-between bg-stone-700/50 border border-stone-700 rounded-xl p-3 cursor-pointer hover:border-stone-600 transition-colors">
                     <div>
-                      <span className="text-xs font-bold text-stone-200 flex items-center gap-1.5">{label}{badge && <span className="text-[9px] font-bold text-violet-400 bg-rose-900/40 px-1.5 py-0.5 rounded uppercase">{badge}</span>}</span>
+                      <span className="text-xs font-bold text-stone-200 flex items-center gap-1.5">{label}{badge && <span className="text-[9px] font-bold text-rose-400 bg-rose-900/40 px-1.5 py-0.5 rounded uppercase">{badge}</span>}</span>
                       <span className="text-[10px] text-stone-500 block mt-0.5">{desc}</span>
                     </div>
-                    <button onClick={() => set(!val)} className={`relative w-10 h-5 rounded-full transition-colors shrink-0 ${val ? 'bg-violet-500' : 'bg-stone-600'}`}>
+                    <button onClick={() => set(!val)} className={`relative w-10 h-5 rounded-full transition-colors shrink-0 ${val ? 'bg-rose-500' : 'bg-stone-600'}`}>
                       <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-transform ${val ? 'translate-x-5' : 'translate-x-0.5'}`} />
                     </button>
                   </label>
                 ))}
               </div>
 
-              <button onClick={() => setShowAIHelper(h => !h)} className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold bg-rose-900/40 border border-rose-700/50 text-rose-300 hover:bg-violet-800/50 active:scale-95 transition-all">
+              <button onClick={() => setShowAIHelper(h => !h)} className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold bg-rose-900/40 border border-rose-700/50 text-rose-300 hover:bg-rose-800/50 active:scale-95 transition-all">
                 <Sparkles size={15} /> AI Editing Tips
               </button>
             </div>
@@ -6313,7 +6302,7 @@ const ClassicEditor = () => {
                   <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
                     <Camera size={32} className="text-stone-600" />
                     <p className="text-[11px] text-stone-500">Camera preview</p>
-                    {cameraPreviewError && <p className="text-[10px] text-violet-400 text-center px-4">{cameraPreviewError}</p>}
+                    {cameraPreviewError && <p className="text-[10px] text-rose-400 text-center px-4">{cameraPreviewError}</p>}
                     <button onClick={() => startCameraPreview()}
                       className="px-4 py-2 bg-stone-800 border border-stone-600 rounded-lg text-xs font-bold text-stone-200 hover:bg-stone-700 active:scale-95 transition-all">
                       Enable Preview
@@ -6349,12 +6338,12 @@ const ClassicEditor = () => {
                   await startRecord(true, true);
                 }}
                 disabled={!!recordError}
-                className={`w-full flex items-center justify-center gap-2 py-4 rounded-xl text-sm font-bold transition-all active:scale-95 disabled:opacity-40 ${isRecording ? 'bg-red-500 hover:bg-red-400 text-white shadow-lg shadow-red-900/40' : 'bg-violet-600 hover:bg-violet-500 text-white shadow-lg shadow-rose-900/30'}`}>
+                className={`w-full flex items-center justify-center gap-2 py-4 rounded-xl text-sm font-bold transition-all active:scale-95 disabled:opacity-40 ${isRecording ? 'bg-red-500 hover:bg-red-400 text-white shadow-lg shadow-red-900/40' : 'bg-rose-600 hover:bg-rose-500 text-white shadow-lg shadow-rose-900/30'}`}>
                 {isRecording
                   ? <><span className="w-3 h-3 rounded bg-white" /> Stop Recording</>
                   : <><Camera size={18} /> Record Video</>}
               </button>
-              {recordError && <p className="text-[11px] text-violet-400 text-center">{recordError}</p>}
+              {recordError && <p className="text-[11px] text-rose-400 text-center">{recordError}</p>}
 
               {/* Quick tips */}
               <div className="bg-stone-800 border border-stone-700 rounded-xl p-3 space-y-2">
@@ -6406,7 +6395,7 @@ const ClassicEditor = () => {
                 if (mainSegments.some(s => s.transition && s.transition !== 'cut')) score += 14;
                 else if (mainSegments.length > 1) tips.push('Use Crossfade');
                 score = Math.min(100, score);
-                const barColor = score >= 80 ? 'bg-emerald-500' : score >= 55 ? 'bg-amber-400' : 'bg-violet-500';
+                const barColor = score >= 80 ? 'bg-emerald-500' : score >= 55 ? 'bg-amber-400' : 'bg-rose-500';
                 return (
                   <div className="bg-stone-800 border border-stone-700 rounded-xl p-3">
                     <div className="flex items-center justify-between mb-1.5">
@@ -6417,7 +6406,7 @@ const ClassicEditor = () => {
                       <div className={`h-full rounded-full transition-all ${barColor}`} style={{ width: `${score}%` }} />
                     </div>
                     {tips.length > 0 && tips.slice(0, 2).map((tip, i) => (
-                      <p key={i} className="text-[11px] text-stone-500 flex gap-1"><span className="text-violet-500">›</span>{tip}</p>
+                      <p key={i} className="text-[11px] text-stone-500 flex gap-1"><span className="text-rose-500">›</span>{tip}</p>
                     ))}
                   </div>
                 );
@@ -6474,7 +6463,7 @@ const ClassicEditor = () => {
                   </button>
                 </div>
               )}
-              <button onClick={exportVideo} disabled={exporting || !selectedVideo} className="w-full py-4 rounded-xl text-base font-bold bg-violet-500 hover:bg-violet-400 text-white disabled:opacity-40 shadow-lg shadow-rose-900/30 transition-all active:scale-95">
+              <button onClick={exportVideo} disabled={exporting || !selectedVideo} className="w-full py-4 rounded-xl text-base font-bold bg-rose-500 hover:bg-rose-400 text-white disabled:opacity-40 shadow-lg shadow-rose-900/30 transition-all active:scale-95">
                 {exporting ? (exportProgress > 0 ? `Exporting ${Math.round(exportProgress * 100)}%…` : 'Rendering…') : '⬇ Export Video'}
               </button>
               {/* Platform-specific final checklist */}
@@ -6501,7 +6490,7 @@ const ClassicEditor = () => {
             <div className="p-3 space-y-3">
               {/* Header */}
               <div className="flex items-center gap-2 pb-1">
-                <div className="w-7 h-7 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shrink-0">
+                <div className="w-7 h-7 rounded-xl bg-gradient-to-br from-rose-500 to-purple-600 flex items-center justify-center shrink-0">
                   <Bot size={14} className="text-white" />
                 </div>
                 <div>
@@ -6511,7 +6500,7 @@ const ClassicEditor = () => {
               </div>
 
               {/* Algorithm tips banner */}
-              <div className="bg-gradient-to-r from-violet-950/60 to-purple-950/60 border border-rose-800/40 rounded-xl p-3">
+              <div className="bg-gradient-to-r from-rose-950/60 to-purple-950/60 border border-rose-800/40 rounded-xl p-3">
                 <p className="text-[10px] font-bold text-rose-300 uppercase tracking-wider mb-1.5 flex items-center gap-1"><Flame size={11} /> What the Algorithm rewards</p>
                 <div className="space-y-1 text-[10px] text-stone-400">
                   <p>• <strong className="text-stone-300">Hook</strong> — first 1–3 seconds must stop the scroll</p>
@@ -6532,7 +6521,7 @@ const ClassicEditor = () => {
                     onChange={e => setAiTopic(e.target.value)}
                     onKeyDown={e => { if (e.key === 'Enter') generateAIContent(); }}
                     placeholder="e.g. morning prayer routine, faith over fear, 5am wake up"
-                    className="w-full px-3 py-2 rounded-xl bg-stone-800 border border-stone-700 text-stone-100 text-xs placeholder-stone-600 focus:border-violet-500 focus:outline-none"
+                    className="w-full px-3 py-2 rounded-xl bg-stone-800 border border-stone-700 text-stone-100 text-xs placeholder-stone-600 focus:border-rose-500 focus:outline-none"
                   />
                 </div>
                 <div>
@@ -6542,13 +6531,13 @@ const ClassicEditor = () => {
                     onChange={e => setAiDescription(e.target.value)}
                     placeholder="e.g. sharing my personal struggle with doubt and how God answered"
                     rows={2}
-                    className="w-full px-3 py-2 rounded-xl bg-stone-800 border border-stone-700 text-stone-100 text-xs placeholder-stone-600 focus:border-violet-500 focus:outline-none resize-none"
+                    className="w-full px-3 py-2 rounded-xl bg-stone-800 border border-stone-700 text-stone-100 text-xs placeholder-stone-600 focus:border-rose-500 focus:outline-none resize-none"
                   />
                 </div>
                 <button
                   onClick={generateAIContent}
                   disabled={!aiTopic.trim() || aiLoading}
-                  className="w-full py-2.5 rounded-xl bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 text-white text-xs font-bold disabled:opacity-50 transition-all flex items-center justify-center gap-2 active:scale-95"
+                  className="w-full py-2.5 rounded-xl bg-gradient-to-r from-rose-600 to-purple-600 hover:from-rose-500 hover:to-purple-500 text-white text-xs font-bold disabled:opacity-50 transition-all flex items-center justify-center gap-2 active:scale-95"
                 >
                   {aiLoading ? <><Loader2 size={13} className="animate-spin" /> Generating…</> : <><Sparkles size={13} /> Generate Content</>}
                 </button>
@@ -6563,9 +6552,9 @@ const ClassicEditor = () => {
                     <p className="text-[10px] font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1"><Flame size={11} /> Opening Hooks (first 3 seconds)</p>
                     {(aiResult.hooks || []).map((hook, i) => (
                       <div key={i} className="flex items-start gap-2 bg-stone-900/60 rounded-lg px-2.5 py-2">
-                        <span className="text-[10px] font-bold text-violet-400 shrink-0 mt-0.5">{i + 1}</span>
+                        <span className="text-[10px] font-bold text-rose-400 shrink-0 mt-0.5">{i + 1}</span>
                         <p className="text-xs text-stone-200 flex-1 leading-tight">{hook}</p>
-                        <button onClick={() => copyAI(hook, `hook${i}`)} className="shrink-0 text-stone-600 hover:text-violet-400 transition-colors" title="Copy">
+                        <button onClick={() => copyAI(hook, `hook${i}`)} className="shrink-0 text-stone-600 hover:text-rose-400 transition-colors" title="Copy">
                           {aiCopied === `hook${i}` ? <CheckCircle size={12} className="text-green-400" /> : <Copy size={12} />}
                         </button>
                       </div>
@@ -6577,12 +6566,12 @@ const ClassicEditor = () => {
                     <div className="bg-stone-800 border border-stone-700 rounded-xl p-3">
                       <div className="flex items-center justify-between mb-2">
                         <p className="text-[10px] font-bold text-stone-400 uppercase tracking-wider flex items-center gap-1"><AlignLeft size={11} /> Caption</p>
-                        <button onClick={() => copyAI(aiResult.caption + (aiResult.cta ? '\n\n' + aiResult.cta : '') + '\n\n' + (aiResult.hashtags || []).map(h => `#${h.replace(/^#/, '')}`).join(' '), 'caption')} className="text-[10px] text-stone-500 hover:text-violet-400 flex items-center gap-1 transition-colors">
+                        <button onClick={() => copyAI(aiResult.caption + (aiResult.cta ? '\n\n' + aiResult.cta : '') + '\n\n' + (aiResult.hashtags || []).map(h => `#${h.replace(/^#/, '')}`).join(' '), 'caption')} className="text-[10px] text-stone-500 hover:text-rose-400 flex items-center gap-1 transition-colors">
                           {aiCopied === 'caption' ? <><CheckCircle size={11} className="text-green-400" /> Copied!</> : <><Copy size={11} /> Copy all</>}
                         </button>
                       </div>
                       <p className="text-xs text-stone-300 leading-relaxed whitespace-pre-wrap">{aiResult.caption}</p>
-                      {aiResult.cta && <p className="text-xs text-violet-400 font-bold mt-2 leading-tight">{aiResult.cta}</p>}
+                      {aiResult.cta && <p className="text-xs text-rose-400 font-bold mt-2 leading-tight">{aiResult.cta}</p>}
                     </div>
                   )}
 
@@ -6591,13 +6580,13 @@ const ClassicEditor = () => {
                     <div className="bg-stone-800 border border-stone-700 rounded-xl p-3">
                       <div className="flex items-center justify-between mb-2">
                         <p className="text-[10px] font-bold text-stone-400 uppercase tracking-wider flex items-center gap-1"><HashIcon size={11} /> Hashtags</p>
-                        <button onClick={() => copyAI((aiResult.hashtags || []).map(h => `#${h.replace(/^#/, '')}`).join(' '), 'hashtags')} className="text-[10px] text-stone-500 hover:text-violet-400 flex items-center gap-1 transition-colors">
+                        <button onClick={() => copyAI((aiResult.hashtags || []).map(h => `#${h.replace(/^#/, '')}`).join(' '), 'hashtags')} className="text-[10px] text-stone-500 hover:text-rose-400 flex items-center gap-1 transition-colors">
                           {aiCopied === 'hashtags' ? <><CheckCircle size={11} className="text-green-400" /> Copied!</> : <><Copy size={11} /> Copy</>}
                         </button>
                       </div>
                       <div className="flex flex-wrap gap-1">
                         {(aiResult.hashtags || []).map((tag, i) => (
-                          <span key={i} onClick={() => copyAI(`#${tag.replace(/^#/, '')}`, `tag${i}`)} className="text-[10px] bg-stone-700 hover:bg-violet-900/40 text-rose-300 rounded-md px-2 py-0.5 cursor-pointer transition-colors">#{tag.replace(/^#/, '')}</span>
+                          <span key={i} onClick={() => copyAI(`#${tag.replace(/^#/, '')}`, `tag${i}`)} className="text-[10px] bg-stone-700 hover:bg-rose-900/40 text-rose-300 rounded-md px-2 py-0.5 cursor-pointer transition-colors">#{tag.replace(/^#/, '')}</span>
                         ))}
                       </div>
                     </div>
@@ -6627,14 +6616,14 @@ const ClassicEditor = () => {
           </div>
         )}
         {showAIHelper && (
-          <div className="absolute right-4 top-14 z-50 bg-white dark:bg-stone-800 border border-violet-200 dark:border-stone-600 rounded-xl shadow-xl p-4 w-80 text-xs max-h-[85vh] overflow-y-auto">
-            <h4 className="font-bold text-stone-800 dark:text-stone-100 mb-3 flex items-center gap-2"><Sparkles size={16} className="text-violet-500" /> AI Helper</h4>
+          <div className="absolute right-4 top-14 z-50 bg-white dark:bg-stone-800 border border-rose-200 dark:border-stone-600 rounded-xl shadow-xl p-4 w-80 text-xs max-h-[85vh] overflow-y-auto">
+            <h4 className="font-bold text-stone-800 dark:text-stone-100 mb-3 flex items-center gap-2"><Sparkles size={16} className="text-rose-500" /> AI Helper</h4>
             <div className="space-y-3">
               <div>
                 <p className="text-[10px] uppercase font-bold text-stone-500 dark:text-stone-400 mb-1.5">Smart zoom</p>
                 <div className="flex gap-2">
-                  <button onClick={zoomToFit} className="px-2 py-1 rounded-lg bg-stone-100 dark:bg-stone-700 hover:bg-violet-100 dark:hover:bg-violet-900/40 text-stone-700 dark:text-stone-300 text-[11px] font-medium">Fit view</button>
-                  <button onClick={zoomToSelection} disabled={!selectedSegmentId && !selectedAudioSegmentId} className="px-2 py-1 rounded-lg bg-stone-100 dark:bg-stone-700 hover:bg-violet-100 dark:hover:bg-violet-900/40 disabled:opacity-50 text-stone-700 dark:text-stone-300 text-[11px] font-medium">Zoom to selection</button>
+                  <button onClick={zoomToFit} className="px-2 py-1 rounded-lg bg-stone-100 dark:bg-stone-700 hover:bg-rose-100 dark:hover:bg-rose-900/40 text-stone-700 dark:text-stone-300 text-[11px] font-medium">Fit view</button>
+                  <button onClick={zoomToSelection} disabled={!selectedSegmentId && !selectedAudioSegmentId} className="px-2 py-1 rounded-lg bg-stone-100 dark:bg-stone-700 hover:bg-rose-100 dark:hover:bg-rose-900/40 disabled:opacity-50 text-stone-700 dark:text-stone-300 text-[11px] font-medium">Zoom to selection</button>
                 </div>
               </div>
               <div>
@@ -6653,7 +6642,7 @@ const ClassicEditor = () => {
               <div>
                 <p className="text-[10px] uppercase font-bold text-stone-500 dark:text-stone-400 mb-1.5">AI um / ah / quiet removal</p>
                 <p className="text-[11px] text-stone-600 dark:text-stone-400 mb-2">Coming soon: AI will scan your timeline, find ums, ahs, and quiet parts, then mark them for one-click removal.</p>
-                <button onClick={() => setActiveTab('audio')} className="px-2 py-1.5 rounded-lg bg-violet-100 dark:bg-rose-900/40 text-violet-600 dark:text-violet-400 text-[11px] font-medium hover:bg-violet-200 dark:hover:bg-violet-800/50">Smart Audio AI →</button>
+                <button onClick={() => setActiveTab('audio')} className="px-2 py-1.5 rounded-lg bg-rose-100 dark:bg-rose-900/40 text-rose-600 dark:text-rose-400 text-[11px] font-medium hover:bg-rose-200 dark:hover:bg-rose-800/50">Smart Audio AI →</button>
               </div>
               <div>
                 <p className="text-[10px] uppercase font-bold text-stone-500 dark:text-stone-400 mb-1.5">Manual filler removal</p>
@@ -6663,7 +6652,7 @@ const ClassicEditor = () => {
           </div>
         )}
         {showShortcuts && (
-          <div className="absolute right-4 top-14 z-50 bg-white dark:bg-stone-800 border border-violet-200 dark:border-stone-600 rounded-xl shadow-xl p-4 w-64 text-xs">
+          <div className="absolute right-4 top-14 z-50 bg-white dark:bg-stone-800 border border-rose-200 dark:border-stone-600 rounded-xl shadow-xl p-4 w-64 text-xs">
             <h4 className="font-bold text-stone-800 dark:text-stone-100 mb-3 flex items-center gap-2"><Keyboard size={16} /> Shortcuts</h4>
             <div className="space-y-2 font-mono text-stone-600 dark:text-stone-400">
               <p><kbd className="px-1.5 py-0.5 bg-stone-100 dark:bg-stone-700 rounded">Space</kbd> Play / Pause</p>
@@ -6682,9 +6671,9 @@ const ClassicEditor = () => {
           </div>
         )}
       {editingClip && (
-        <div className="fixed right-4 top-24 z-50 w-72 p-4 bg-white dark:bg-stone-800 border border-violet-100 dark:border-stone-700 rounded-2xl shadow-lg">
+        <div className="fixed right-4 top-24 z-50 w-72 p-4 bg-white dark:bg-stone-800 border border-rose-100 dark:border-stone-700 rounded-2xl shadow-lg">
           <h4 className="font-bold text-stone-800 dark:text-stone-100 mb-3">Edit text</h4>
-          <textarea value={editingClip.text || ''} onChange={(e) => updateTextClip(editingClip.id, e.target.value)} placeholder="Type your text..." rows={2} className="w-full p-3 rounded-xl border border-violet-100 dark:border-stone-600 bg-violet-50/50 dark:bg-stone-700 text-sm mb-3 resize-none" />
+          <textarea value={editingClip.text || ''} onChange={(e) => updateTextClip(editingClip.id, e.target.value)} placeholder="Type your text..." rows={2} className="w-full p-3 rounded-xl border border-rose-100 dark:border-stone-600 bg-rose-50/50 dark:bg-stone-700 text-sm mb-3 resize-none" />
           <div className="grid grid-cols-2 gap-2 mb-3">
             <div>
               <label className="block text-xs font-bold text-stone-500 mb-1">Start (e.g. 0:05)</label>
@@ -6735,7 +6724,7 @@ const ClassicEditor = () => {
             </select>
             {businesses?.length > 0 && (() => {
               const brand = BRAND_PRESETS[activeBusinessId] || BRAND_PRESETS.sarah;
-              return <button type="button" onClick={() => updateTextClip(editingClip.id, { color: brand.colors[0], font: brand.font })} className="text-xs font-bold text-violet-600 hover:underline" title={`Apply ${businesses.find(b => b.id === activeBusinessId)?.name || 'brand'} style`}>Use brand</button>;
+              return <button type="button" onClick={() => updateTextClip(editingClip.id, { color: brand.colors[0], font: brand.font })} className="text-xs font-bold text-rose-600 hover:underline" title={`Apply ${businesses.find(b => b.id === activeBusinessId)?.name || 'brand'} style`}>Use brand</button>;
             })()}
             <label className="flex items-center gap-1 px-2 cursor-pointer">
               <input type="checkbox" checked={!!editingClip.bold} onChange={(e) => updateTextClip(editingClip.id, { bold: e.target.checked })} className="rounded" />
@@ -6751,7 +6740,7 @@ const ClassicEditor = () => {
                 { id: 'tiktok-bold', label: 'TikTok', preview: 'BOLD', cls: 'bg-black text-yellow-400 font-black' },
                 { id: 'faith', label: 'Faith', preview: 'Aa', cls: 'bg-stone-800 text-amber-300 italic font-serif' },
                 { id: 'minimal', label: 'Minimal', preview: 'Aa', cls: 'bg-transparent border border-stone-500 text-white' },
-                { id: 'highlight', label: 'Highlight', preview: 'Aa', cls: 'bg-violet-500 text-white font-extrabold' },
+                { id: 'highlight', label: 'Highlight', preview: 'Aa', cls: 'bg-rose-500 text-white font-extrabold' },
                 { id: 'neon', label: 'Neon', preview: 'NEO', cls: 'bg-stone-900 text-cyan-300 font-bold uppercase' },
                 { id: 'typewriter', label: 'Type', preview: 'Aa_', cls: 'bg-stone-800 text-white font-mono' },
               ].map(({ id, label, preview, cls }) => (
@@ -6759,7 +6748,7 @@ const ClassicEditor = () => {
                   key={String(id)}
                   type="button"
                   onClick={() => updateTextClip(editingClip.id, { animStyle: id })}
-                  className={`relative px-2 py-2 rounded-lg text-xs font-semibold transition-all border-2 ${editingClip.animStyle === id ? 'border-violet-400 scale-105 shadow-lg' : 'border-transparent'} ${cls}`}
+                  className={`relative px-2 py-2 rounded-lg text-xs font-semibold transition-all border-2 ${editingClip.animStyle === id ? 'border-rose-400 scale-105 shadow-lg' : 'border-transparent'} ${cls}`}
                   title={label}
                 >
                   <span className="block text-[11px] opacity-70 mb-0.5">{preview}</span>
@@ -6768,7 +6757,7 @@ const ClassicEditor = () => {
               ))}
             </div>
           </div>
-          <button onClick={() => setEditingClipId(null)} className="w-full py-2 rounded-xl bg-violet-500 text-white font-bold text-sm">Done</button>
+          <button onClick={() => setEditingClipId(null)} className="w-full py-2 rounded-xl bg-rose-500 text-white font-bold text-sm">Done</button>
         </div>
       )}
       </div>
@@ -6776,7 +6765,7 @@ const ClassicEditor = () => {
       <div className="flex flex-col min-h-0 bg-stone-900" style={{ gridArea: 'timeline' }}>
       {/* Primary editing toolbar — Split, Delete, Undo, Redo front and center */}
       <div className="shrink-0 flex items-center gap-1 px-3 py-2 bg-stone-800 border-t border-stone-700">
-        <button onClick={splitAtPlayhead} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-violet-600 hover:bg-violet-500 text-white text-xs font-bold shadow" title="Split clip at playhead (S)"><Scissors size={13} /> Split</button>
+        <button onClick={splitAtPlayhead} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold shadow" title="Split clip at playhead (S)"><Scissors size={13} /> Split</button>
         <button
           onClick={deleteSelectedSegment}
           disabled={!selectedSegmentId && !selectedAudioSegmentId && !selectedClipId}
@@ -6791,17 +6780,17 @@ const ClassicEditor = () => {
         <span className="text-xs font-mono text-stone-400 min-w-[2.5rem] text-center">{timelineZoom.toFixed(1)}×</span>
         <button onClick={() => setTimelineZoom(z => Math.max(0.5, Math.min(4, z * 1.4)))} className="px-2 py-1.5 rounded bg-stone-700 hover:bg-stone-600 text-stone-300 text-xs" title="Zoom in">+</button>
         <button onClick={zoomToFit} className="px-2 py-1.5 rounded bg-stone-700 hover:bg-stone-600 text-stone-300 text-xs">Fit</button>
-        {splitFeedback && <span className="text-[10px] text-violet-400 font-bold ml-2">{splitFeedback}</span>}
+        {splitFeedback && <span className="text-[10px] text-rose-400 font-bold ml-2">{splitFeedback}</span>}
       </div>
       <div
         className={`timeline-track flex flex-col flex-shrink-0 border-t border-stone-700 bg-stone-900 overflow-auto transition-all touch-pan-y ${!selectedVideo && !hasLayeredClips ? 'opacity-60' : ''}`}
         ref={el => { timelineScrollRef.current = el; }}
         onWheel={e => { e.preventDefault(); const el = timelineScrollRef.current; if (!el) return; if (e.shiftKey) el.scrollLeft += e.deltaY; else el.scrollTop += e.deltaY; }}
-        onDragOver={e => { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; e.currentTarget.classList.add('ring-2', 'ring-violet-500'); }}
-        onDragLeave={e => { if (!e.currentTarget.contains(e.relatedTarget)) e.currentTarget.classList.remove('ring-2', 'ring-violet-500'); }}
+        onDragOver={e => { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; e.currentTarget.classList.add('ring-2', 'ring-rose-500'); }}
+        onDragLeave={e => { if (!e.currentTarget.contains(e.relatedTarget)) e.currentTarget.classList.remove('ring-2', 'ring-rose-500'); }}
         onDrop={e => {
           e.preventDefault();
-          e.currentTarget.classList.remove('ring-2', 'ring-violet-500');
+          e.currentTarget.classList.remove('ring-2', 'ring-rose-500');
           const files = Array.from(e.dataTransfer.files || []);
           const video = files.find(f => f.type.startsWith('video/'));
           const audio = files.find(f => f.type.startsWith('audio/'));
@@ -6874,7 +6863,7 @@ const ClassicEditor = () => {
         <div className="flex-1 min-h-0 flex flex-col p-2 gap-0 bg-stone-800/80 bg-[linear-gradient(to_right,rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:20px_20px]" style={{ minWidth: 80 + 500 * timelineZoom }}>
           {/* 1. Text track */}
           <div className="flex items-center shrink-0 relative group/track" style={{ height: trackHeights.text }}>
-            <div onMouseDown={(e) => { e.preventDefault(); setResizingTrack('text'); }} className="absolute bottom-0 left-0 right-0 h-1.5 cursor-ns-resize hover:bg-violet-500/50 z-20 flex items-center justify-center" title="Drag to resize track"><div className="w-12 h-0.5 bg-stone-500 rounded opacity-0 group-hover/track:opacity-100" /></div>
+            <div onMouseDown={(e) => { e.preventDefault(); setResizingTrack('text'); }} className="absolute bottom-0 left-0 right-0 h-1.5 cursor-ns-resize hover:bg-rose-500/50 z-20 flex items-center justify-center" title="Drag to resize track"><div className="w-12 h-0.5 bg-stone-500 rounded opacity-0 group-hover/track:opacity-100" /></div>
             <div className="w-20 shrink-0 flex items-center gap-2 text-stone-300 text-xs">
               <span>T</span>
               <span>Text</span>
@@ -6934,7 +6923,7 @@ const ClassicEditor = () => {
           ) : (
             <>
           {/* Resize bar */}
-          <div onMouseDown={(e) => { e.preventDefault(); setResizingTrack('video'); }} className="h-1.5 shrink-0 cursor-ns-resize hover:bg-violet-500/30 flex items-center justify-center" title="Drag to resize Video track"><div className="w-8 h-0.5 bg-stone-600 rounded" /></div>
+          <div onMouseDown={(e) => { e.preventDefault(); setResizingTrack('video'); }} className="h-1.5 shrink-0 cursor-ns-resize hover:bg-rose-500/30 flex items-center justify-center" title="Drag to resize Video track"><div className="w-8 h-0.5 bg-stone-600 rounded" /></div>
           {/* 2. Video track (legacy — when no layered clips) */}
           <div className="flex items-center shrink-0 relative" style={{ height: trackHeights.video }}>
             <div className="w-20 shrink-0 flex items-center gap-2 text-stone-300 text-xs">
@@ -6954,12 +6943,12 @@ const ClassicEditor = () => {
                         onClick={() => { zoomToSelection(); }}
                         className={`absolute h-[calc(100%-4px)] top-0.5 flex items-stretch group rounded overflow-hidden cursor-pointer ${selectedSegmentId === seg.id ? 'ring-2 ring-amber-400' : 'ring-1 ring-stone-600'} ${movingMainId === seg.id ? 'ring-2 ring-white' : ''}`}
                         style={{ left: `${left}%`, width: `${Math.max(2, w)}%` }}>
-                        <div onMouseDown={(e) => handleResizeMain(e, seg, 'start')} className="w-2.5 flex-shrink-0 cursor-ew-resize bg-white/20 hover:bg-violet-400/60 z-10 flex items-center justify-center"><div className="w-0.5 h-4 bg-white/50 rounded-full" /></div>
+                        <div onMouseDown={(e) => handleResizeMain(e, seg, 'start')} className="w-2.5 flex-shrink-0 cursor-ew-resize bg-white/20 hover:bg-rose-400/60 z-10 flex items-center justify-center"><div className="w-0.5 h-4 bg-white/50 rounded-full" /></div>
                         <div onMouseDown={(e) => handleMoveMainStart(e, seg)} className="flex-1 min-w-0 relative overflow-hidden">
                           <VideoSegmentThumbnail videoUrl={selectedVideo.url} startTime={seg.start} segStart={seg.start} segEnd={seg.end} />
                           <span className="absolute bottom-0 left-0 right-0 text-[9px] font-mono text-white bg-black/60 px-1 truncate">{secToTimecode(seg.start)} – {secToTimecode(seg.end)}</span>
                         </div>
-                        <div onMouseDown={(e) => handleResizeMain(e, seg, 'end')} className="w-2.5 flex-shrink-0 cursor-ew-resize bg-white/20 hover:bg-violet-400/60 z-10 flex items-center justify-center"><div className="w-0.5 h-4 bg-white/50 rounded-full" /></div>
+                        <div onMouseDown={(e) => handleResizeMain(e, seg, 'end')} className="w-2.5 flex-shrink-0 cursor-ew-resize bg-white/20 hover:bg-rose-400/60 z-10 flex items-center justify-center"><div className="w-0.5 h-4 bg-white/50 rounded-full" /></div>
                       </div>
                     );
                   })}
@@ -6974,7 +6963,7 @@ const ClassicEditor = () => {
             </div>
           </div>
           {/* Resize bar */}
-          <div onMouseDown={(e) => { e.preventDefault(); setResizingTrack('audio'); }} className="h-1.5 shrink-0 cursor-ns-resize hover:bg-violet-500/30 flex items-center justify-center" title="Drag to resize Audio track"><div className="w-8 h-0.5 bg-stone-600 rounded" /></div>
+          <div onMouseDown={(e) => { e.preventDefault(); setResizingTrack('audio'); }} className="h-1.5 shrink-0 cursor-ns-resize hover:bg-rose-500/30 flex items-center justify-center" title="Drag to resize Audio track"><div className="w-8 h-0.5 bg-stone-600 rounded" /></div>
           {/* 3. Audio track — drag segment down to move to track 2 */}
           <div className="flex items-center shrink-0" style={{ height: trackHeights.audio }}>
             <div className="w-20 shrink-0 flex items-center gap-2 text-stone-300 text-xs">
@@ -7070,9 +7059,9 @@ const AIAudioStudio = () => {
 
   return (
     <div className="max-w-4xl mx-auto">
-      <div className="bg-white dark:bg-stone-800 border border-violet-100 dark:border-stone-700 rounded-3xl p-8 shadow-sm transition-colors">
+      <div className="bg-white dark:bg-stone-800 border border-rose-100 dark:border-stone-700 rounded-3xl p-8 shadow-sm transition-colors">
         <h3 className="text-xl font-semibold text-stone-800 flex items-center mb-2">
-          <AudioLines className="mr-2 text-violet-400" size={24} />
+          <AudioLines className="mr-2 text-rose-400" size={24} />
           Smart Audio AI
         </h3>
         <p className="text-sm text-stone-500 mb-2">Achieve professional broadcast quality using AI Voice Isolation.</p>
@@ -7087,7 +7076,7 @@ const AIAudioStudio = () => {
         <div className="mb-8">
           <label className="block text-xs font-bold text-stone-400 mb-2 uppercase">Source Audio</label>
           {audioFiles.length > 0 ? (
-            <select value={selectedAudio?.id || ''} onChange={(e) => setSelectedAudioId(Number(e.target.value) || null)} className="w-full bg-stone-50 border border-violet-100 rounded-xl px-4 py-2.5 text-sm">
+            <select value={selectedAudio?.id || ''} onChange={(e) => setSelectedAudioId(Number(e.target.value) || null)} className="w-full bg-stone-50 border border-rose-100 rounded-xl px-4 py-2.5 text-sm">
               <option value="">Select audio file...</option>
               {audioFiles.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
             </select>
@@ -7100,39 +7089,39 @@ const AIAudioStudio = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="bg-violet-50/50 dark:bg-stone-700/40 p-6 rounded-3xl border border-violet-100 dark:border-stone-600">
+          <div className="bg-rose-50/50 dark:bg-stone-700/40 p-6 rounded-3xl border border-rose-100 dark:border-stone-600">
             <div className="flex justify-between items-start mb-2">
               <div>
                 <h4 className="text-base font-bold text-stone-800 dark:text-stone-100 flex items-center gap-2">Voice Isolation {voiceIsolation && <span className="text-[10px] font-bold text-emerald-600 bg-emerald-100 dark:bg-emerald-900/50 px-2 py-0.5 rounded">ON</span>}</h4>
                 <p className="text-xs text-stone-500 dark:text-stone-400 mt-1">Removes AC, traffic, and background noise.</p>
               </div>
-              <button onClick={() => setVoiceIsolation(!voiceIsolation)} className={`relative w-12 h-6 rounded-full transition-colors ${voiceIsolation ? 'bg-violet-500' : 'bg-violet-200 dark:bg-stone-600'}`}>
+              <button onClick={() => setVoiceIsolation(!voiceIsolation)} className={`relative w-12 h-6 rounded-full transition-colors ${voiceIsolation ? 'bg-rose-500' : 'bg-rose-200 dark:bg-stone-600'}`}>
                 <span className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow-sm transition-transform ${voiceIsolation ? 'translate-x-7' : 'translate-x-1'}`}></span>
               </button>
             </div>
           </div>
-          <div className="bg-violet-50/50 dark:bg-stone-700/40 p-6 rounded-3xl border border-violet-100 dark:border-stone-600">
+          <div className="bg-rose-50/50 dark:bg-stone-700/40 p-6 rounded-3xl border border-rose-100 dark:border-stone-600">
             <div className="flex justify-between items-start mb-2">
               <div>
                 <h4 className="text-base font-bold text-stone-800 dark:text-stone-100 flex items-center gap-2">Studio De-Reverb {deReverb && <span className="text-[10px] font-bold text-emerald-600 bg-emerald-100 dark:bg-emerald-900/50 px-2 py-0.5 rounded">ON</span>}</h4>
                 <p className="text-xs text-stone-500 dark:text-stone-400 mt-1">Removes room echo.</p>
               </div>
-              <button onClick={() => setDeReverb(!deReverb)} className={`relative w-12 h-6 rounded-full transition-colors ${deReverb ? 'bg-violet-500' : 'bg-violet-200 dark:bg-stone-600'}`}>
+              <button onClick={() => setDeReverb(!deReverb)} className={`relative w-12 h-6 rounded-full transition-colors ${deReverb ? 'bg-rose-500' : 'bg-rose-200 dark:bg-stone-600'}`}>
                 <span className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow-sm transition-transform ${deReverb ? 'translate-x-7' : 'translate-x-1'}`}></span>
               </button>
             </div>
-            <div className="mt-4 pt-6 border-t border-violet-100 dark:border-stone-600">
+            <div className="mt-4 pt-6 border-t border-rose-100 dark:border-stone-600">
               <label className="text-[10px] font-bold uppercase tracking-widest text-stone-400 block mb-3">Enhancement Strength</label>
               <input type="range" min="0" max="100" value={deReverbStrength} onChange={(e) => setDeReverbStrength(Number(e.target.value))} className="w-full accent-rose-400" />
             </div>
           </div>
-          <div className="md:col-span-2 bg-violet-50/80 dark:bg-rose-950/30 p-6 rounded-3xl border border-violet-200 dark:border-rose-800">
+          <div className="md:col-span-2 bg-rose-50/80 dark:bg-rose-950/30 p-6 rounded-3xl border border-rose-200 dark:border-rose-800">
             <h4 className="text-base font-bold text-stone-800 dark:text-stone-100 flex items-center gap-2">
-              <Sparkles size={18} className="text-violet-500" />
+              <Sparkles size={18} className="text-rose-500" />
               Filler removal (ums, ahs, pauses)
             </h4>
-            <p className="text-sm text-stone-600 dark:text-stone-300 mt-2">AI auto-detection coming soon. For now: use <button type="button" onClick={() => setActiveTab('classic')} className="text-violet-600 dark:text-violet-400 font-bold hover:underline">Classic Timeline</button> → type time (e.g. 0:12) → Split at time → delete segment.</p>
-            <p className="text-xs text-stone-500 dark:text-stone-400 mt-2"><button type="button" onClick={() => setActiveTab('editor')} className="text-violet-600 dark:text-violet-400 hover:underline">No-Mouse Editor</button> for cut lists without timeline scrubbing.</p>
+            <p className="text-sm text-stone-600 dark:text-stone-300 mt-2">AI auto-detection coming soon. For now: use <button type="button" onClick={() => setActiveTab('classic')} className="text-rose-600 dark:text-rose-400 font-bold hover:underline">Classic Timeline</button> → type time (e.g. 0:12) → Split at time → delete segment.</p>
+            <p className="text-xs text-stone-500 dark:text-stone-400 mt-2"><button type="button" onClick={() => setActiveTab('editor')} className="text-rose-600 dark:text-rose-400 hover:underline">No-Mouse Editor</button> for cut lists without timeline scrubbing.</p>
           </div>
         </div>
       </div>
@@ -7147,9 +7136,9 @@ const ProEnhancements = () => {
 
   return (
     <div className="max-w-4xl mx-auto">
-      <div className="bg-white dark:bg-stone-800 border border-violet-100 dark:border-stone-700 rounded-3xl p-8 shadow-sm transition-colors">
+      <div className="bg-white dark:bg-stone-800 border border-rose-100 dark:border-stone-700 rounded-3xl p-8 shadow-sm transition-colors">
         <h3 className="text-xl font-semibold text-stone-800 flex items-center mb-2">
-          <Wand2 className="mr-2 text-violet-400" size={24} />
+          <Wand2 className="mr-2 text-rose-400" size={24} />
           Cinematic Processing
         </h3>
         <p className="text-sm text-stone-500 mb-8">Upscale and color-grade footage for a premium lifestyle look.</p>
@@ -7162,13 +7151,13 @@ const ProEnhancements = () => {
             <div className="grid grid-cols-4 gap-2">
               {videos.map(v => (
                 <button key={v.id} onClick={() => setSelectedVideoId(v.id)}
-                  className={`relative rounded-xl overflow-hidden aspect-video border-2 transition-all group ${selectedVideo?.id === v.id ? 'border-violet-500 ring-2 ring-violet-400' : 'border-violet-100 hover:border-violet-300'}`}
+                  className={`relative rounded-xl overflow-hidden aspect-video border-2 transition-all group ${selectedVideo?.id === v.id ? 'border-rose-500 ring-2 ring-rose-400' : 'border-rose-100 hover:border-rose-300'}`}
                   title={v.name}>
                   <video src={v.url} muted playsInline preload="metadata" className="w-full h-full object-cover"
                     onLoadedMetadata={e => { e.target.currentTime = 0.5; }} />
                   {selectedVideo?.id === v.id && (
-                    <div className="absolute inset-0 bg-violet-500/20 flex items-center justify-center">
-                      <div className="w-5 h-5 rounded-full bg-violet-500 flex items-center justify-center shadow-lg">
+                    <div className="absolute inset-0 bg-rose-500/20 flex items-center justify-center">
+                      <div className="w-5 h-5 rounded-full bg-rose-500 flex items-center justify-center shadow-lg">
                         <div className="w-2 h-2 rounded-full bg-white" />
                       </div>
                     </div>
@@ -7183,23 +7172,23 @@ const ProEnhancements = () => {
         </div>
 
         <div className="space-y-4">
-          <label className="flex items-center justify-between bg-violet-50/50 p-5 rounded-2xl border border-violet-100 cursor-pointer hover:bg-violet-50 transition-colors">
+          <label className="flex items-center justify-between bg-rose-50/50 p-5 rounded-2xl border border-rose-100 cursor-pointer hover:bg-rose-50 transition-colors">
             <div>
               <span className="text-base font-bold text-stone-800 flex items-center gap-2">
-                4K AI Upscaling <span className="bg-violet-100 text-violet-600 text-[10px] px-2 py-0.5 rounded-full uppercase font-bold">Ultra HD</span>
+                4K AI Upscaling <span className="bg-rose-100 text-rose-600 text-[10px] px-2 py-0.5 rounded-full uppercase font-bold">Ultra HD</span>
               </span>
               <span className="text-xs text-stone-500 block mt-1">Sharpens soft footage and adds realistic details.</span>
             </div>
-            <button onClick={() => setAiUpscale(!aiUpscale)} className={`relative w-12 h-6 rounded-full transition-colors ${aiUpscale ? 'bg-violet-400' : 'bg-violet-200'}`}>
+            <button onClick={() => setAiUpscale(!aiUpscale)} className={`relative w-12 h-6 rounded-full transition-colors ${aiUpscale ? 'bg-rose-400' : 'bg-rose-200'}`}>
               <span className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow-sm transition-transform ${aiUpscale ? 'translate-x-7' : 'translate-x-1'}`}></span>
             </button>
           </label>
-          <label className="flex items-center justify-between bg-violet-50/50 p-5 rounded-2xl border border-violet-100 cursor-pointer hover:bg-violet-50 transition-colors">
+          <label className="flex items-center justify-between bg-rose-50/50 p-5 rounded-2xl border border-rose-100 cursor-pointer hover:bg-rose-50 transition-colors">
             <div>
               <span className="text-base font-bold text-stone-800">Auto Cinematic Color Grade</span>
               <span className="text-xs text-stone-500 block mt-1">Converts flat iPhone footage into rich, moody cinematic tones.</span>
             </div>
-            <button onClick={() => setCinematicGrade(!cinematicGrade)} className={`relative w-12 h-6 rounded-full transition-colors ${cinematicGrade ? 'bg-violet-400' : 'bg-violet-200'}`}>
+            <button onClick={() => setCinematicGrade(!cinematicGrade)} className={`relative w-12 h-6 rounded-full transition-colors ${cinematicGrade ? 'bg-rose-400' : 'bg-rose-200'}`}>
               <span className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow-sm transition-transform ${cinematicGrade ? 'translate-x-7' : 'translate-x-1'}`}></span>
             </button>
           </label>
@@ -7427,7 +7416,7 @@ const InlineCameraGuide = () => {
       {/* Camera picker */}
       <div className="flex gap-1.5 flex-wrap">
         {allCams.map(c => (
-          <button key={c.id} onClick={() => setCamera(c.id)} className={`px-2.5 py-1 rounded-lg text-[11px] font-bold border transition-colors ${camera === c.id ? 'bg-violet-600 border-rose-600 text-white' : 'bg-stone-800 border-stone-700 text-stone-400 hover:text-stone-200'}`}>{c.name}</button>
+          <button key={c.id} onClick={() => setCamera(c.id)} className={`px-2.5 py-1 rounded-lg text-[11px] font-bold border transition-colors ${camera === c.id ? 'bg-rose-600 border-rose-600 text-white' : 'bg-stone-800 border-stone-700 text-stone-400 hover:text-stone-200'}`}>{c.name}</button>
         ))}
       </div>
       {/* Type + lighting */}
@@ -7459,7 +7448,7 @@ const CameraSettings = () => {
   const [contentType, setContentType] = useState('video');
   const [lighting, setLighting] = useState('day');
   const [camera, setCamera] = useState('blackmagic');
-  const [customCameras, setCustomCameras] = useState(() => JSON.parse(localStorage.getItem('kreativelync-custom-cameras') || '[]'));
+  const [customCameras, setCustomCameras] = useState(() => JSON.parse(localStorage.getItem('faith-studio-custom-cameras') || '[]'));
   const [showAddCamera, setShowAddCamera] = useState(false);
   const [newCameraName, setNewCameraName] = useState('');
   const [lightroomSuggestion, setLightroomSuggestion] = useState(null);
@@ -7467,7 +7456,7 @@ const CameraSettings = () => {
   const analyzeRef = useRef(null);
 
   useEffect(() => {
-    localStorage.setItem('kreativelync-custom-cameras', JSON.stringify(customCameras));
+    localStorage.setItem('faith-studio-custom-cameras', JSON.stringify(customCameras));
   }, [customCameras]);
 
   const addCustomCamera = () => {
@@ -7517,14 +7506,14 @@ const CameraSettings = () => {
   return (
     <div className="max-w-5xl mx-auto space-y-10">
       {/* 1. What are you shooting? */}
-      <div className="bg-white dark:bg-stone-800 border border-violet-100 dark:border-stone-700 rounded-3xl p-6 shadow-sm transition-colors">
+      <div className="bg-white dark:bg-stone-800 border border-rose-100 dark:border-stone-700 rounded-3xl p-6 shadow-sm transition-colors">
         <h3 className="text-sm font-bold text-stone-500 dark:text-stone-400 uppercase tracking-widest mb-4">What are you shooting?</h3>
         <div className="flex flex-wrap gap-2">
           {[
             { id: 'video', label: 'Video', Icon: Video },
             { id: 'photo', label: 'Photos', Icon: ImageIcon }
           ].map(({ id, label, Icon }) => (
-            <button key={id} onClick={() => setContentType(id)} className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all ${contentType === id ? 'bg-violet-500 text-white shadow-lg' : 'bg-violet-50 dark:bg-stone-700 border border-violet-100 dark:border-stone-600 text-stone-600 dark:text-stone-300 hover:border-violet-300'}`}>
+            <button key={id} onClick={() => setContentType(id)} className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all ${contentType === id ? 'bg-rose-500 text-white shadow-lg' : 'bg-rose-50 dark:bg-stone-700 border border-rose-100 dark:border-stone-600 text-stone-600 dark:text-stone-300 hover:border-rose-300'}`}>
               <Icon size={18} /> {label}
             </button>
           ))}
@@ -7532,14 +7521,14 @@ const CameraSettings = () => {
       </div>
 
       {/* 2. Lighting */}
-      <div className="bg-white dark:bg-stone-800 border border-violet-100 dark:border-stone-700 rounded-3xl p-6 shadow-sm transition-colors">
+      <div className="bg-white dark:bg-stone-800 border border-rose-100 dark:border-stone-700 rounded-3xl p-6 shadow-sm transition-colors">
         <h3 className="text-sm font-bold text-stone-500 dark:text-stone-400 uppercase tracking-widest mb-4">Lighting</h3>
         <div className="flex flex-wrap gap-2">
           {[
             { id: 'day', label: 'Day', Icon: Sun },
             { id: 'night', label: 'Night / Low Light', Icon: Moon }
           ].map(({ id, label, Icon }) => (
-            <button key={id} onClick={() => setLighting(id)} className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all ${lighting === id ? 'bg-violet-500 text-white shadow-lg' : 'bg-violet-50 dark:bg-stone-700 border border-violet-100 dark:border-stone-600 text-stone-600 dark:text-stone-300 hover:border-violet-300'}`}>
+            <button key={id} onClick={() => setLighting(id)} className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all ${lighting === id ? 'bg-rose-500 text-white shadow-lg' : 'bg-rose-50 dark:bg-stone-700 border border-rose-100 dark:border-stone-600 text-stone-600 dark:text-stone-300 hover:border-rose-300'}`}>
               <Icon size={18} /> {label}
             </button>
           ))}
@@ -7547,48 +7536,48 @@ const CameraSettings = () => {
       </div>
 
       {/* 3. Which camera? */}
-      <div className="bg-white dark:bg-stone-800 border border-violet-100 dark:border-stone-700 rounded-3xl p-6 shadow-sm transition-colors">
+      <div className="bg-white dark:bg-stone-800 border border-rose-100 dark:border-stone-700 rounded-3xl p-6 shadow-sm transition-colors">
         <h3 className="text-sm font-bold text-stone-500 dark:text-stone-400 uppercase tracking-widest mb-4">Which camera?</h3>
         <div className="flex flex-wrap gap-2 items-center">
           {allCameras.map((c) => (
-            <button key={c.id} onClick={() => setCamera(c.id)} className={`px-5 py-2.5 rounded-xl text-sm font-bold transition-all ${camera === c.id ? 'bg-violet-500 text-white shadow-lg' : 'bg-violet-50 dark:bg-stone-700 border border-violet-100 dark:border-stone-600 text-stone-600 dark:text-stone-300 hover:border-violet-300'}`}>
+            <button key={c.id} onClick={() => setCamera(c.id)} className={`px-5 py-2.5 rounded-xl text-sm font-bold transition-all ${camera === c.id ? 'bg-rose-500 text-white shadow-lg' : 'bg-rose-50 dark:bg-stone-700 border border-rose-100 dark:border-stone-600 text-stone-600 dark:text-stone-300 hover:border-rose-300'}`}>
               {c.name}
             </button>
           ))}
-          <button onClick={() => setShowAddCamera(true)} className="flex items-center gap-2 px-4 py-2.5 rounded-xl border-2 border-dashed border-violet-300 dark:border-rose-600 text-violet-500 dark:text-violet-400 font-bold text-sm hover:bg-violet-50 dark:hover:bg-stone-700">
+          <button onClick={() => setShowAddCamera(true)} className="flex items-center gap-2 px-4 py-2.5 rounded-xl border-2 border-dashed border-rose-300 dark:border-rose-600 text-rose-500 dark:text-rose-400 font-bold text-sm hover:bg-rose-50 dark:hover:bg-stone-700">
             <Plus size={18} /> Add new camera
           </button>
         </div>
         {showAddCamera && (
-          <div className="mt-4 p-4 rounded-2xl bg-violet-50/50 dark:bg-stone-700/50 border border-violet-100 dark:border-stone-600 flex flex-wrap gap-2 items-center">
-            <input value={newCameraName} onChange={(e) => setNewCameraName(e.target.value)} placeholder="Camera name (e.g. Nikon Z8)" className="flex-1 min-w-[180px] bg-white dark:bg-stone-800 border border-violet-100 dark:border-stone-600 rounded-xl px-4 py-2 text-sm" />
-            <button onClick={addCustomCamera} className="px-4 py-2 rounded-xl bg-violet-500 text-white font-bold text-sm">Add</button>
+          <div className="mt-4 p-4 rounded-2xl bg-rose-50/50 dark:bg-stone-700/50 border border-rose-100 dark:border-stone-600 flex flex-wrap gap-2 items-center">
+            <input value={newCameraName} onChange={(e) => setNewCameraName(e.target.value)} placeholder="Camera name (e.g. Nikon Z8)" className="flex-1 min-w-[180px] bg-white dark:bg-stone-800 border border-rose-100 dark:border-stone-600 rounded-xl px-4 py-2 text-sm" />
+            <button onClick={addCustomCamera} className="px-4 py-2 rounded-xl bg-rose-500 text-white font-bold text-sm">Add</button>
             <button onClick={() => { setShowAddCamera(false); setNewCameraName(''); }} className="px-4 py-2 rounded-xl border border-stone-200 dark:border-stone-600 text-stone-600 dark:text-stone-400 text-sm">Cancel</button>
           </div>
         )}
       </div>
 
       {/* Active Preset Card */}
-      <div className="bg-white dark:bg-stone-800 border border-violet-100 dark:border-stone-700 rounded-3xl p-8 shadow-sm transition-colors">
+      <div className="bg-white dark:bg-stone-800 border border-rose-100 dark:border-stone-700 rounded-3xl p-8 shadow-sm transition-colors">
         <h3 className="text-xl font-bold text-stone-800 dark:text-stone-100 mb-1">{displayCameraName} — {lighting === 'day' ? 'Day' : 'Night / Low Light'} ({contentType === 'video' ? 'Video' : 'Photos'})</h3>
         <p className="text-sm text-stone-500 dark:text-stone-400 mb-6">Lock these before shooting to avoid auto-exposure flicker.</p>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {settings.map((s, i) => (
-            <div key={i} className="flex justify-between items-start p-4 rounded-2xl bg-violet-50/50 dark:bg-stone-700/50 border border-violet-100 dark:border-stone-600">
+            <div key={i} className="flex justify-between items-start p-4 rounded-2xl bg-rose-50/50 dark:bg-stone-700/50 border border-rose-100 dark:border-stone-600">
               <div>
                 <span className="text-sm font-bold text-stone-800 dark:text-stone-100">{s.label}</span>
                 <span className="text-xs text-stone-500 dark:text-stone-400 block mt-1">{s.note}</span>
               </div>
-              <span className="text-sm font-mono font-bold text-violet-600 dark:text-violet-400 shrink-0 ml-4">{s.value}</span>
+              <span className="text-sm font-mono font-bold text-rose-600 dark:text-rose-400 shrink-0 ml-4">{s.value}</span>
             </div>
           ))}
         </div>
       </div>
 
       {/* Lightroom Preset Helper */}
-      <div className="bg-white dark:bg-stone-800 border border-violet-100 dark:border-stone-700 rounded-3xl p-8 shadow-sm transition-colors">
+      <div className="bg-white dark:bg-stone-800 border border-rose-100 dark:border-stone-700 rounded-3xl p-8 shadow-sm transition-colors">
         <h3 className="text-xl font-bold text-stone-800 dark:text-stone-100 flex items-center gap-2 mb-2">
-          <ImageIcon size={22} className="text-violet-400" />
+          <ImageIcon size={22} className="text-rose-400" />
           Lightroom Preset Helper
         </h3>
         <p className="text-sm text-stone-500 dark:text-stone-400 mb-6">
@@ -7611,7 +7600,7 @@ const CameraSettings = () => {
         />
         <button
           onClick={() => analyzeRef.current?.click()}
-          className="px-6 py-3 rounded-xl bg-violet-500 text-white font-bold hover:bg-violet-600 flex items-center gap-2 mb-6"
+          className="px-6 py-3 rounded-xl bg-rose-500 text-white font-bold hover:bg-rose-600 flex items-center gap-2 mb-6"
         >
           <Wand2 size={18} /> Upload & Analyze
         </button>
@@ -7624,48 +7613,48 @@ const CameraSettings = () => {
           </button>
         )}
         {lightroomSuggestion && (
-          <div className="mt-6 p-6 rounded-2xl bg-violet-50 dark:bg-stone-700/50 border border-violet-100 dark:border-stone-600">
+          <div className="mt-6 p-6 rounded-2xl bg-rose-50 dark:bg-stone-700/50 border border-rose-100 dark:border-stone-600">
             {lightroomSuggestion.type === 'empty' ? (
               <p className="text-stone-600 dark:text-stone-300">{lightroomSuggestion.message}</p>
             ) : (
               <>
                 <p className="text-sm font-bold text-stone-800 dark:text-stone-100 mb-4">{lightroomSuggestion.message}</p>
                 <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-                  <div className="p-3 rounded-xl bg-white dark:bg-stone-800 border border-violet-100 dark:border-stone-600">
+                  <div className="p-3 rounded-xl bg-white dark:bg-stone-800 border border-rose-100 dark:border-stone-600">
                     <span className="text-[10px] font-bold text-stone-400 uppercase">Exposure</span>
-                    <p className="text-sm font-mono font-bold text-violet-600">{lightroomSuggestion.exposure}</p>
+                    <p className="text-sm font-mono font-bold text-rose-600">{lightroomSuggestion.exposure}</p>
                   </div>
-                  <div className="p-3 rounded-xl bg-white dark:bg-stone-800 border border-violet-100 dark:border-stone-600">
+                  <div className="p-3 rounded-xl bg-white dark:bg-stone-800 border border-rose-100 dark:border-stone-600">
                     <span className="text-[10px] font-bold text-stone-400 uppercase">Contrast</span>
-                    <p className="text-sm font-mono font-bold text-violet-600">{lightroomSuggestion.contrast}</p>
+                    <p className="text-sm font-mono font-bold text-rose-600">{lightroomSuggestion.contrast}</p>
                   </div>
-                  <div className="p-3 rounded-xl bg-white dark:bg-stone-800 border border-violet-100 dark:border-stone-600">
+                  <div className="p-3 rounded-xl bg-white dark:bg-stone-800 border border-rose-100 dark:border-stone-600">
                     <span className="text-[10px] font-bold text-stone-400 uppercase">Shadows</span>
-                    <p className="text-sm font-mono font-bold text-violet-600">{lightroomSuggestion.shadows}</p>
+                    <p className="text-sm font-mono font-bold text-rose-600">{lightroomSuggestion.shadows}</p>
                   </div>
-                  <div className="p-3 rounded-xl bg-white dark:bg-stone-800 border border-violet-100 dark:border-stone-600">
+                  <div className="p-3 rounded-xl bg-white dark:bg-stone-800 border border-rose-100 dark:border-stone-600">
                     <span className="text-[10px] font-bold text-stone-400 uppercase">Highlights</span>
-                    <p className="text-sm font-mono font-bold text-violet-600">{lightroomSuggestion.highlights}</p>
+                    <p className="text-sm font-mono font-bold text-rose-600">{lightroomSuggestion.highlights}</p>
                   </div>
-                  <div className="p-3 rounded-xl bg-white dark:bg-stone-800 border border-violet-100 dark:border-stone-600">
+                  <div className="p-3 rounded-xl bg-white dark:bg-stone-800 border border-rose-100 dark:border-stone-600">
                     <span className="text-[10px] font-bold text-stone-400 uppercase">Temp</span>
-                    <p className="text-sm font-mono font-bold text-violet-600">{lightroomSuggestion.temp}</p>
+                    <p className="text-sm font-mono font-bold text-rose-600">{lightroomSuggestion.temp}</p>
                   </div>
-                  <div className="p-3 rounded-xl bg-white dark:bg-stone-800 border border-violet-100 dark:border-stone-600">
+                  <div className="p-3 rounded-xl bg-white dark:bg-stone-800 border border-rose-100 dark:border-stone-600">
                     <span className="text-[10px] font-bold text-stone-400 uppercase">Tint</span>
-                    <p className="text-sm font-mono font-bold text-violet-600">{lightroomSuggestion.tint}</p>
+                    <p className="text-sm font-mono font-bold text-rose-600">{lightroomSuggestion.tint}</p>
                   </div>
-                  <div className="p-3 rounded-xl bg-white dark:bg-stone-800 border border-violet-100 dark:border-stone-600">
+                  <div className="p-3 rounded-xl bg-white dark:bg-stone-800 border border-rose-100 dark:border-stone-600">
                     <span className="text-[10px] font-bold text-stone-400 uppercase">Clarity</span>
-                    <p className="text-sm font-mono font-bold text-violet-600">{lightroomSuggestion.clarity}</p>
+                    <p className="text-sm font-mono font-bold text-rose-600">{lightroomSuggestion.clarity}</p>
                   </div>
-                  <div className="p-3 rounded-xl bg-white dark:bg-stone-800 border border-violet-100 dark:border-stone-600">
+                  <div className="p-3 rounded-xl bg-white dark:bg-stone-800 border border-rose-100 dark:border-stone-600">
                     <span className="text-[10px] font-bold text-stone-400 uppercase">Vibrance</span>
-                    <p className="text-sm font-mono font-bold text-violet-600">{lightroomSuggestion.vibrance}</p>
+                    <p className="text-sm font-mono font-bold text-rose-600">{lightroomSuggestion.vibrance}</p>
                   </div>
                 </div>
-                <div className="mt-6 pt-6 border-t border-violet-100 dark:border-stone-600">
-                  <h4 className="text-sm font-bold text-stone-800 dark:text-stone-100 mb-3 flex items-center gap-2"><Target size={16} className="text-violet-400" /> How to apply in Lightroom</h4>
+                <div className="mt-6 pt-6 border-t border-rose-100 dark:border-stone-600">
+                  <h4 className="text-sm font-bold text-stone-800 dark:text-stone-100 mb-3 flex items-center gap-2"><Target size={16} className="text-rose-400" /> How to apply in Lightroom</h4>
                   <ol className="space-y-2 text-sm text-stone-600 dark:text-stone-300">
                     <li><strong>1.</strong> Open Lightroom → select your photo in Library</li>
                     <li><strong>2.</strong> Press <kbd className="px-1.5 py-0.5 rounded bg-stone-200 dark:bg-stone-600 font-mono text-xs">D</kbd> to switch to Develop module</li>
@@ -7696,13 +7685,13 @@ const TrafficHub = () => {
     platforms: { instagram: true, youtube: true, tiktok: true, facebook: false }
   });
   const [campaigns, setCampaigns] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('kreativelync-campaigns') || '[]'); } catch { return []; }
+    try { return JSON.parse(localStorage.getItem('faith-studio-campaigns') || '[]'); } catch { return []; }
   });
   const [copied, setCopied] = useState(null);
   const [expandedId, setExpandedId] = useState(null);
 
   useEffect(() => {
-    localStorage.setItem('kreativelync-campaigns', JSON.stringify(campaigns));
+    localStorage.setItem('faith-studio-campaigns', JSON.stringify(campaigns));
   }, [campaigns]);
 
   const UTM_CONFIGS = [
@@ -7787,7 +7776,7 @@ const TrafficHub = () => {
       <BrandKitReminder compact />
 
       {/* Campaign Builder */}
-      <div className="bg-gradient-to-br from-amber-50 to-violet-50 dark:from-stone-800 dark:to-stone-800 border-2 border-amber-200 dark:border-amber-800 rounded-3xl p-8 shadow-lg">
+      <div className="bg-gradient-to-br from-amber-50 to-rose-50 dark:from-stone-800 dark:to-stone-800 border-2 border-amber-200 dark:border-amber-800 rounded-3xl p-8 shadow-lg">
         <h2 className="text-2xl font-bold text-stone-800 dark:text-stone-100 flex items-center gap-3 mb-1">
           <Link2 className="text-amber-500" size={26} />
           Traffic Links
@@ -7987,7 +7976,7 @@ const TrafficHub = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="bg-white dark:bg-stone-800 border border-stone-100 dark:border-stone-700 rounded-2xl p-6 shadow-sm">
           <h4 className="font-bold text-stone-800 dark:text-stone-100 flex items-center gap-2 mb-4">
-            <MapPin size={18} className="text-violet-400" />
+            <MapPin size={18} className="text-rose-400" />
             Where to Put Each Link
           </h4>
           <div className="space-y-4">
@@ -8024,8 +8013,8 @@ const TrafficHub = () => {
               <p className="font-bold text-stone-700 dark:text-stone-200 mb-1">No Google Analytics?</p>
               <p>Use Linktree Analytics, Bitly, or Short.io — they track clicks automatically without any setup.</p>
             </div>
-            <div className="p-3 rounded-xl bg-violet-50 dark:bg-rose-900/20 border border-violet-100 dark:border-rose-800">
-              <p className="font-bold text-rose-700 dark:text-violet-400 mb-1">What to look for</p>
+            <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-900/20 border border-rose-100 dark:border-rose-800">
+              <p className="font-bold text-rose-700 dark:text-rose-400 mb-1">What to look for</p>
               <p>Which platform sends the most clicks? Which content label gets more? Make more of what works.</p>
             </div>
           </div>
@@ -8038,7 +8027,7 @@ const TrafficHub = () => {
 // --- Post Analytics ---
 const PostAnalytics = ({ onOpenSettings }) => {
   const { activeBusinessId, setActiveBusinessId, businesses } = useStudio();
-  const [posts, setPosts] = useState(() => { try { return JSON.parse(localStorage.getItem('kreativelync-post-analytics') || '[]'); } catch { return []; } });
+  const [posts, setPosts] = useState(() => { try { return JSON.parse(localStorage.getItem('faith-studio-post-analytics') || '[]'); } catch { return []; } });
   const [editingId, setEditingId] = useState(null);
   const [editBuf, setEditBuf] = useState({});
   const [aiInsights, setAiInsights] = useState(null);
@@ -8047,25 +8036,25 @@ const PostAnalytics = ({ onOpenSettings }) => {
 
   // Social account connection — per brand
   const brandKey = `brand-${activeBusinessId}`;
-  const [connectedBrands, setConnectedBrands] = useState(() => { try { return JSON.parse(localStorage.getItem('kreativelync-connected-brands') || '{}'); } catch { return {}; } });
+  const [connectedBrands, setConnectedBrands] = useState(() => { try { return JSON.parse(localStorage.getItem('faith-studio-connected-brands') || '{}'); } catch { return {}; } });
   const igConnected = !!connectedBrands[brandKey]?.ig;
   const ytConnected = !!connectedBrands[brandKey]?.yt;
-  const setIgConnected = (v) => setConnectedBrands(prev => { const next = { ...prev, [brandKey]: { ...prev[brandKey], ig: v } }; localStorage.setItem('kreativelync-connected-brands', JSON.stringify(next)); return next; });
-  const setYtConnected = (v) => setConnectedBrands(prev => { const next = { ...prev, [brandKey]: { ...prev[brandKey], yt: v } }; localStorage.setItem('kreativelync-connected-brands', JSON.stringify(next)); return next; });
+  const setIgConnected = (v) => setConnectedBrands(prev => { const next = { ...prev, [brandKey]: { ...prev[brandKey], ig: v } }; localStorage.setItem('faith-studio-connected-brands', JSON.stringify(next)); return next; });
+  const setYtConnected = (v) => setConnectedBrands(prev => { const next = { ...prev, [brandKey]: { ...prev[brandKey], yt: v } }; localStorage.setItem('faith-studio-connected-brands', JSON.stringify(next)); return next; });
   const [syncing, setSyncing] = useState(false);
   const [syncMsg, setSyncMsg] = useState('');
 
   // Ads state
-  const [igProfileMap, setIgProfileMap] = useState(() => { try { return JSON.parse(localStorage.getItem('kreativelync-ig-profile-map') || '{}'); } catch { return {}; } });
-  const [igGrowthMap, setIgGrowthMap] = useState(() => { try { return JSON.parse(localStorage.getItem('kreativelync-ig-growth-map') || '{}'); } catch { return {}; } });
-  const [igInsightsMap, setIgInsightsMap] = useState(() => { try { return JSON.parse(localStorage.getItem('kreativelync-ig-insights-map') || '{}'); } catch { return {}; } });
-  const [igAudienceMap, setIgAudienceMap] = useState(() => { try { return JSON.parse(localStorage.getItem('kreativelync-ig-audience-map') || '{}'); } catch { return {}; } });
+  const [igProfileMap, setIgProfileMap] = useState(() => { try { return JSON.parse(localStorage.getItem('faith-studio-ig-profile-map') || '{}'); } catch { return {}; } });
+  const [igGrowthMap, setIgGrowthMap] = useState(() => { try { return JSON.parse(localStorage.getItem('faith-studio-ig-growth-map') || '{}'); } catch { return {}; } });
+  const [igInsightsMap, setIgInsightsMap] = useState(() => { try { return JSON.parse(localStorage.getItem('faith-studio-ig-insights-map') || '{}'); } catch { return {}; } });
+  const [igAudienceMap, setIgAudienceMap] = useState(() => { try { return JSON.parse(localStorage.getItem('faith-studio-ig-audience-map') || '{}'); } catch { return {}; } });
   const igProfile = igProfileMap[brandKey] || null;
   const igGrowth = igGrowthMap[brandKey] || null;
   const igInsights = igInsightsMap[brandKey] || null;
   const igAudience = igAudienceMap[brandKey] || null;
   const [adsTab, setAdsTab] = useState(false);
-  const [adAccountId, setAdAccountId] = useState(() => localStorage.getItem('kreativelync-ad-account') || '');
+  const [adAccountId, setAdAccountId] = useState(() => localStorage.getItem('faith-studio-ad-account') || '');
   const [adAccounts, setAdAccounts] = useState([]);
   const [campaigns, setCampaigns] = useState([]);
   const [adsLoading, setAdsLoading] = useState(false);
@@ -8078,17 +8067,17 @@ const PostAnalytics = ({ onOpenSettings }) => {
     const params = new URLSearchParams(window.location.search);
     const state = params.get('state');
     if (params.get('instagram_connected') === '1') {
-      if (state) setConnectedBrands(prev => { const next = { ...prev, [state]: { ...prev[state], ig: true } }; localStorage.setItem('kreativelync-connected-brands', JSON.stringify(next)); return next; });
+      if (state) setConnectedBrands(prev => { const next = { ...prev, [state]: { ...prev[state], ig: true } }; localStorage.setItem('faith-studio-connected-brands', JSON.stringify(next)); return next; });
     }
     if (params.get('youtube_connected') === '1') {
-      if (state) setConnectedBrands(prev => { const next = { ...prev, [state]: { ...prev[state], yt: true } }; localStorage.setItem('kreativelync-connected-brands', JSON.stringify(next)); return next; });
+      if (state) setConnectedBrands(prev => { const next = { ...prev, [state]: { ...prev[state], yt: true } }; localStorage.setItem('faith-studio-connected-brands', JSON.stringify(next)); return next; });
     }
     if (params.get('instagram_connected') || params.get('youtube_connected')) {
       window.history.replaceState({}, '', window.location.pathname);
     }
   }, []);
 
-  useEffect(() => { localStorage.setItem('kreativelync-post-analytics', JSON.stringify(posts)); }, [posts]);
+  useEffect(() => { localStorage.setItem('faith-studio-post-analytics', JSON.stringify(posts)); }, [posts]);
 
   const removePost = (id) => setPosts(prev => prev.filter(p => p.id !== id));
   const updatePost = (id, updates) => setPosts(prev => prev.map(p => p.id === id ? { ...p, ...updates } : p));
@@ -8105,10 +8094,10 @@ const PostAnalytics = ({ onOpenSettings }) => {
       try {
         const r = await fetch('/api/sync/instagram', { headers: { 'X-User-Key': brandKey } });
         const data = await r.json();
-        if (data.account) { setIgProfileMap(p => { const n = { ...p, [brandKey]: data.account }; localStorage.setItem('kreativelync-ig-profile-map', JSON.stringify(n)); return n; }); }
-        if (data.growth) { setIgGrowthMap(p => { const n = { ...p, [brandKey]: data.growth }; localStorage.setItem('kreativelync-ig-growth-map', JSON.stringify(n)); return n; }); }
-        if (data.insights) { setIgInsightsMap(p => { const n = { ...p, [brandKey]: data.insights }; localStorage.setItem('kreativelync-ig-insights-map', JSON.stringify(n)); return n; }); }
-        if (data.audience) { setIgAudienceMap(p => { const n = { ...p, [brandKey]: data.audience }; localStorage.setItem('kreativelync-ig-audience-map', JSON.stringify(n)); return n; }); }
+        if (data.account) { setIgProfileMap(p => { const n = { ...p, [brandKey]: data.account }; localStorage.setItem('faith-studio-ig-profile-map', JSON.stringify(n)); return n; }); }
+        if (data.growth) { setIgGrowthMap(p => { const n = { ...p, [brandKey]: data.growth }; localStorage.setItem('faith-studio-ig-growth-map', JSON.stringify(n)); return n; }); }
+        if (data.insights) { setIgInsightsMap(p => { const n = { ...p, [brandKey]: data.insights }; localStorage.setItem('faith-studio-ig-insights-map', JSON.stringify(n)); return n; }); }
+        if (data.audience) { setIgAudienceMap(p => { const n = { ...p, [brandKey]: data.audience }; localStorage.setItem('faith-studio-ig-audience-map', JSON.stringify(n)); return n; }); }
         if (data.posts?.length) {
           const existing = new Set(posts.map(p => p.id));
           const newPosts = data.posts.filter(p => !existing.has(p.id)).map(p => ({ ...p, businessId: activeBusinessId }));
@@ -8202,13 +8191,13 @@ const PostAnalytics = ({ onOpenSettings }) => {
 
       {/* Tab bar: Analytics | Ads Manager */}
       <div className="flex gap-2">
-        <button onClick={() => setAdsTab(false)} className={`px-5 py-2 rounded-xl font-bold text-sm transition-colors ${!adsTab ? 'bg-violet-500 text-white' : 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-300 hover:bg-violet-50 dark:hover:bg-stone-700'}`}>Post Analytics</button>
-        <button onClick={() => { setAdsTab(true); if (!adAccounts.length) loadAdAccounts(); }} className={`px-5 py-2 rounded-xl font-bold text-sm transition-colors ${adsTab ? 'bg-violet-500 text-white' : 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-300 hover:bg-violet-50 dark:hover:bg-stone-700'}`}>Ads Manager</button>
+        <button onClick={() => setAdsTab(false)} className={`px-5 py-2 rounded-xl font-bold text-sm transition-colors ${!adsTab ? 'bg-rose-500 text-white' : 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-300 hover:bg-rose-50 dark:hover:bg-stone-700'}`}>Post Analytics</button>
+        <button onClick={() => { setAdsTab(true); if (!adAccounts.length) loadAdAccounts(); }} className={`px-5 py-2 rounded-xl font-bold text-sm transition-colors ${adsTab ? 'bg-rose-500 text-white' : 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-300 hover:bg-rose-50 dark:hover:bg-stone-700'}`}>Ads Manager</button>
       </div>
 
       {/* Connected Accounts */}
       <div className="bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-3xl p-6 shadow-sm">
-        <h3 className="font-bold text-stone-800 dark:text-stone-100 mb-4 flex items-center gap-2"><Zap size={16} className="text-violet-400" /> Connected Accounts</h3>
+        <h3 className="font-bold text-stone-800 dark:text-stone-100 mb-4 flex items-center gap-2"><Zap size={16} className="text-rose-400" /> Connected Accounts</h3>
         <div className="flex flex-wrap gap-3 mb-4">
           <button onClick={connectInstagram} className={`flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-sm border-2 transition-all ${igConnected ? 'border-pink-400 bg-pink-50 dark:bg-pink-900/20 text-pink-700 dark:text-pink-300' : 'border-stone-300 dark:border-stone-600 text-stone-600 dark:text-stone-300 hover:border-pink-400 hover:text-pink-600'}`}>
             <Instagram size={16} /> {igConnected ? 'Instagram Connected' : 'Connect Instagram'}
@@ -8230,21 +8219,21 @@ const PostAnalytics = ({ onOpenSettings }) => {
       {adsTab && (
         <div className="space-y-6">
           <div className="bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-3xl p-6 shadow-sm">
-            <h3 className="font-bold text-stone-800 dark:text-stone-100 mb-1 flex items-center gap-2"><TrendingUp size={16} className="text-violet-400" /> Meta Ads Manager</h3>
+            <h3 className="font-bold text-stone-800 dark:text-stone-100 mb-1 flex items-center gap-2"><TrendingUp size={16} className="text-rose-400" /> Meta Ads Manager</h3>
             <p className="text-xs text-stone-400 mb-4">Create and manage Facebook & Instagram ad campaigns directly. Requires your Instagram/Facebook to be connected with ads permissions.</p>
 
             {/* Ad Account Selector */}
             <div className="mb-4">
               <label className="block text-xs font-bold text-stone-500 uppercase mb-1">Your Ad Accounts</label>
               {adAccounts.length === 0 ? (
-                <button onClick={loadAdAccounts} disabled={adsLoading} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-stone-100 dark:bg-stone-700 text-sm font-bold text-stone-600 dark:text-stone-300 hover:bg-violet-50 dark:hover:bg-violet-900/20">
+                <button onClick={loadAdAccounts} disabled={adsLoading} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-stone-100 dark:bg-stone-700 text-sm font-bold text-stone-600 dark:text-stone-300 hover:bg-rose-50 dark:hover:bg-rose-900/20">
                   {adsLoading ? <><Loader2 size={14} className="animate-spin" /> Loading…</> : 'Load Ad Accounts'}
                 </button>
               ) : (
                 <div className="flex flex-wrap gap-2">
                   {adAccounts.map(a => (
-                    <button key={a.id} onClick={() => { setAdAccountId(a.id); localStorage.setItem('kreativelync-ad-account', a.id); loadCampaigns(a.id); }}
-                      className={`px-3 py-1.5 rounded-lg text-sm font-bold border-2 ${adAccountId === a.id ? 'border-violet-400 bg-violet-50 dark:bg-rose-900/20 text-rose-700 dark:text-rose-300' : 'border-stone-200 dark:border-stone-600 text-stone-600 dark:text-stone-300'}`}>
+                    <button key={a.id} onClick={() => { setAdAccountId(a.id); localStorage.setItem('faith-studio-ad-account', a.id); loadCampaigns(a.id); }}
+                      className={`px-3 py-1.5 rounded-lg text-sm font-bold border-2 ${adAccountId === a.id ? 'border-rose-400 bg-rose-50 dark:bg-rose-900/20 text-rose-700 dark:text-rose-300' : 'border-stone-200 dark:border-stone-600 text-stone-600 dark:text-stone-300'}`}>
                       {a.name} ({a.currency}) — Balance: {a.balance}
                     </button>
                   ))}
@@ -8265,7 +8254,7 @@ const PostAnalytics = ({ onOpenSettings }) => {
                         <p className="text-xs text-stone-400">{c.objective} · {c.status}</p>
                       </div>
                       <div className="text-right">
-                        <p className="font-mono font-bold text-sm text-violet-600 dark:text-violet-400">${(Number(c.spend || 0) / 100).toFixed(2)} spent</p>
+                        <p className="font-mono font-bold text-sm text-rose-600 dark:text-rose-400">${(Number(c.spend || 0) / 100).toFixed(2)} spent</p>
                         <p className="text-xs text-stone-400">{c.impressions || 0} impressions · {c.clicks || 0} clicks</p>
                       </div>
                     </div>
@@ -8306,7 +8295,7 @@ const PostAnalytics = ({ onOpenSettings }) => {
                   </div>
                 </div>
                 <p className="text-xs text-stone-400 mb-3">Total budget: <strong>${(Number(adForm.budget || 0) * Number(adForm.days || 0)).toFixed(2)}</strong> over {adForm.days} days</p>
-                <button onClick={createAd} disabled={adCreating} className="flex items-center gap-2 px-5 py-2 rounded-xl bg-violet-500 text-white font-bold text-sm hover:bg-violet-600 disabled:opacity-50">
+                <button onClick={createAd} disabled={adCreating} className="flex items-center gap-2 px-5 py-2 rounded-xl bg-rose-500 text-white font-bold text-sm hover:bg-rose-600 disabled:opacity-50">
                   {adCreating ? <><Loader2 size={14} className="animate-spin" /> Creating…</> : <><Zap size={14} /> Launch Campaign</>}
                 </button>
                 {adMsg && <p className={`text-sm mt-2 font-medium ${adMsg.includes('Error') || adMsg.includes('Failed') ? 'text-red-500' : 'text-emerald-600 dark:text-emerald-400'}`}>{adMsg}</p>}
@@ -8325,7 +8314,7 @@ const PostAnalytics = ({ onOpenSettings }) => {
         <div className="bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-3xl p-6 shadow-sm space-y-5">
           {/* Profile header */}
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-violet-400 to-pink-500 flex items-center justify-center text-white font-bold text-lg">
+            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-rose-400 to-pink-500 flex items-center justify-center text-white font-bold text-lg">
               {igProfile.username?.[0]?.toUpperCase() || 'I'}
             </div>
             <div>
@@ -8342,8 +8331,8 @@ const PostAnalytics = ({ onOpenSettings }) => {
               <p className="text-2xl font-bold text-pink-600 dark:text-pink-400">{(igProfile.followers || 0).toLocaleString()}</p>
               <p className="text-xs text-stone-500 mt-1">Followers</p>
             </div>
-            <div className="bg-violet-50 dark:bg-rose-900/20 rounded-2xl p-4 text-center">
-              <p className="text-2xl font-bold text-violet-600 dark:text-violet-400">{igGrowth?.newFollowers30d != null ? (igGrowth.newFollowers30d >= 0 ? '+' : '') + igGrowth.newFollowers30d : '—'}</p>
+            <div className="bg-rose-50 dark:bg-rose-900/20 rounded-2xl p-4 text-center">
+              <p className="text-2xl font-bold text-rose-600 dark:text-rose-400">{igGrowth?.newFollowers30d != null ? (igGrowth.newFollowers30d >= 0 ? '+' : '') + igGrowth.newFollowers30d : '—'}</p>
               <p className="text-xs text-stone-500 mt-1">New followers (30d)</p>
             </div>
             <div className="bg-amber-50 dark:bg-amber-900/20 rounded-2xl p-4 text-center">
@@ -8359,7 +8348,7 @@ const PostAnalytics = ({ onOpenSettings }) => {
           {/* What works */}
           {igInsights && (
             <div className="bg-stone-50 dark:bg-stone-700/40 rounded-2xl p-4 space-y-2">
-              <h4 className="font-bold text-stone-700 dark:text-stone-200 flex items-center gap-2"><Flame size={14} className="text-violet-400" /> What works for you</h4>
+              <h4 className="font-bold text-stone-700 dark:text-stone-200 flex items-center gap-2"><Flame size={14} className="text-rose-400" /> What works for you</h4>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
                 {igInsights.avgReelEngagement > igInsights.avgImageEngagement ? (
                   <p className="text-emerald-700 dark:text-emerald-400">✓ <strong>Reels</strong> get {igInsights.avgReelEngagement} avg engagement vs {igInsights.avgImageEngagement} for images — post more Reels</p>
@@ -8371,7 +8360,7 @@ const PostAnalytics = ({ onOpenSettings }) => {
                 )}
                 {igInsights.topPost && (
                   <p className="text-stone-600 dark:text-stone-300 sm:col-span-2">🏆 Top post: "<strong>{igInsights.topPost.title?.slice(0,60)}</strong>" — {igInsights.topPost.engagement} engagement
-                    {igInsights.topPost.permalink && <a href={igInsights.topPost.permalink} target="_blank" rel="noopener noreferrer" className="ml-2 text-violet-500 underline">View</a>}
+                    {igInsights.topPost.permalink && <a href={igInsights.topPost.permalink} target="_blank" rel="noopener noreferrer" className="ml-2 text-rose-500 underline">View</a>}
                   </p>
                 )}
                 {igProfile.followers > 0 && igGrowth?.newFollowers30d != null && (
@@ -8387,7 +8376,7 @@ const PostAnalytics = ({ onOpenSettings }) => {
           {/* Audience Demographics */}
           {igAudience && (igAudience.topCountries?.length > 0 || Object.keys(igAudience.genderAge || {}).length > 0) && (
             <div className="bg-stone-50 dark:bg-stone-700/40 rounded-2xl p-4 space-y-3">
-              <h4 className="font-bold text-stone-700 dark:text-stone-200 flex items-center gap-2"><Users size={14} className="text-violet-400" /> Your audience</h4>
+              <h4 className="font-bold text-stone-700 dark:text-stone-200 flex items-center gap-2"><Users size={14} className="text-rose-400" /> Your audience</h4>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                 {igAudience.topCountries?.length > 0 && (
                   <div>
@@ -8399,7 +8388,7 @@ const PostAnalytics = ({ onOpenSettings }) => {
                         return (
                           <div key={name}>
                             <div className="flex justify-between text-xs mb-0.5"><span>{name}</span><span className="text-stone-500">{pct}%</span></div>
-                            <div className="h-1.5 bg-stone-200 dark:bg-stone-600 rounded-full"><div className="h-1.5 bg-violet-400 rounded-full" style={{ width: `${pct}%` }} /></div>
+                            <div className="h-1.5 bg-stone-200 dark:bg-stone-600 rounded-full"><div className="h-1.5 bg-rose-400 rounded-full" style={{ width: `${pct}%` }} /></div>
                           </div>
                         );
                       })}
@@ -8442,18 +8431,18 @@ const PostAnalytics = ({ onOpenSettings }) => {
       )}
 
       {/* Auto-log notice */}
-      <div className="bg-gradient-to-br from-violet-50 to-amber-50 dark:from-stone-800 dark:to-stone-800 border-2 border-violet-200 dark:border-rose-800 rounded-3xl p-6 shadow-lg">
+      <div className="bg-gradient-to-br from-rose-50 to-amber-50 dark:from-stone-800 dark:to-stone-800 border-2 border-rose-200 dark:border-rose-800 rounded-3xl p-6 shadow-lg">
         <h2 className="text-2xl font-bold text-stone-800 dark:text-stone-100 mb-1">Post Analytics</h2>
         <p className="text-stone-500 dark:text-stone-400 text-sm">Posts are logged automatically every time you export a video or click Publish. After your post goes live, tap it below to add the numbers.</p>
         {bizPosts.length === 0 && (
-          <p className="mt-4 text-sm text-violet-500 font-medium">No posts yet — export or publish a video to get started.</p>
+          <p className="mt-4 text-sm text-rose-500 font-medium">No posts yet — export or publish a video to get started.</p>
         )}
       </div>
 
       {/* All accounts overview */}
       {(businesses || []).length > 0 && (
-        <div className="bg-white dark:bg-stone-800 border border-violet-100 dark:border-stone-700 rounded-3xl p-6 shadow-sm">
-          <h3 className="text-lg font-bold text-stone-800 dark:text-stone-100 mb-4 flex items-center gap-2"><BarChart2 size={20} className="text-violet-400" /> Each account — overall progress</h3>
+        <div className="bg-white dark:bg-stone-800 border border-rose-100 dark:border-stone-700 rounded-3xl p-6 shadow-sm">
+          <h3 className="text-lg font-bold text-stone-800 dark:text-stone-100 mb-4 flex items-center gap-2"><BarChart2 size={20} className="text-rose-400" /> Each account — overall progress</h3>
           <p className="text-xs text-stone-500 dark:text-stone-400 mb-4">Progress and AI analysis are separate per business. Select a business below to see details.</p>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {(businesses || []).filter(Boolean).map((b) => {
@@ -8461,7 +8450,7 @@ const PostAnalytics = ({ onOpenSettings }) => {
               const tv = bp.reduce((s, p) => s + (p.views || 0), 0);
               const te = bp.reduce((s, p) => s + p.likes + p.comments + p.shares + p.saves, 0);
               return (
-                <div key={b.id} className={`relative p-4 rounded-2xl border transition-all ${activeBusinessId === b.id ? 'border-violet-400 bg-violet-50 dark:bg-rose-900/20 dark:border-rose-600' : 'border-stone-200 dark:border-stone-600'}`}>
+                <div key={b.id} className={`relative p-4 rounded-2xl border transition-all ${activeBusinessId === b.id ? 'border-rose-400 bg-rose-50 dark:bg-rose-900/20 dark:border-rose-600' : 'border-stone-200 dark:border-stone-600'}`}>
                   <button onClick={() => setActiveBusinessId(b.id)} className="text-left w-full">
                     <p className="font-bold text-stone-800 dark:text-stone-100">{b.name}</p>
                     <p className="text-sm text-stone-500 dark:text-stone-400 mt-1">{bp.length} posts · {tv.toLocaleString()} views · {te.toLocaleString()} engagement</p>
@@ -8479,12 +8468,12 @@ const PostAnalytics = ({ onOpenSettings }) => {
       )}
 
       {/* Progress tracker (current business) */}
-      <div className="bg-white dark:bg-stone-800 border border-violet-100 dark:border-stone-700 rounded-3xl p-6 shadow-sm">
-        <h3 className="text-lg font-bold text-stone-800 dark:text-stone-100 mb-4 flex items-center gap-2"><BarChart2 size={20} className="text-violet-400" /> {(businesses || []).find(b => b?.id === activeBusinessId)?.name || 'This account'} — this week</h3>
+      <div className="bg-white dark:bg-stone-800 border border-rose-100 dark:border-stone-700 rounded-3xl p-6 shadow-sm">
+        <h3 className="text-lg font-bold text-stone-800 dark:text-stone-100 mb-4 flex items-center gap-2"><BarChart2 size={20} className="text-rose-400" /> {(businesses || []).find(b => b?.id === activeBusinessId)?.name || 'This account'} — this week</h3>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div>
             <span className="text-[10px] font-bold text-stone-400 uppercase">This week</span>
-            <p className="text-xl font-bold text-violet-600 dark:text-violet-400">{postsThisWeek.length} posts · {viewsThisWeek.toLocaleString()} views</p>
+            <p className="text-xl font-bold text-rose-600 dark:text-rose-400">{postsThisWeek.length} posts · {viewsThisWeek.toLocaleString()} views</p>
           </div>
           <div>
             <span className="text-[10px] font-bold text-stone-400 uppercase">Last week</span>
@@ -8492,7 +8481,7 @@ const PostAnalytics = ({ onOpenSettings }) => {
           </div>
           <div>
             <span className="text-[10px] font-bold text-stone-400 uppercase">This month</span>
-            <p className="text-xl font-bold text-violet-600 dark:text-violet-400">{postsThisMonth.length} posts</p>
+            <p className="text-xl font-bold text-rose-600 dark:text-rose-400">{postsThisMonth.length} posts</p>
           </div>
           <div>
             <span className="text-[10px] font-bold text-stone-400 uppercase">Week-over-week</span>
@@ -8505,27 +8494,27 @@ const PostAnalytics = ({ onOpenSettings }) => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white dark:bg-stone-800 border border-violet-100 dark:border-stone-700 rounded-2xl p-5 shadow-sm">
+        <div className="bg-white dark:bg-stone-800 border border-rose-100 dark:border-stone-700 rounded-2xl p-5 shadow-sm">
           <span className="text-[10px] font-bold text-stone-400 uppercase">Total views</span>
-          <p className="text-2xl font-bold text-violet-600 dark:text-violet-400 mt-1">{totalViews.toLocaleString()}</p>
+          <p className="text-2xl font-bold text-rose-600 dark:text-rose-400 mt-1">{totalViews.toLocaleString()}</p>
         </div>
-        <div className="bg-white dark:bg-stone-800 border border-violet-100 dark:border-stone-700 rounded-2xl p-5 shadow-sm">
+        <div className="bg-white dark:bg-stone-800 border border-rose-100 dark:border-stone-700 rounded-2xl p-5 shadow-sm">
           <span className="text-[10px] font-bold text-stone-400 uppercase">Total engagement</span>
-          <p className="text-2xl font-bold text-violet-600 dark:text-violet-400 mt-1">{totalEngagement.toLocaleString()}</p>
+          <p className="text-2xl font-bold text-rose-600 dark:text-rose-400 mt-1">{totalEngagement.toLocaleString()}</p>
         </div>
-        <div className="bg-white dark:bg-stone-800 border border-violet-100 dark:border-stone-700 rounded-2xl p-5 shadow-sm">
+        <div className="bg-white dark:bg-stone-800 border border-rose-100 dark:border-stone-700 rounded-2xl p-5 shadow-sm">
           <span className="text-[10px] font-bold text-stone-400 uppercase">Avg views/post</span>
-          <p className="text-2xl font-bold text-violet-600 dark:text-violet-400 mt-1">{avgViews.toLocaleString()}</p>
+          <p className="text-2xl font-bold text-rose-600 dark:text-rose-400 mt-1">{avgViews.toLocaleString()}</p>
         </div>
-        <div className="bg-white dark:bg-stone-800 border border-violet-100 dark:border-stone-700 rounded-2xl p-5 shadow-sm">
+        <div className="bg-white dark:bg-stone-800 border border-rose-100 dark:border-stone-700 rounded-2xl p-5 shadow-sm">
           <span className="text-[10px] font-bold text-stone-400 uppercase">Posts logged</span>
-          <p className="text-2xl font-bold text-violet-600 dark:text-violet-400 mt-1">{bizPosts.length}</p>
+          <p className="text-2xl font-bold text-rose-600 dark:text-rose-400 mt-1">{bizPosts.length}</p>
         </div>
       </div>
 
       {bizPosts.length > 0 && (
-        <div className="bg-white dark:bg-stone-800 border border-violet-100 dark:border-stone-700 rounded-3xl p-6 shadow-sm">
-          <h3 className="text-lg font-bold text-stone-800 dark:text-stone-100 mb-4 flex items-center gap-2"><TrendingUp size={20} className="text-violet-400" /> Insights & tips</h3>
+        <div className="bg-white dark:bg-stone-800 border border-rose-100 dark:border-stone-700 rounded-3xl p-6 shadow-sm">
+          <h3 className="text-lg font-bold text-stone-800 dark:text-stone-100 mb-4 flex items-center gap-2"><TrendingUp size={20} className="text-rose-400" /> Insights & tips</h3>
           <ul className="space-y-3 text-sm text-stone-600 dark:text-stone-300">
             {bestPost && <li><strong>Top performer:</strong> &quot;{bestPost.title}&quot; — {bestPost.views != null ? bestPost.views.toLocaleString() : '—'} views. {bestPost.notes && `Notes: ${bestPost.notes}`}</li>}
             {Object.keys(byPlatform).length > 0 && <li><strong>By platform:</strong> {Object.entries(byPlatform).map(([k, v]) => `${platformLabels[k] || k}: ${v.toLocaleString()} views`).join('; ')}</li>}
@@ -8561,14 +8550,14 @@ const PostAnalytics = ({ onOpenSettings }) => {
               } finally {
                 setAiLoading(false);
               }
-            }} disabled={aiLoading} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500/20 to-violet-500/20 text-amber-700 dark:text-amber-400 font-bold text-sm hover:from-amber-500/30 hover:to-violet-500/30 disabled:opacity-50 border border-amber-200 dark:border-amber-800">
+            }} disabled={aiLoading} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500/20 to-rose-500/20 text-amber-700 dark:text-amber-400 font-bold text-sm hover:from-amber-500/30 hover:to-rose-500/30 disabled:opacity-50 border border-amber-200 dark:border-amber-800">
               {aiLoading ? <><Loader2 size={14} className="animate-spin" /> Analyzing your data…</> : '✨ Get AI Expert Analysis'}
             </button>
             {aiError && <p className="text-sm text-red-600 dark:text-red-400 mt-2">{aiError}</p>}
             {aiInsights && typeof aiInsights === 'object' && (
               <div className="mt-4 space-y-4 text-sm">
                 {aiInsights.verdict && (
-                  <div className="p-4 rounded-xl bg-gradient-to-br from-amber-50 to-violet-50 dark:from-amber-900/20 dark:to-violet-900/20 border border-amber-200 dark:border-amber-800">
+                  <div className="p-4 rounded-xl bg-gradient-to-br from-amber-50 to-rose-50 dark:from-amber-900/20 dark:to-rose-900/20 border border-amber-200 dark:border-amber-800">
                     <p className="font-bold text-amber-800 dark:text-amber-300 mb-1">📊 Expert Verdict</p>
                     <p className="text-stone-700 dark:text-stone-300">{aiInsights.verdict}</p>
                   </div>
@@ -8615,8 +8604,8 @@ const PostAnalytics = ({ onOpenSettings }) => {
                     </div>
                   )}
                   {aiInsights.growthHack && (
-                    <div className="p-3 rounded-xl bg-violet-50 dark:bg-rose-900/20 border border-violet-200 dark:border-rose-800">
-                      <p className="font-bold text-rose-700 dark:text-violet-400 mb-1">🚀 Growth hack</p>
+                    <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800">
+                      <p className="font-bold text-rose-700 dark:text-rose-400 mb-1">🚀 Growth hack</p>
                       <p className="text-stone-600 dark:text-stone-300 text-xs">{aiInsights.growthHack}</p>
                     </div>
                   )}
@@ -8632,7 +8621,7 @@ const PostAnalytics = ({ onOpenSettings }) => {
                     <p className="font-bold text-stone-700 dark:text-stone-200 mb-2">📅 This week's posting plan</p>
                     <div className="grid grid-cols-2 gap-1">
                       {Object.entries(aiInsights.weeklyPlan).map(([day, plan]) => (
-                        <div key={day} className="text-xs"><span className="font-semibold capitalize text-violet-600 dark:text-violet-400">{day}:</span> <span className="text-stone-600 dark:text-stone-300">{plan}</span></div>
+                        <div key={day} className="text-xs"><span className="font-semibold capitalize text-rose-600 dark:text-rose-400">{day}:</span> <span className="text-stone-600 dark:text-stone-300">{plan}</span></div>
                       ))}
                     </div>
                   </div>
@@ -8648,14 +8637,14 @@ const PostAnalytics = ({ onOpenSettings }) => {
         <div className="space-y-3">
           <h3 className="text-sm font-bold text-stone-500 dark:text-stone-400 uppercase">Your posts — tap to update numbers</h3>
           {[...bizPosts].reverse().map(p => (
-            <div key={p.id} className="bg-white dark:bg-stone-800 border border-violet-100 dark:border-stone-700 rounded-2xl p-4 shadow-sm">
+            <div key={p.id} className="bg-white dark:bg-stone-800 border border-rose-100 dark:border-stone-700 rounded-2xl p-4 shadow-sm">
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
                   <p className="font-bold text-stone-800 dark:text-stone-100 truncate">{p.title}</p>
                   <p className="text-xs text-stone-400 mt-0.5">{platformLabels[p.platform] || p.platform} · {p.postedAt} {p.source === 'instagram_api' || p.source === 'youtube_api' ? '· synced' : ''}</p>
                 </div>
                 <div className="flex gap-1 shrink-0 flex-wrap justify-end">
-                  <button onClick={() => editingId === p.id ? saveEdit(p.id) : startEdit(p)} className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${editingId === p.id ? 'bg-violet-500 text-white' : 'bg-stone-100 dark:bg-stone-700 text-stone-600 dark:text-stone-300 hover:bg-violet-50 dark:hover:bg-violet-900/30 hover:text-violet-600'}`}>{editingId === p.id ? 'Save' : 'Update'}</button>
+                  <button onClick={() => editingId === p.id ? saveEdit(p.id) : startEdit(p)} className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${editingId === p.id ? 'bg-rose-500 text-white' : 'bg-stone-100 dark:bg-stone-700 text-stone-600 dark:text-stone-300 hover:bg-rose-50 dark:hover:bg-rose-900/30 hover:text-rose-600'}`}>{editingId === p.id ? 'Save' : 'Update'}</button>
                   <select onChange={e => { if (e.target.value) { updatePost(p.id, { businessId: e.target.value }); e.target.value = ''; } }} defaultValue="" className="px-2 py-1.5 rounded-lg text-xs bg-stone-100 dark:bg-stone-700 text-stone-600 dark:text-stone-300 border-0 cursor-pointer">
                     <option value="" disabled>Move to…</option>
                     {(businesses || []).filter(Boolean).map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
@@ -8862,7 +8851,7 @@ const PhotoEditor = () => {
       <div>
         <div className="flex justify-between items-center mb-1">
           <span className="text-xs font-medium text-stone-400">{label}</span>
-          <span className={`text-xs font-mono tabular-nums ${isChanged ? 'text-violet-400' : 'text-stone-500'}`}>{val > 0 ? '+' : ''}{val}{unit}</span>
+          <span className={`text-xs font-mono tabular-nums ${isChanged ? 'text-rose-400' : 'text-stone-500'}`}>{val > 0 ? '+' : ''}{val}{unit}</span>
         </div>
         <input type="range" min={min} max={max} value={val}
           onChange={e => { setKey(k, Number(e.target.value)); setActivePreset(''); }}
@@ -8877,7 +8866,7 @@ const PhotoEditor = () => {
       <div>
         <div className="flex justify-between items-center mb-1">
           <span className="text-xs font-medium text-stone-400">{label}</span>
-          <span className={`text-xs font-mono ${val !== 0 ? 'text-violet-400' : 'text-stone-500'}`}>{val > 0 ? '+' : ''}{val}</span>
+          <span className={`text-xs font-mono ${val !== 0 ? 'text-rose-400' : 'text-stone-500'}`}>{val > 0 ? '+' : ''}{val}</span>
         </div>
         <input type="range" min={min} max={max} value={val}
           onChange={e => { setHslKey(hslColor, k, Number(e.target.value)); setActivePreset(''); }}
@@ -8909,12 +8898,12 @@ const PhotoEditor = () => {
 
       {!imgSrc ? (
         /* ─── Upload State ─── */
-        <label className="cursor-pointer flex flex-col items-center justify-center gap-5 border-2 border-dashed border-stone-600 hover:border-violet-500 rounded-3xl p-20 text-center transition-all group bg-stone-900/40 hover:bg-stone-800/50">
+        <label className="cursor-pointer flex flex-col items-center justify-center gap-5 border-2 border-dashed border-stone-600 hover:border-rose-500 rounded-3xl p-20 text-center transition-all group bg-stone-900/40 hover:bg-stone-800/50">
           <div className="relative">
-            <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-violet-900/60 to-stone-800 border-2 border-dashed border-stone-600 group-hover:border-violet-500 flex items-center justify-center transition-colors">
-              <ImageIcon size={36} className="text-stone-500 group-hover:text-violet-400 transition-colors" />
+            <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-rose-900/60 to-stone-800 border-2 border-dashed border-stone-600 group-hover:border-rose-500 flex items-center justify-center transition-colors">
+              <ImageIcon size={36} className="text-stone-500 group-hover:text-rose-400 transition-colors" />
             </div>
-            <div className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-violet-600 flex items-center justify-center shadow-lg">
+            <div className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-rose-600 flex items-center justify-center shadow-lg">
               <Plus size={14} className="text-white" />
             </div>
           </div>
@@ -8940,7 +8929,7 @@ const PhotoEditor = () => {
             <div className="flex flex-wrap gap-1">
               {presetCategories.map(c => (
                 <button key={c} onClick={() => setPresetCat(c)}
-                  className={`text-[10px] font-bold px-2 py-0.5 rounded-full border transition-colors ${presetCat === c ? 'bg-violet-600 border-rose-600 text-white' : 'border-stone-700 text-stone-400 hover:border-rose-600 hover:text-violet-400'}`}>
+                  className={`text-[10px] font-bold px-2 py-0.5 rounded-full border transition-colors ${presetCat === c ? 'bg-rose-600 border-rose-600 text-white' : 'border-stone-700 text-stone-400 hover:border-rose-600 hover:text-rose-400'}`}>
                   {c}
                 </button>
               ))}
@@ -8949,7 +8938,7 @@ const PhotoEditor = () => {
             <div className="flex-1 overflow-y-auto space-y-1 pr-0.5">
               {visiblePresets.map(p => (
                 <button key={p.id} onClick={() => applyPreset(p)}
-                  className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-left transition-colors ${activePreset === p.id ? 'bg-violet-600/30 border border-rose-600/50 text-rose-300' : 'hover:bg-stone-700/60 text-stone-300 border border-transparent'}`}>
+                  className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-left transition-colors ${activePreset === p.id ? 'bg-rose-600/30 border border-rose-600/50 text-rose-300' : 'hover:bg-stone-700/60 text-stone-300 border border-transparent'}`}>
                   <span className="text-base leading-none">{p.emoji}</span>
                   <div className="min-w-0">
                     <p className="text-[11px] font-bold truncate">{p.label}</p>
@@ -8966,9 +8955,9 @@ const PhotoEditor = () => {
             <div className="flex items-center gap-2 flex-wrap">
               <div className="flex items-center gap-1 bg-stone-800 rounded-lg p-0.5 border border-stone-700">
                 <button onClick={() => setShowBefore(false)}
-                  className={`px-3 py-1 rounded text-xs font-bold transition-colors ${!showBefore ? 'bg-violet-600 text-white' : 'text-stone-400 hover:text-stone-200'}`}>After</button>
+                  className={`px-3 py-1 rounded text-xs font-bold transition-colors ${!showBefore ? 'bg-rose-600 text-white' : 'text-stone-400 hover:text-stone-200'}`}>After</button>
                 <button onClick={() => setShowBefore(true)}
-                  className={`px-3 py-1 rounded text-xs font-bold transition-colors ${showBefore ? 'bg-violet-600 text-white' : 'text-stone-400 hover:text-stone-200'}`}>Before</button>
+                  className={`px-3 py-1 rounded text-xs font-bold transition-colors ${showBefore ? 'bg-rose-600 text-white' : 'text-stone-400 hover:text-stone-200'}`}>Before</button>
               </div>
               <div className="flex items-center gap-1">
                 <button onClick={undo} disabled={historyIdx === 0}
@@ -8981,7 +8970,7 @@ const PhotoEditor = () => {
                 </button>
               </div>
               <button onClick={resetAdj}
-                className="px-2.5 py-1.5 rounded bg-stone-800 border border-stone-700 text-xs font-bold text-stone-400 hover:text-violet-400 hover:border-rose-600/50 transition-colors">
+                className="px-2.5 py-1.5 rounded bg-stone-800 border border-stone-700 text-xs font-bold text-stone-400 hover:text-rose-400 hover:border-rose-600/50 transition-colors">
                 Reset
               </button>
               <button onClick={() => fileRef.current?.click()}
@@ -8991,12 +8980,12 @@ const PhotoEditor = () => {
               <div className="flex items-center gap-1 ml-auto">
                 {['jpg','png','webp'].map(f => (
                   <button key={f} onClick={() => setExportFmt(f)}
-                    className={`px-2 py-1 rounded text-[10px] font-bold uppercase border transition-colors ${exportFmt === f ? 'bg-violet-600 border-rose-600 text-white' : 'border-stone-700 text-stone-400 hover:border-rose-600'}`}>
+                    className={`px-2 py-1 rounded text-[10px] font-bold uppercase border transition-colors ${exportFmt === f ? 'bg-rose-600 border-rose-600 text-white' : 'border-stone-700 text-stone-400 hover:border-rose-600'}`}>
                     {f}
                   </button>
                 ))}
                 <button onClick={downloadPhoto}
-                  className="ml-1 flex items-center gap-1.5 px-3 py-1.5 rounded bg-violet-600 hover:bg-violet-500 text-white text-xs font-bold transition-colors">
+                  className="ml-1 flex items-center gap-1.5 px-3 py-1.5 rounded bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold transition-colors">
                   <Download size={12} /> Export
                 </button>
               </div>
@@ -9071,7 +9060,7 @@ const PhotoEditor = () => {
                 <div className="absolute top-3 left-3 px-2 py-1 bg-black/60 rounded text-[10px] font-bold text-white uppercase tracking-wider">Original</div>
               )}
               {!showBefore && (
-                <div className="absolute top-3 left-3 px-2 py-1 bg-violet-600/80 rounded text-[10px] font-bold text-white uppercase tracking-wider">Edited</div>
+                <div className="absolute top-3 left-3 px-2 py-1 bg-rose-600/80 rounded text-[10px] font-bold text-white uppercase tracking-wider">Edited</div>
               )}
               {/* Close button */}
               <button onClick={() => { setImgSrc(null); resetAdj(); setRotation(0); setFineRotation(0); setFlipH(false); setFlipV(false); }}
@@ -9142,7 +9131,7 @@ const PhotoEditor = () => {
                 <div className="grid grid-cols-4 gap-1">
                   {[['Free','free'],['9:16','9:16'],['16:9','16:9'],['1:1','1:1'],['4:5','4:5'],['2:3','2:3'],['3:4','3:4'],['4:3','4:3']].map(([lbl,val]) => (
                     <button key={val} onClick={() => setCropAspect(val)}
-                      className={`py-1 text-[9px] font-bold rounded border transition-colors ${cropAspect === val ? 'bg-violet-600 border-rose-600 text-white' : 'border-stone-700 text-stone-400 hover:border-rose-600'}`}>
+                      className={`py-1 text-[9px] font-bold rounded border transition-colors ${cropAspect === val ? 'bg-rose-600 border-rose-600 text-white' : 'border-stone-700 text-stone-400 hover:border-rose-600'}`}>
                       {lbl}
                     </button>
                   ))}
@@ -9154,8 +9143,8 @@ const PhotoEditor = () => {
                 <div className="grid grid-cols-2 gap-1.5">
                   <button onClick={() => setRotation(r => r - 1)} className="py-1.5 rounded-lg border border-stone-700 text-stone-300 text-xs font-bold hover:bg-stone-700 transition-colors">↺ 90°</button>
                   <button onClick={() => setRotation(r => r + 1)} className="py-1.5 rounded-lg border border-stone-700 text-stone-300 text-xs font-bold hover:bg-stone-700 transition-colors">↻ 90°</button>
-                  <button onClick={() => setFlipH(v => !v)} className={`py-1.5 rounded-lg border text-xs font-bold transition-colors ${flipH ? 'bg-violet-600/30 border-rose-600/50 text-rose-300' : 'border-stone-700 text-stone-300 hover:bg-stone-700'}`}>↔ Flip H</button>
-                  <button onClick={() => setFlipV(v => !v)} className={`py-1.5 rounded-lg border text-xs font-bold transition-colors ${flipV ? 'bg-violet-600/30 border-rose-600/50 text-rose-300' : 'border-stone-700 text-stone-300 hover:bg-stone-700'}`}>↕ Flip V</button>
+                  <button onClick={() => setFlipH(v => !v)} className={`py-1.5 rounded-lg border text-xs font-bold transition-colors ${flipH ? 'bg-rose-600/30 border-rose-600/50 text-rose-300' : 'border-stone-700 text-stone-300 hover:bg-stone-700'}`}>↔ Flip H</button>
+                  <button onClick={() => setFlipV(v => !v)} className={`py-1.5 rounded-lg border text-xs font-bold transition-colors ${flipV ? 'bg-rose-600/30 border-rose-600/50 text-rose-300' : 'border-stone-700 text-stone-300 hover:bg-stone-700'}`}>↕ Flip V</button>
                 </div>
               </div>
               {/* Fine rotation */}
@@ -9237,7 +9226,7 @@ const DESIGN_TEMPLATES = [
     bg:{ type:'solid', color:'#1a1a2e', gradient:{ type:'linear', colors:['#1a1a2e','#e94560'], angle:135 }, image:null },
     els:[ { id:'a', type:'shape', x:390, y:90, w:300, h:300, st:'circle', fill:'#e94560', stroke:'', sw:0, br:0, op:18, rot:0 },
           { id:'b', type:'text', x:80, y:400, w:920, h:200, text:'✝  God Is Good\nAll The Time  ✝', ff:'Playfair Display', fs:72, fw:'bold', fi:'normal', ta:'center', col:'#ffffff', lh:1.4, ls:0, td:'none', op:100, rot:0 },
-          { id:'c', type:'text', x:80, y:700, w:920, h:60,  text:'KreativeLync',               ff:'Lato',            fs:30, fw:'bold', fi:'normal', ta:'center', col:'#e94560', lh:1.3, ls:3, td:'none', op:100, rot:0 } ] },
+          { id:'c', type:'text', x:80, y:700, w:920, h:60,  text:'Sarah Speaks Faith',               ff:'Lato',            fs:30, fw:'bold', fi:'normal', ta:'center', col:'#e94560', lh:1.3, ls:3, td:'none', op:100, rot:0 } ] },
 ];
 
 const mkDesignEl = (type, extra = {}) => ({ id: Math.random().toString(36).slice(2,10), type, x:100, y:100, w:200, h:200, rot:0, op:100, locked:false, ...extra });
@@ -9493,7 +9482,7 @@ const DesignStudio = () => {
         <div className="flex gap-0.5 bg-stone-800 rounded-lg p-0.5 border border-stone-700">
           {[['add','Add'],['templates','Templates'],['bg','BG']].map(([id,lbl])=>(
             <button key={id} onClick={()=>setLeftTab(id)}
-              className={`flex-1 py-1 rounded text-[10px] font-bold transition-colors ${leftTab===id?'bg-violet-600 text-white':'text-stone-400 hover:text-stone-200'}`}>{lbl}</button>
+              className={`flex-1 py-1 rounded text-[10px] font-bold transition-colors ${leftTab===id?'bg-rose-600 text-white':'text-stone-400 hover:text-stone-200'}`}>{lbl}</button>
           ))}
         </div>
         <div className="flex-1 overflow-y-auto space-y-2">
@@ -9550,7 +9539,7 @@ const DesignStudio = () => {
               <div className="grid grid-cols-3 gap-1">
                 {[['solid','Solid'],['gradient','Gradient'],['image','Image']].map(([id,lbl])=>(
                   <button key={id} onClick={()=>setBg(b=>({...b,type:id}))}
-                    className={`py-1.5 rounded text-[10px] font-bold border transition-colors ${bg.type===id?'bg-violet-600 border-rose-600 text-white':'border-stone-700 text-stone-400 hover:border-rose-600'}`}>{lbl}</button>
+                    className={`py-1.5 rounded text-[10px] font-bold border transition-colors ${bg.type===id?'bg-rose-600 border-rose-600 text-white':'border-stone-700 text-stone-400 hover:border-rose-600'}`}>{lbl}</button>
                 ))}
               </div>
               {bg.type==='solid' && (
@@ -9595,7 +9584,7 @@ const DesignStudio = () => {
               <div className="absolute top-full left-0 mt-1 bg-stone-800 border border-stone-700 rounded-xl shadow-xl z-50 w-52 p-1 max-h-64 overflow-y-auto">
                 {DESIGN_FORMATS.map(f=>(
                   <button key={f.id} onClick={()=>{setFmt(f);setShowFmtPicker(false);}}
-                    className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs transition-colors ${fmt.id===f.id?'bg-violet-600/30 text-rose-300':'text-stone-300 hover:bg-stone-700'}`}>
+                    className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs transition-colors ${fmt.id===f.id?'bg-rose-600/30 text-rose-300':'text-stone-300 hover:bg-stone-700'}`}>
                     <span>{f.emoji}</span><span className="flex-1">{f.label}</span><span className="text-stone-500">{f.w}×{f.h}</span>
                   </button>
                 ))}
@@ -9606,11 +9595,11 @@ const DesignStudio = () => {
             <button onClick={undo} disabled={histIdx===0} className="p-1.5 rounded bg-stone-800 border border-stone-700 text-stone-400 hover:text-white disabled:opacity-30 transition-colors"><RotateCcw size={13}/></button>
             <button onClick={redo} disabled={histIdx>=hist.length-1} className="p-1.5 rounded bg-stone-800 border border-stone-700 text-stone-400 hover:text-white disabled:opacity-30 transition-colors"><RotateCcw size={13} className="scale-x-[-1]"/></button>
           </div>
-          <button onClick={()=>{setEls([]);setSelId(null);push([]);}} className="px-2.5 py-1.5 rounded bg-stone-800 border border-stone-700 text-xs font-bold text-stone-400 hover:text-violet-400 transition-colors">Clear</button>
+          <button onClick={()=>{setEls([]);setSelId(null);push([]);}} className="px-2.5 py-1.5 rounded bg-stone-800 border border-stone-700 text-xs font-bold text-stone-400 hover:text-rose-400 transition-colors">Clear</button>
           <div className="flex items-center gap-1 px-2 py-1.5 bg-stone-800 rounded border border-stone-700 text-xs text-stone-400">
             <Layers size={11}/><span>{els.length} layers</span>
           </div>
-          <button onClick={exportPNG} className="ml-auto flex items-center gap-1.5 px-3 py-1.5 rounded bg-violet-600 hover:bg-violet-500 text-white text-xs font-bold transition-colors">
+          <button onClick={exportPNG} className="ml-auto flex items-center gap-1.5 px-3 py-1.5 rounded bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold transition-colors">
             <Download size={12}/> Export PNG
           </button>
         </div>
@@ -9658,7 +9647,7 @@ const DesignStudio = () => {
                 <textarea value={sel.text||''} rows={3}
                   onChange={e=>updEl(sel.id,{text:e.target.value})}
                   onBlur={()=>push(els)}
-                  className="w-full bg-stone-700 border border-stone-600 rounded text-xs text-stone-200 p-2 resize-none focus:outline-none focus:border-violet-500" />
+                  className="w-full bg-stone-700 border border-stone-600 rounded text-xs text-stone-200 p-2 resize-none focus:outline-none focus:border-rose-500" />
               </div>
               <div>
                 <p className="text-[10px] text-stone-500 mb-1">Font Family</p>
@@ -9678,7 +9667,7 @@ const DesignStudio = () => {
                   <div className="flex gap-0.5">
                     {['left','center','right'].map(a=>(
                       <button key={a} onClick={()=>updElPush(sel.id,{ta:a})}
-                        className={`flex-1 py-1 rounded border text-xs transition-colors ${sel.ta===a?'bg-violet-600 border-rose-600 text-white':'border-stone-700 text-stone-400 hover:bg-stone-700'}`}>
+                        className={`flex-1 py-1 rounded border text-xs transition-colors ${sel.ta===a?'bg-rose-600 border-rose-600 text-white':'border-stone-700 text-stone-400 hover:bg-stone-700'}`}>
                         {a==='left'?'⟵':a==='center'?'↔':'⟶'}
                       </button>
                     ))}
@@ -9687,11 +9676,11 @@ const DesignStudio = () => {
               </div>
               <div className="flex gap-1">
                 <button onClick={()=>updElPush(sel.id,{fw:sel.fw==='bold'?'normal':'bold'})}
-                  className={`flex-1 py-1.5 rounded border text-xs font-bold transition-colors ${sel.fw==='bold'?'bg-violet-600 border-rose-600 text-white':'border-stone-700 text-stone-300 hover:bg-stone-700'}`}>B</button>
+                  className={`flex-1 py-1.5 rounded border text-xs font-bold transition-colors ${sel.fw==='bold'?'bg-rose-600 border-rose-600 text-white':'border-stone-700 text-stone-300 hover:bg-stone-700'}`}>B</button>
                 <button onClick={()=>updElPush(sel.id,{fi:sel.fi==='italic'?'normal':'italic'})}
-                  className={`flex-1 py-1.5 rounded border text-xs italic transition-colors ${sel.fi==='italic'?'bg-violet-600 border-rose-600 text-white':'border-stone-700 text-stone-300 hover:bg-stone-700'}`}>I</button>
+                  className={`flex-1 py-1.5 rounded border text-xs italic transition-colors ${sel.fi==='italic'?'bg-rose-600 border-rose-600 text-white':'border-stone-700 text-stone-300 hover:bg-stone-700'}`}>I</button>
                 <button onClick={()=>updElPush(sel.id,{td:sel.td==='underline'?'none':'underline'})}
-                  className={`flex-1 py-1.5 rounded border text-xs underline transition-colors ${sel.td==='underline'?'bg-violet-600 border-rose-600 text-white':'border-stone-700 text-stone-300 hover:bg-stone-700'}`}>U</button>
+                  className={`flex-1 py-1.5 rounded border text-xs underline transition-colors ${sel.td==='underline'?'bg-rose-600 border-rose-600 text-white':'border-stone-700 text-stone-300 hover:bg-stone-700'}`}>U</button>
               </div>
               <div>
                 <p className="text-[10px] text-stone-500 mb-1">Text Color</p>
@@ -9727,7 +9716,7 @@ const DesignStudio = () => {
                 <div className="flex gap-1">
                   {['cover','contain','fill'].map(f=>(
                     <button key={f} onClick={()=>updElPush(sel.id,{fit:f})}
-                      className={`flex-1 py-1 rounded text-[10px] border capitalize transition-colors ${sel.fit===f?'bg-violet-600 border-rose-600 text-white':'border-stone-700 text-stone-400 hover:bg-stone-700'}`}>{f}</button>
+                      className={`flex-1 py-1 rounded text-[10px] border capitalize transition-colors ${sel.fit===f?'bg-rose-600 border-rose-600 text-white':'border-stone-700 text-stone-400 hover:bg-stone-700'}`}>{f}</button>
                   ))}
                 </div>
                 <PropSlider label="Corner Radius" val={sel.br||0} min={0} max={300} onChange={v=>updEl(sel.id,{br:v})} />
@@ -9751,7 +9740,7 @@ const DesignStudio = () => {
 // --- Swift Code View (kept for legacy compatibility) ---
 const SwiftCodeView = () => (
   <div className="max-w-4xl mx-auto text-center py-20">
-    <Code className="mx-auto text-rose-300 dark:text-violet-600/50 w-16 h-16 mb-6" />
+    <Code className="mx-auto text-rose-300 dark:text-rose-600/50 w-16 h-16 mb-6" />
     <h3 className="text-2xl font-semibold text-stone-800 dark:text-stone-100 mb-2">System Logic</h3>
     <p className="text-stone-500 dark:text-stone-400 max-w-md mx-auto">AVFoundation Swift logic for time-based cutting and export.</p>
   </div>
@@ -9759,10 +9748,10 @@ const SwiftCodeView = () => (
 
 // --- Sidebar Item ---
 const SidebarItem = ({ icon, label, active, onClick }) => (
-  <button onClick={onClick} className={`w-full flex items-center space-x-3 px-4 py-3.5 rounded-2xl transition-all ${active ? 'bg-violet-50 dark:bg-rose-900/30 border border-violet-100 dark:border-rose-800 text-violet-600 dark:text-violet-400 font-bold shadow-sm' : 'text-stone-500 dark:text-stone-400 hover:bg-violet-50 dark:hover:bg-stone-700 hover:text-stone-800 dark:hover:text-stone-100 font-medium'}`}>
-    <span className={active ? 'text-violet-500' : 'text-stone-400'}>{icon}</span>
+  <button onClick={onClick} className={`w-full flex items-center space-x-3 px-4 py-3.5 rounded-2xl transition-all ${active ? 'bg-rose-50 dark:bg-rose-900/30 border border-rose-100 dark:border-rose-800 text-rose-600 dark:text-rose-400 font-bold shadow-sm' : 'text-stone-500 dark:text-stone-400 hover:bg-rose-50 dark:hover:bg-stone-700 hover:text-stone-800 dark:hover:text-stone-100 font-medium'}`}>
+    <span className={active ? 'text-rose-500' : 'text-stone-400'}>{icon}</span>
     <span className="text-sm">{label}</span>
-    {active && <div className="ml-auto w-1.5 h-1.5 bg-violet-500 rounded-full" />}
+    {active && <div className="ml-auto w-1.5 h-1.5 bg-rose-500 rounded-full" />}
   </button>
 );
 
