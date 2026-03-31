@@ -244,9 +244,9 @@ const App = () => {
   const [businesses, setBusinesses] = useState(() => {
     const defaults = [
       { id: 'sarah', name: 'Sarah Speaks Faith', type: 'faith', color: 'rose' },
-      { id: 'stewardship', name: 'Her Stewardship', type: 'service', color: 'emerald' },
-      { id: 'stoklync', name: 'Stoklync', type: 'product', color: 'indigo' },
-      { id: 'skin', name: 'Skin Products', type: 'product', color: 'amber' }
+      { id: 'stewardship', name: 'Her Stewardship', type: 'stewardship', color: 'emerald' },
+      { id: 'stoklync', name: 'Stoklync', type: 'business', color: 'indigo' },
+      { id: 'skin', name: 'Skin Products', type: 'business', color: 'amber' }
     ];
     try {
       const raw = localStorage.getItem('faith-studio-businesses');
@@ -302,12 +302,15 @@ const App = () => {
     ['analytics', BarChart2, 'Analytics'],
   ];
 
+  const [newBusinessType, setNewBusinessType] = useState('business');
   const addBusiness = () => {
     if (!newBusinessName.trim()) return;
     const id = 'b' + Date.now();
-    setBusinesses(prev => [...prev, { id, name: newBusinessName.trim(), type: 'product', color: 'stone' }]);
+    const colorMap = { faith: 'rose', stewardship: 'emerald', business: 'indigo' };
+    setBusinesses(prev => [...prev, { id, name: newBusinessName.trim(), type: newBusinessType, color: colorMap[newBusinessType] || 'stone' }]);
     setActiveBusinessId(id);
     setNewBusinessName('');
+    setNewBusinessType('business');
     setShowAddBusiness(false);
   };
 
@@ -578,12 +581,25 @@ const App = () => {
         {showAddBusiness && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
             <div className="bg-white dark:bg-stone-800 rounded-2xl p-6 max-w-md w-full shadow-xl border border-rose-100 dark:border-stone-700">
-              <h3 className="text-lg font-bold text-stone-800 dark:text-stone-100 mb-4">Add Business or Brand</h3>
-              <p className="text-sm text-stone-500 dark:text-stone-400 mb-4">Create content for another product, service, or brand—e.g. Stoklync, skin products, coaching, etc.</p>
-              <input value={newBusinessName} onChange={(e) => setNewBusinessName(e.target.value)} placeholder="Business name (e.g. Stoklync, Skin Care Co)" className="w-full bg-rose-50 dark:bg-stone-700 border border-rose-100 dark:border-stone-600 rounded-xl px-4 py-3 text-stone-800 dark:text-stone-100 placeholder-stone-400 mb-4" />
+              <h3 className="text-lg font-bold text-stone-800 dark:text-stone-100 mb-1">Add Brand or Business</h3>
+              <p className="text-sm text-stone-500 dark:text-stone-400 mb-4">Each brand gets its own AI coach, roadmap, notes, and chat history — completely separate.</p>
+              <input value={newBusinessName} onChange={(e) => setNewBusinessName(e.target.value)} placeholder="Brand name (e.g. Stoklync, Skin Care Co, Client Brand)" className="w-full bg-rose-50 dark:bg-stone-700 border border-rose-100 dark:border-stone-600 rounded-xl px-4 py-3 text-stone-800 dark:text-stone-100 placeholder-stone-400 mb-3" />
+              <p className="text-xs font-bold text-stone-500 mb-2">What type is this brand?</p>
+              <div className="grid grid-cols-3 gap-2 mb-4">
+                {[
+                  { value: 'business', label: '💼 Business', desc: 'Sales, marketing, SEO, revenue' },
+                  { value: 'faith', label: '✝️ Faith', desc: 'Ministry, gospel, community' },
+                  { value: 'stewardship', label: '💚 Stewardship', desc: 'Faith + finances podcast' },
+                ].map(opt => (
+                  <button key={opt.value} onClick={() => setNewBusinessType(opt.value)} className={`p-3 rounded-xl border-2 text-left transition-all ${newBusinessType === opt.value ? 'border-rose-500 bg-rose-50 dark:bg-rose-900/20' : 'border-stone-200 dark:border-stone-600 hover:border-rose-300'}`}>
+                    <p className="font-bold text-xs text-stone-800 dark:text-stone-100">{opt.label}</p>
+                    <p className="text-xs text-stone-400 mt-0.5">{opt.desc}</p>
+                  </button>
+                ))}
+              </div>
               <div className="flex gap-2">
-                <button onClick={() => { setShowAddBusiness(false); setNewBusinessName(''); }} className="flex-1 py-2 rounded-xl border border-stone-200 dark:border-stone-600 text-stone-600 dark:text-stone-400 font-medium">Cancel</button>
-                <button onClick={addBusiness} className="flex-1 py-2 rounded-xl bg-rose-500 text-white font-bold hover:bg-rose-600">Add</button>
+                <button onClick={() => { setShowAddBusiness(false); setNewBusinessName(''); setNewBusinessType('business'); }} className="flex-1 py-2 rounded-xl border border-stone-200 dark:border-stone-600 text-stone-600 dark:text-stone-400 font-medium">Cancel</button>
+                <button onClick={addBusiness} className="flex-1 py-2 rounded-xl bg-rose-500 text-white font-bold hover:bg-rose-600">Add Brand</button>
               </div>
             </div>
           </div>
@@ -1351,6 +1367,7 @@ const ProContentToolkit = () => {
                     topic: `Roadmap for ${bizName}`,
                     analyticsData: {
                       brandName: bizName,
+                      brandType: bizType,
                       posts: bizPosts,
                       account: igProfileMap[brandKey] || null,
                       growth: igGrowthMap[brandKey] || null,

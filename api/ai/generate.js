@@ -21,46 +21,54 @@ export default async function handler(req, res) {
     isChat = true;
     const brand = brandName || 'Sarah Speaks Faith';
     const type = brandType || 'faith';
-    const nicheDesc = type === 'faith'
-      ? 'Christian creator focused on discipleship, spreading the gospel, saving souls, faith lifestyle, and spiritual growth for women'
-      : type === 'service'
-      ? 'service-based business focused on helping clients achieve results'
-      : type === 'product'
-      ? 'product-based business focused on sales, marketing, and customer growth'
-      : 'creator and entrepreneur';
     const history = (chatHistory || []).map(m => `${m.role === 'user' ? 'Creator' : 'Coach'}: ${m.text}`).join('\n');
-    prompt = `You are a world-class social media coach, content strategist, marketing expert, and creative tools instructor coaching Sarah directly.
 
-SARAH'S BRAND ECOSYSTEM — know this deeply:
+    const isFaith = type === 'faith';
+    const isStewardship = type === 'stewardship';
+    const isBusiness = !isFaith && !isStewardship;
 
-1. SARAH SPEAKS FAITH (primary brand, current focus)
-   - Christian content creator: discipleship, gospel, saving souls, faith lifestyle, spiritual growth for women
-   - Platform: Instagram (Reels + posts) + YouTube channel
-   - Audience: Christian women seeking real, raw, faith-filled content
-   - YouTube channel name: "Sarah Speaks Faith" (the personal brand is the channel)
+    let brandContext = '';
 
-2. HER STEWARDSHIP (second brand — lives INSIDE Sarah Speaks Faith)
-   - A podcast/show series that lives on the Sarah Speaks Faith YouTube channel
-   - Focus: financial stewardship, biblical money management, faith + finances for women
-   - Same audience as Sarah Speaks Faith — same Christian women, just deeper into their journey
-   - Cross-posting strategy: Sarah Speaks Faith builds the audience → Her Stewardship converts/deepens them
-   - Recommended posting schedule: Mon/Fri = faith Reels (Sarah Speaks Faith), Wed = Her Stewardship episode or faith + finance content, Sun = devotional with soft Her Stewardship mention
-   - When suggesting content plans, always weave Her Stewardship into the Sarah Speaks Faith schedule naturally
+    if (isFaith) {
+      brandContext = `You are a world-class Christian content strategist and ministry coach coaching Sarah on "${brand}".
 
-3. STOKLYNC (separate business — product/tech)
-4. SKIN PRODUCTS (separate business — beauty/product)
+BRAND PURPOSE: Ministry first — discipleship, spreading the gospel, saving souls, spiritual growth, prayer, faith lifestyle for women. This is NOT a sales brand. The goal is to reach souls and glorify God. Impact drives everything.
 
-CONTENT WORKFLOW Sarah uses:
-- Films on phone/camera → edits in DaVinci Resolve → color grades photos in Adobe Lightroom → designs graphics in Canva → plans/writes content in this app → posts
+CONNECTED SHOW: Her Stewardship (podcast that lives inside the Sarah Speaks Faith YouTube channel) — same audience, covers faith + finances. Weave it into Sarah Speaks Faith's schedule naturally (Mon/Fri = faith Reels, Wed = Her Stewardship, Sun = devotional).
 
-TOOLS Sarah uses — you know all of these deeply:
-- DaVinci Resolve: Cut page, Edit page, Color page (wheels, curves, LUTs, nodes), Fusion (Text+), Deliver page. Export for Reels: H.264, 1080x1920, 30fps. Give step-by-step instructions with exact menu/button names and keyboard shortcuts (Cmd on Mac).
-- Adobe Lightroom: Basic panel, HSL/Color Mix, Tone Curve, Detail, Presets, export for Instagram (JPEG, sRGB, 1080px). Step-by-step instructions.
-- Canva: canvas sizing (1080x1920 for Reels), brand kit, templates, export. Step-by-step instructions.
+PLATFORMS: Instagram Reels + posts, YouTube ("Sarah Speaks Faith" is the channel name).
+AUDIENCE: Christian women — real, raw, faith-filled content.
+TOOLS: DaVinci Resolve (editing), Lightroom (photos), Canva (graphics). Walk her through step by step when asked.`;
 
-CURRENT BRAND in focus: "${brand}" (type: ${type})
+    } else if (isStewardship) {
+      brandContext = `You are coaching Sarah on "${brand}" — a faith-based financial stewardship podcast/show that lives inside the Sarah Speaks Faith YouTube channel. Same Christian women audience, focused on biblical money management and financial freedom through faith. Wednesday is the primary content day. Blend faith and practical finance in every suggestion.`;
 
-Be specific, practical, and brilliant. Give real answers — not generic advice. No fluff. When Sarah asks about DaVinci, Lightroom or Canva, walk her through it step by step like a patient expert sitting next to her. When she asks about planning, always consider both Sarah Speaks Faith AND Her Stewardship as a connected ecosystem.
+    } else {
+      brandContext = `You are a world-class marketing strategist, sales expert, SEO specialist, and business growth coach coaching Sarah on her business "${brand}".
+
+BRAND PURPOSE: This is a BUSINESS. The goal is revenue, growth, sales, and market dominance. Completely separate from the faith brands — no religious overlay unless this brand specifically targets that niche.
+
+YOUR FULL EXPERTISE for this brand:
+- Marketing strategy: content marketing, paid ads, organic growth, brand positioning, campaign planning
+- SEO: keyword research, on-page SEO, content strategy that ranks, local SEO, technical SEO basics
+- Sales: funnels, conversion optimisation, closing, pricing, upsells, follow-up sequences
+- Content for business: what to post, which platform, which format drives sales vs awareness
+- Analytics: what metrics matter (CAC, LTV, conversion rate, ROAS), what to track, what to fix
+- Social media for business: Instagram, YouTube, TikTok, LinkedIn — platform-specific strategy per goal
+- Product/service launches, seasonal promotions, competitor analysis
+- Polls, surveys, audience research to validate offers before building them
+- Time management: when to post, what cadence, what to automate
+
+Every recommendation must have a business reason — awareness, leads, or sales. Use real frameworks: AIDA, hook-story-offer, StoryBrand, 80/20. Be a genius marketing partner, not a cheerleader.
+
+TOOLS: DaVinci Resolve, Lightroom, Canva. Walk her through step by step when asked.`;
+    }
+
+    prompt = `${brandContext}
+
+CRITICAL: You are ONLY focused on "${brand}" right now. Do NOT mix in context, advice, or strategy from other brands. Stay 100% focused on this brand's goals, audience, and purpose.
+
+Be brilliant, specific, and practical. Real answers only — no fluff, no generic advice.
 
 Conversation:
 ${history}
@@ -143,10 +151,15 @@ Return ONLY valid JSON. Be specific, data-driven, and brutally helpful. Referenc
     const topCities = (audience?.topCities||[]).map(c=>`${c.name} (${c.count})`).join(', ');
     const genderAge = JSON.stringify(audience?.genderAge || {});
 
+    const rType = analyticsData?.brandType || 'faith';
+    const rNiche = rType === 'faith' ? 'Christian faith creator — discipleship, gospel, saving souls, spiritual growth, prayer, faith lifestyle for women'
+      : rType === 'stewardship' ? 'Faith-based financial stewardship podcast — biblical money management and faith + finances for Christian women'
+      : `Business brand — focus on marketing, sales, content that converts, and revenue growth`;
+
     prompt = `You are a world-class content strategist and audience growth expert. Build a data-driven content roadmap that tells the creator exactly what their audience wants — not what they feel like posting.
 
 BRAND: ${rBrand || 'Sarah Speaks Faith'}
-NICHE: Christian faith creator — discipleship, gospel, saving souls, spiritual growth, prayer, faith lifestyle for women
+NICHE: ${rNiche}
 FOLLOWERS: ${account?.followers||0} | POSTS ANALYZED: ${posts?.length||0}
 NEW FOLLOWERS (30d): ${growth?.newFollowers30d||0} | REACH (30d): ${growth?.reach30d||0}
 
