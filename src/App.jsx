@@ -246,7 +246,7 @@ const App = () => {
 
   const [businesses, setBusinesses] = useState(() => {
     const defaults = [
-      { id: 'kreativelync', name: 'Sarah Speaks Faith', type: 'brand', color: 'violet' },
+      { id: 'kreativelync', name: 'Sarah Speaks Faith', type: 'faith', color: 'violet' },
       { id: 'stewardship', name: 'Her Stewardship', type: 'stewardship', color: 'emerald' },
       { id: 'stoklync', name: 'Stoklync', type: 'business', color: 'indigo' },
       { id: 'skin', name: 'Skin Products', type: 'business', color: 'amber' }
@@ -260,7 +260,7 @@ const App = () => {
           const migrated = parsed.map(b => {
             if (!b) return b;
             if (b.id === 'kreativelync' && b.name === 'KreativeLync') {
-              return { ...b, name: 'Sarah Speaks Faith' };
+              return { ...b, name: 'Sarah Speaks Faith', type: 'faith' };
             }
             if (b.id === 'sarah') {
               return { ...b, id: 'kreativelync', name: 'Sarah Speaks Faith' };
