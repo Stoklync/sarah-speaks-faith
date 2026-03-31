@@ -1391,14 +1391,20 @@ const ProContentToolkit = () => {
                 });
                 const data = await r.json();
                 if (data.error) throw new Error(data.error);
-                setRoadmapResult(data);
-                try { localStorage.setItem(`faith-roadmap-${activeBusinessId}`, JSON.stringify(data)); } catch (_) {}
+                const dataWithDate = { ...data, _generatedAt: Date.now() };
+                setRoadmapResult(dataWithDate);
+                try { localStorage.setItem(`faith-roadmap-${activeBusinessId}`, JSON.stringify(dataWithDate)); } catch (_) {}
               } catch (e) { setRoadmapError(e.message || 'Failed to generate roadmap'); }
               finally { setRoadmapLoading(false); }
-            }} disabled={roadmapLoading} className="px-6 py-3 bg-gradient-to-r from-violet-500 to-rose-500 text-white rounded-2xl font-bold text-sm hover:opacity-90 disabled:opacity-50 flex items-center gap-2">
-              {roadmapLoading ? <><Loader2 size={16} className="animate-spin" /> Building your roadmap…</> : '✨ Build My 30-Day Roadmap'}
+            }} data-roadmap-generate disabled={roadmapLoading} className="px-6 py-3 bg-gradient-to-r from-violet-500 to-rose-500 text-white rounded-2xl font-bold text-sm hover:opacity-90 disabled:opacity-50 flex items-center gap-2">
+              {roadmapLoading ? <><Loader2 size={16} className="animate-spin" /> Building your roadmap…</> : roadmapResult ? '🔄 Regenerate with latest data' : '✨ Build My 30-Day Roadmap'}
             </button>
             {roadmapError && <p className="text-sm text-red-500">{roadmapError}</p>}
+            {roadmapResult && !roadmapLoading && (
+              <p className="text-xs text-stone-400">
+                Generated {new Date(roadmapResult._generatedAt || Date.now()).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} · Stays saved until you clear it · Regenerate anytime with fresh data
+              </p>
+            )}
             {!roadmapResult && !roadmapLoading && <p className="text-xs text-stone-400">Tip: Connect Instagram in Analytics first for the most personalised roadmap. Works without it too.</p>}
           </div>
 
@@ -1505,7 +1511,10 @@ const ProContentToolkit = () => {
                 )}
               </div>
 
-              <button onClick={() => { setRoadmapResult(null); localStorage.removeItem(`faith-roadmap-${activeBusinessId}`); }} className="text-xs text-stone-400 hover:text-red-400">Clear roadmap</button>
+              <div className="flex items-center gap-3 pt-2">
+                <button onClick={() => document.querySelector('[data-roadmap-generate]')?.click()} className="px-4 py-2 bg-gradient-to-r from-violet-500 to-rose-500 text-white rounded-xl font-bold text-sm hover:opacity-90">🔄 Regenerate with latest data</button>
+                <button onClick={() => { setRoadmapResult(null); localStorage.removeItem(`faith-roadmap-${activeBusinessId}`); }} className="text-xs text-stone-400 hover:text-red-400">Clear roadmap</button>
+              </div>
             </div>
           )}
         </div>
