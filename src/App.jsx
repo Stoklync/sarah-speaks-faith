@@ -1010,9 +1010,16 @@ const ProContentToolkit = () => {
   const activeBiz = (businesses || []).find(b => b?.id === activeBusinessId);
   const bizName = activeBiz?.name || 'Your brand';
   const bizType = activeBiz?.type || 'faith';
-  const [aiMode, setAiMode] = useState('ideas'); // ideas | script | caption | calendar | chat
+  const [aiMode, setAiMode] = useState('roadmap');
   const [topic, setTopic] = useState('');
   const [chatInput, setChatInput] = useState('');
+
+  // Clear stale results when switching brands
+  useEffect(() => {
+    setAiResult(null);
+    setAiError('');
+    setTopic('');
+  }, [activeBusinessId]);
 
   // Per-brand chat history, persisted to localStorage
   const [chatHistories, setChatHistories] = useState(() => {
@@ -1061,11 +1068,18 @@ const ProContentToolkit = () => {
   const [editingNoteId, setEditingNoteId] = useState(null);
 
   // Roadmap state
-  const [roadmapResult, setRoadmapResult] = useState(() => {
-    try { return JSON.parse(localStorage.getItem(`faith-roadmap-${activeBusinessId}`) || 'null'); } catch { return null; }
-  });
+  const [roadmapResult, setRoadmapResult] = useState(null);
   const [roadmapLoading, setRoadmapLoading] = useState(false);
   const [roadmapError, setRoadmapError] = useState('');
+
+  // Reload roadmap from localStorage whenever the active brand changes
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(`faith-roadmap-${activeBusinessId}`);
+      setRoadmapResult(saved ? JSON.parse(saved) : null);
+    } catch { setRoadmapResult(null); }
+    setRoadmapError('');
+  }, [activeBusinessId]);
 
   const copyText = (text, id) => { navigator.clipboard.writeText(text); setCopiedId(id); setTimeout(() => setCopiedId(null), 2000); };
 
