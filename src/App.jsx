@@ -1005,6 +1005,424 @@ const BUSINESS_TEMPLATES = [
   { name: 'Coaching / Consulting', hook: 'The #1 thing that changed [outcome] for my clients.', cta: 'Book a free call—link in bio.', for: 'service' }
 ];
 
+// ---- Poll & Engagement Creator ----
+const PollEngagementCreator = ({ bizName, bizType }) => {
+  const [pollType, setPollType] = useState('poll');
+  const [topic, setTopic] = useState('');
+  const [result, setResult] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [copied, setCopied] = useState(false);
+
+  const pollTypes = [
+    { id: 'poll', label: '📊 Instagram Poll', desc: 'Yes/No or A vs B poll for Stories' },
+    { id: 'question', label: '❓ Question Sticker', desc: 'Open question for Stories engagement' },
+    { id: 'quiz', label: '🧠 Quiz Sticker', desc: '4-option quiz for Stories' },
+    { id: 'carousel', label: '🎠 Engagement Carousel', desc: 'Swipeable post that drives saves & shares' },
+    { id: 'debate', label: '🔥 Debate Post', desc: 'Controversial (but safe) take that drives comments' },
+    { id: 'challenge', label: '🏆 Challenge/CTA', desc: 'Action-based post that grows your community' },
+  ];
+
+  const generate = async () => {
+    if (!topic.trim()) return;
+    setLoading(true); setError(''); setResult(null);
+    try {
+      const r = await fetch('/api/ai/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          mode: 'chat',
+          topic,
+          brandName: bizName,
+          brandType: bizType,
+          chatHistory: [{
+            role: 'user',
+            text: `Create a "${pollTypes.find(p=>p.id===pollType)?.label}" for ${bizName} about: ${topic}
+
+${pollType === 'poll' ? `Give me:
+POLL QUESTION: [the question]
+OPTION A: [first option]
+OPTION B: [second option]
+CAPTION: [short caption to post with it]
+WHY THIS WORKS: [why this will get engagement]` :
+pollType === 'question' ? `Give me:
+QUESTION: [the open question]
+CONTEXT CAPTION: [1-2 sentences to post before the question sticker]
+FOLLOW UP: [what to do with the responses — story idea, DM strategy, etc]
+WHY THIS WORKS: [why this drives engagement]` :
+pollType === 'quiz' ? `Give me:
+QUIZ QUESTION: [the question]
+CORRECT ANSWER: [the right answer]
+WRONG OPTION 1: [plausible wrong answer]
+WRONG OPTION 2: [plausible wrong answer]
+WRONG OPTION 3: [plausible wrong answer]
+CAPTION: [short teaser caption]
+WHY THIS WORKS: [why this drives engagement]` :
+pollType === 'carousel' ? `Give me a full carousel post:
+SLIDE 1 (Hook): [what to show/say on slide 1 to stop the scroll]
+SLIDE 2: [content]
+SLIDE 3: [content]
+SLIDE 4: [content]
+SLIDE 5: [content]
+SLIDE 6 (CTA): [save this, share with a friend, or comment]
+CAPTION: [full caption with hashtags]
+DESIGN TIP: [visual direction for Canva]` :
+pollType === 'debate' ? `Give me:
+THE TAKE: [the debatable opinion — bold but not offensive]
+CAPTION: [full caption presenting both sides, asking audience to weigh in]
+HOOK LINE: [first line that stops the scroll]
+COMMENT CTA: [exactly what to ask in comments]
+HASHTAGS: [15-20 relevant hashtags]` :
+`Give me:
+CHALLENGE NAME: [name of the challenge or CTA]
+WHAT TO DO: [exactly what you're asking your audience to do]
+CAPTION: [full post caption with the challenge/CTA]
+HOOK: [first line]
+COMMUNITY ANGLE: [how this builds community or loyalty]
+HASHTAGS: [15-20 hashtags]`}
+
+Make it specific to ${bizName}'s audience and niche. Not generic — this should feel native to the brand.`
+          }]
+        })
+      });
+      const data = await r.json();
+      if (data.error) throw new Error(data.error);
+      setResult(data.reply);
+    } catch (e) { setError(e.message); }
+    finally { setLoading(false); }
+  };
+
+  return (
+    <div className="bg-white dark:bg-stone-800 border border-stone-100 dark:border-stone-700 rounded-3xl p-6 space-y-4">
+      <h3 className="font-bold text-stone-800 dark:text-stone-100 text-lg">📊 Polls & Engagement Creator</h3>
+      <p className="text-xs text-stone-400">Create polls, quizzes, debate posts, and carousels that drive real engagement — not just likes.</p>
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+        {pollTypes.map(pt => (
+          <button key={pt.id} onClick={() => setPollType(pt.id)} className={`p-3 rounded-xl border-2 text-left transition-all ${pollType === pt.id ? 'border-rose-500 bg-rose-50 dark:bg-rose-900/20' : 'border-stone-200 dark:border-stone-600 hover:border-rose-300'}`}>
+            <p className="font-bold text-xs text-stone-800 dark:text-stone-100">{pt.label}</p>
+            <p className="text-xs text-stone-400 mt-0.5">{pt.desc}</p>
+          </button>
+        ))}
+      </div>
+      <div className="flex gap-2">
+        <input value={topic} onChange={e => setTopic(e.target.value)} onKeyDown={e => e.key === 'Enter' && generate()} placeholder={`Topic for your ${pollTypes.find(p=>p.id===pollType)?.label}…`} className="flex-1 bg-stone-50 dark:bg-stone-700 border border-stone-200 dark:border-stone-600 rounded-xl px-4 py-2 text-sm" />
+        <button onClick={generate} disabled={loading || !topic.trim()} className="px-5 py-2 bg-rose-500 text-white rounded-xl font-bold text-sm disabled:opacity-50 hover:bg-rose-600 whitespace-nowrap">
+          {loading ? <Loader2 size={14} className="animate-spin" /> : 'Generate ✨'}
+        </button>
+      </div>
+      {error && <p className="text-sm text-red-500">{error}</p>}
+      {result && (
+        <div className="p-4 rounded-2xl bg-stone-50 dark:bg-stone-700/40 border border-stone-200 dark:border-stone-600 space-y-2">
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-bold text-rose-500 uppercase">Your {pollTypes.find(p=>p.id===pollType)?.label}</p>
+            <button onClick={() => { navigator.clipboard.writeText(result); setCopied(true); setTimeout(()=>setCopied(false),2000); }} className="text-xs text-rose-500 font-bold">{copied ? '✓ Copied' : 'Copy all'}</button>
+          </div>
+          <p className="text-sm text-stone-700 dark:text-stone-200 whitespace-pre-wrap leading-relaxed">{result}</p>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ---- Podcast Planner ----
+const PodcastPlanner = ({ bizName, bizType }) => {
+  const [planMode, setPlanMode] = useState('episode');
+  const [topic, setTopic] = useState('');
+  const [result, setResult] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [copied, setCopied] = useState(false);
+
+  const modes = [
+    { id: 'episode', label: '🎙️ Episode Plan', desc: 'Full episode structure & talking points' },
+    { id: 'shownotes', label: '📝 Show Notes', desc: 'SEO-ready show notes + timestamps' },
+    { id: 'titles', label: '✨ Episode Titles', desc: '10 title options that get clicks' },
+    { id: 'series', label: '📚 Series Plan', desc: 'Multi-episode series around a theme' },
+    { id: 'promo', label: '📣 Promo Content', desc: 'Reels, captions & clips to promote the episode' },
+  ];
+
+  const generate = async () => {
+    if (!topic.trim()) return;
+    setLoading(true); setError(''); setResult(null);
+    try {
+      const r = await fetch('/api/ai/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          mode: 'chat',
+          topic,
+          brandName: bizName || 'Her Stewardship',
+          brandType: bizType || 'stewardship',
+          chatHistory: [{
+            role: 'user',
+            text: planMode === 'episode' ?
+`Plan a full podcast episode for "${bizName || 'Her Stewardship'}" about: ${topic}
+
+EPISODE TITLE: [compelling title]
+EPISODE HOOK (first 60 seconds): [exactly what to say to open the episode and hook the listener]
+INTRO: [2-3 minute intro — welcome, what this episode covers, why it matters]
+SEGMENT 1 — [title]: [talking points and key ideas]
+SEGMENT 2 — [title]: [talking points and key ideas]
+SEGMENT 3 — [title]: [talking points and key ideas]
+LISTENER ACTION (CTA): [what you want listeners to do by end of episode]
+OUTRO: [how to close — subscribe ask, next episode tease, prayer/blessing if faith-based]
+GUEST ANGLE: [would a guest work? Who type? What questions to ask?]
+EPISODE LENGTH SUGGESTION: [recommended runtime and why]` :
+
+planMode === 'shownotes' ?
+`Write SEO-optimised show notes for a "${bizName || 'Her Stewardship'}" episode about: ${topic}
+
+EPISODE TITLE: [SEO title with keyword]
+EPISODE SUMMARY: [2-3 sentence description for podcast platforms]
+WHAT YOU'LL LEARN: [3-5 bullet points]
+TIMESTAMPS:
+00:00 - Intro
+[fill in logical timestamps]
+KEY TAKEAWAYS: [3-5 actionable takeaways]
+RESOURCES MENTIONED: [placeholder for links]
+CONNECT WITH US: [placeholder for social links]
+KEYWORDS: [10-15 search keywords this episode should rank for]` :
+
+planMode === 'titles' ?
+`Give me 10 episode title options for "${bizName || 'Her Stewardship'}" about: ${topic}
+
+Mix these styles:
+- Number-based ("5 Ways to...")
+- Question-based ("Why Are You...")
+- Bold statement
+- Story-based ("How I...")
+- Curiosity gap ("The One Thing...")
+
+For each title, give a 1-line note on why it will get clicks.` :
+
+planMode === 'series' ?
+`Plan a podcast series for "${bizName || 'Her Stewardship'}" about: ${topic}
+
+SERIES NAME: [title]
+SERIES CONCEPT: [what the whole series covers and why listeners need it]
+TARGET LISTENER: [who this is for, where they are in their journey]
+EPISODE 1: [title + 2-sentence description]
+EPISODE 2: [title + 2-sentence description]
+EPISODE 3: [title + 2-sentence description]
+EPISODE 4: [title + 2-sentence description]
+EPISODE 5: [title + 2-sentence description]
+EPISODE 6 (Finale): [title + 2-sentence description]
+LAUNCH STRATEGY: [how to announce and promote the series]` :
+
+`Create promotional content for a "${bizName || 'Her Stewardship'}" episode about: ${topic}
+
+INSTAGRAM REEL HOOK (for a 15-30 sec clip): [exact words to say]
+REEL CAPTION: [caption + hashtags]
+INSTAGRAM STORY TEXT: [text for story announcing the episode]
+PULL QUOTE (for graphic): [the most shareable quote from this episode topic]
+EMAIL SUBJECT LINE: [subject line to send to email list]
+YOUTUBE DESCRIPTION INTRO: [first 3 sentences for YouTube description]`
+          }]
+        })
+      });
+      const data = await r.json();
+      if (data.error) throw new Error(data.error);
+      setResult(data.reply);
+    } catch (e) { setError(e.message); }
+    finally { setLoading(false); }
+  };
+
+  return (
+    <div className="bg-white dark:bg-stone-800 border border-stone-100 dark:border-stone-700 rounded-3xl p-6 space-y-4">
+      <div className="flex items-center gap-3">
+        <div>
+          <h3 className="font-bold text-stone-800 dark:text-stone-100 text-lg">🎙️ Podcast Planner</h3>
+          <p className="text-xs text-stone-400">Plan episodes, write show notes, create promo content — for Her Stewardship or any podcast brand.</p>
+        </div>
+      </div>
+      <div className="flex gap-2 flex-wrap">
+        {modes.map(m => (
+          <button key={m.id} onClick={() => { setPlanMode(m.id); setResult(null); }} className={`px-3 py-1.5 rounded-xl text-sm font-bold border transition-all ${planMode === m.id ? 'bg-emerald-500 text-white border-emerald-500' : 'bg-stone-50 dark:bg-stone-700 border-stone-200 dark:border-stone-600 text-stone-600 dark:text-stone-300 hover:border-emerald-300'}`}>{m.label}</button>
+        ))}
+      </div>
+      <p className="text-xs text-stone-400">{modes.find(m=>m.id===planMode)?.desc}</p>
+      <div className="flex gap-2">
+        <input value={topic} onChange={e => setTopic(e.target.value)} onKeyDown={e => e.key === 'Enter' && generate()} placeholder={planMode === 'series' ? 'Series theme (e.g. "Financial freedom through faith")' : 'Episode topic (e.g. "How to tithe when you\'re broke")'} className="flex-1 bg-stone-50 dark:bg-stone-700 border border-stone-200 dark:border-stone-600 rounded-xl px-4 py-2 text-sm" />
+        <button onClick={generate} disabled={loading || !topic.trim()} className="px-5 py-2 bg-emerald-500 text-white rounded-xl font-bold text-sm disabled:opacity-50 hover:bg-emerald-600 whitespace-nowrap">
+          {loading ? <Loader2 size={14} className="animate-spin" /> : 'Generate ✨'}
+        </button>
+      </div>
+      {error && <p className="text-sm text-red-500">{error}</p>}
+      {result && (
+        <div className="p-4 rounded-2xl bg-stone-50 dark:bg-stone-700/40 border border-stone-200 dark:border-stone-600 space-y-2">
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-bold text-emerald-600 uppercase">{modes.find(m=>m.id===planMode)?.label}</p>
+            <button onClick={() => { navigator.clipboard.writeText(result); setCopied(true); setTimeout(()=>setCopied(false),2000); }} className="text-xs text-rose-500 font-bold">{copied ? '✓ Copied' : 'Copy all'}</button>
+          </div>
+          <p className="text-sm text-stone-700 dark:text-stone-200 whitespace-pre-wrap leading-relaxed">{result}</p>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ---- SEO & Keywords Planner ----
+const SEOPlanner = ({ bizName, bizType }) => {
+  const [seoMode, setSeoMode] = useState('keywords');
+  const [topic, setTopic] = useState('');
+  const [result, setResult] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [copied, setCopied] = useState(false);
+
+  const modes = [
+    { id: 'keywords', label: '🔑 Keywords', desc: 'Find what your audience is searching for' },
+    { id: 'youtube', label: '▶️ YouTube SEO', desc: 'Title, description & tags that rank' },
+    { id: 'instagram', label: '📱 Instagram SEO', desc: 'Hashtags, keywords & bio optimisation' },
+    { id: 'blog', label: '📄 Blog/Website', desc: 'Blog post outline optimised for Google' },
+    { id: 'competitor', label: '🔭 Competitor Analysis', desc: 'What to do differently to stand out' },
+  ];
+
+  const generate = async () => {
+    if (!topic.trim()) return;
+    setLoading(true); setError(''); setResult(null);
+    try {
+      const r = await fetch('/api/ai/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          mode: 'chat',
+          topic,
+          brandName: bizName,
+          brandType: bizType,
+          chatHistory: [{
+            role: 'user',
+            text: seoMode === 'keywords' ?
+`Do a keyword analysis for ${bizName} around: ${topic}
+
+PRIMARY KEYWORDS (high intent, moderate competition):
+[list 5-8 with estimated monthly search intent: high/medium/low]
+
+LONG-TAIL KEYWORDS (easier to rank, specific):
+[list 8-10 specific phrases people actually search]
+
+QUESTION-BASED KEYWORDS (for content):
+[list 8 questions people ask about this topic]
+
+CONTENT IDEAS BASED ON KEYWORDS:
+[5 content pieces that could rank for these terms]
+
+QUICK WIN: [the single keyword to target first and why]` :
+
+seoMode === 'youtube' ?
+`Write YouTube SEO for ${bizName} video about: ${topic}
+
+TITLE OPTION 1: [optimised, click-worthy, under 60 chars]
+TITLE OPTION 2: [alternative with different keyword angle]
+TITLE OPTION 3: [curiosity/emotion-based]
+
+DESCRIPTION:
+[Full YouTube description — first 2-3 lines most important, include keyword naturally, timestamps placeholder, subscribe CTA, links section]
+
+TAGS: [30 tags — mix of broad, specific, long-tail]
+
+THUMBNAIL TEXT: [3-5 words for thumbnail overlay]
+
+CHAPTERS:
+00:00 Intro
+[logical chapter breakdown]` :
+
+seoMode === 'instagram' ?
+`Instagram SEO strategy for ${bizName} around: ${topic}
+
+HASHTAG STRATEGY (mix of sizes):
+LARGE (1M+): [5 hashtags]
+MEDIUM (100K-1M): [8 hashtags]
+SMALL (10K-100K): [8 hashtags]
+NICHE (under 10K): [5 hashtags]
+
+KEYWORD-RICH CAPTION PHRASES:
+[5 natural phrases to weave into captions that help discovery]
+
+BIO OPTIMISATION:
+[Suggested bio text that includes searchable keywords]
+
+REELS KEYWORD TIP: [how to use keywords in Reels for discovery]` :
+
+seoMode === 'blog' ?
+`Write a full SEO blog post outline for ${bizName} about: ${topic}
+
+SEO TITLE: [under 60 chars, includes primary keyword]
+META DESCRIPTION: [under 155 chars, includes keyword + CTA]
+URL SLUG: [/short-keyword-url]
+PRIMARY KEYWORD: [main keyword]
+SECONDARY KEYWORDS: [3-4 supporting keywords to include]
+
+OUTLINE:
+H1: [same as title]
+H2: Introduction — [hook paragraph direction]
+H2: [Section 1 heading with keyword]
+  H3: [sub-point]
+  H3: [sub-point]
+H2: [Section 2 heading]
+  H3: [sub-point]
+  H3: [sub-point]
+H2: [Section 3 heading]
+H2: Conclusion + CTA
+INTERNAL LINK OPPORTUNITY: [what to link to]
+IMAGE ALT TEXT SUGGESTION: [for the featured image]` :
+
+`Competitor analysis for ${bizName} in the space of: ${topic}
+
+WHO'S WINNING THIS SPACE:
+[Types of creators/businesses doing well — what they do right]
+
+CONTENT GAPS (what nobody is doing well):
+[3-5 specific angles that are underserved]
+
+YOUR UNFAIR ADVANTAGE:
+[What ${bizName} can do that generic competitors can't — be specific to this brand's unique position]
+
+DIFFERENTIATION STRATEGY:
+[Exactly how to position differently to stand out]
+
+CONTENT TO CREATE FIRST:
+[3 specific pieces that would carve out a unique position]`
+          }]
+        })
+      });
+      const data = await r.json();
+      if (data.error) throw new Error(data.error);
+      setResult(data.reply);
+    } catch (e) { setError(e.message); }
+    finally { setLoading(false); }
+  };
+
+  return (
+    <div className="bg-white dark:bg-stone-800 border border-stone-100 dark:border-stone-700 rounded-3xl p-6 space-y-4">
+      <h3 className="font-bold text-stone-800 dark:text-stone-100 text-lg">🔍 SEO & Keywords</h3>
+      <p className="text-xs text-stone-400">Get found. Research keywords, optimise YouTube & Instagram, plan content that ranks on Google.</p>
+      <div className="flex gap-2 flex-wrap">
+        {modes.map(m => (
+          <button key={m.id} onClick={() => { setSeoMode(m.id); setResult(null); }} className={`px-3 py-1.5 rounded-xl text-sm font-bold border transition-all ${seoMode === m.id ? 'bg-indigo-500 text-white border-indigo-500' : 'bg-stone-50 dark:bg-stone-700 border-stone-200 dark:border-stone-600 text-stone-600 dark:text-stone-300 hover:border-indigo-300'}`}>{m.label}</button>
+        ))}
+      </div>
+      <p className="text-xs text-stone-400">{modes.find(m=>m.id===seoMode)?.desc}</p>
+      <div className="flex gap-2">
+        <input value={topic} onChange={e => setTopic(e.target.value)} onKeyDown={e => e.key === 'Enter' && generate()} placeholder={seoMode === 'competitor' ? 'Your niche/market (e.g. "faith-based financial coaching")' : 'Topic or keyword to research…'} className="flex-1 bg-stone-50 dark:bg-stone-700 border border-stone-200 dark:border-stone-600 rounded-xl px-4 py-2 text-sm" />
+        <button onClick={generate} disabled={loading || !topic.trim()} className="px-5 py-2 bg-indigo-500 text-white rounded-xl font-bold text-sm disabled:opacity-50 hover:bg-indigo-600 whitespace-nowrap">
+          {loading ? <Loader2 size={14} className="animate-spin" /> : 'Analyse ✨'}
+        </button>
+      </div>
+      {error && <p className="text-sm text-red-500">{error}</p>}
+      {result && (
+        <div className="p-4 rounded-2xl bg-stone-50 dark:bg-stone-700/40 border border-stone-200 dark:border-stone-600 space-y-2">
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-bold text-indigo-600 uppercase">{modes.find(m=>m.id===seoMode)?.label} Results</p>
+            <button onClick={() => { navigator.clipboard.writeText(result); setCopied(true); setTimeout(()=>setCopied(false),2000); }} className="text-xs text-rose-500 font-bold">{copied ? '✓ Copied' : 'Copy all'}</button>
+          </div>
+          <p className="text-sm text-stone-700 dark:text-stone-200 whitespace-pre-wrap leading-relaxed">{result}</p>
+        </div>
+      )}
+    </div>
+  );
+};
+
 const ProContentToolkit = () => {
   const { activeBusinessId, businesses } = useStudio();
   const activeBiz = (businesses || []).find(b => b?.id === activeBusinessId);
@@ -1181,7 +1599,7 @@ const ProContentToolkit = () => {
 
       {/* Mode tabs */}
       <div className="flex gap-2 flex-wrap">
-        {[['roadmap','🗺️ Roadmap'],['ideas','💡 Ideas'],['script','🎬 Script'],['caption','✍️ Caption'],['calendar','📅 Weekly Plan'],['review','🔍 Review Before Post'],['chat','💬 Ask AI'],['notes','📌 Notes & Journal'],['guides','🎓 App Guides']].map(([mode, label]) => (
+        {[['roadmap','🗺️ Roadmap'],['ideas','💡 Ideas'],['script','🎬 Script'],['caption','✍️ Caption'],['calendar','📅 Weekly Plan'],['poll','📊 Polls & Engagement'],['podcast','🎙️ Podcast Planner'],['seo','🔍 SEO & Keywords'],['review','✅ Review Before Post'],['chat','💬 Ask AI'],['notes','📌 Notes & Journal'],['guides','🎓 App Guides']].map(([mode, label]) => (
           <button key={mode} onClick={() => { setAiMode(mode); setAiResult(null); setAiError(''); }} className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${aiMode === mode ? 'bg-rose-500 text-white shadow' : 'bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 text-stone-600 dark:text-stone-300 hover:border-rose-300'}`}>{label}</button>
         ))}
       </div>
@@ -1768,7 +2186,22 @@ ${bizType === 'business' ? '8. SALES/MARKETING ANGLE (how this post moves people
         </div>
       )}
 
-      {aiMode !== 'chat' && aiMode !== 'notes' && aiMode !== 'roadmap' && aiMode !== 'guides' && (
+      {/* Poll & Engagement Creator */}
+      {aiMode === 'poll' && (
+        <PollEngagementCreator bizName={bizName} bizType={bizType} />
+      )}
+
+      {/* Podcast Planner */}
+      {aiMode === 'podcast' && (
+        <PodcastPlanner bizName={bizName} bizType={bizType} />
+      )}
+
+      {/* SEO & Keywords */}
+      {aiMode === 'seo' && (
+        <SEOPlanner bizName={bizName} bizType={bizType} />
+      )}
+
+      {aiMode !== 'chat' && aiMode !== 'notes' && aiMode !== 'roadmap' && aiMode !== 'guides' && aiMode !== 'poll' && aiMode !== 'podcast' && aiMode !== 'seo' && (
         <div className="bg-white dark:bg-stone-800 border border-rose-100 dark:border-stone-700 rounded-3xl p-6 space-y-4">
           {aiMode === 'ideas' && <>
             <h3 className="font-bold text-stone-800 dark:text-stone-100">💡 Content Ideas Generator</h3>
@@ -1870,12 +2303,30 @@ const SocialPublisher = () => {
   const [repLoading, setRepLoading] = useState(false);
   const [repResult, setRepResult] = useState('');
 
+  const activeBiz = (businesses || []).find(b => b?.id === activeBusinessId);
+  const bizNameSocial = activeBiz?.name || 'Your brand';
+  const bizTypeSocial = activeBiz?.type || 'faith';
+
   const writeCaption = async () => {
     if (!aiTopic.trim()) return;
     setAiLoading(true); setAiResult('');
     try {
-      const res = await generateCaption(aiTopic, aiPlatform);
-      setAiResult(res);
+      const r = await fetch('/api/ai/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          mode: 'chat',
+          topic: aiTopic,
+          brandName: bizNameSocial,
+          brandType: bizTypeSocial,
+          chatHistory: [{
+            role: 'user',
+            text: `Write a ${aiPlatform} caption for: ${aiTopic}\n\nFormat your response as:\nCAPTION:\n[the caption with line breaks and emojis]\n\nHASHTAGS:\n[20-25 hashtags]`
+          }]
+        })
+      });
+      const data = await r.json();
+      setAiResult(data.reply || 'Could not generate caption.');
     } catch (e) { setAiResult('Error: ' + e.message); }
     setAiLoading(false);
   };
@@ -1895,8 +2346,22 @@ const SocialPublisher = () => {
     if (!repScript.trim()) return;
     setRepLoading(true); setRepResult('');
     try {
-      const res = await repurposeContent(repScript);
-      setRepResult(res);
+      const r = await fetch('/api/ai/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          mode: 'chat',
+          topic: 'repurpose content',
+          brandName: bizNameSocial,
+          brandType: bizTypeSocial,
+          chatHistory: [{
+            role: 'user',
+            text: `Repurpose this content for every platform. Be platform-native — each one should feel like it was written for that platform specifically.\n\nOriginal script/content:\n${repScript}\n\nGive me:\nINSTAGRAM REEL CAPTION:\n[caption + hashtags]\n\nTIKTOK CAPTION:\n[caption + hashtags]\n\nYOUTUBE DESCRIPTION:\n[full description with timestamps placeholder]\n\nFACEBOOK POST:\n[longer form, community-focused]\n\nEMAIL SUBJECT + PREVIEW:\n[subject line + 2 sentence preview]\n\nHOOK 1:\n[first hook variation]\n\nHOOK 2:\n[second hook variation]\n\nHOOK 3:\n[third hook variation]`
+          }]
+        })
+      });
+      const data = await r.json();
+      setRepResult(data.reply || 'Could not repurpose content.');
     } catch (e) { setRepResult('Error: ' + e.message); }
     setRepLoading(false);
   };

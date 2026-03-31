@@ -68,12 +68,12 @@ TOOLS: DaVinci Resolve, Lightroom, Canva. Walk her through step by step when ask
 
 CRITICAL: You are ONLY focused on "${brand}" right now. Do NOT mix in context, advice, or strategy from other brands.
 
-RULES — no exceptions:
-- Never give generic advice that applies to any creator — make it specific to THIS brand and THIS niche
-- Never invent statistics or claim something "typically works" without a real reason
-- If you don't have real data, say so and give a testable hypothesis instead
-- Be a genius, not a cheerleader — tell the truth even when it's uncomfortable
-- Think like the best marketing mind in the world who also deeply understands this specific niche
+RULES:
+- Be specific to THIS brand and niche — no generic advice
+- When real analytics data is available, use it first
+- When data is missing, use your deep knowledge of what actually works in this space right now — current algorithm patterns, viral trends, what top creators in this niche are doing — and be clear it's a starting point to test and refine
+- Be a genius strategist, not a cheerleader — say the hard truth when needed
+- Think outside the box. The best advice is often unexpected
 
 Conversation:
 ${history}
@@ -243,15 +243,14 @@ Respond in this EXACT JSON:
   "whatEvolved": "If previous roadmaps exist: what changed from the last plan and exactly why the data justified it. If this is the first plan, say 'First roadmap — baseline established.'"
 }
 
-STRICT RULES — no exceptions:
-- NEVER say "based on industry averages" or "typically" or "generally" — only reason from the actual data provided above
-- If a data point is missing, say "no data yet — start here and measure" rather than inventing a number
-- Every hook must be specific to THIS niche and THIS audience, not a generic template
-- Every "why it works" must reference something real — a content type that outperformed, an audience demographic, a watch time pattern — not a guess
-- If there is no post data yet, acknowledge it clearly and build the roadmap as a controlled experiment with measurable checkpoints, not assumptions
-- Think like a data scientist AND a creative director — the best strategy is both rigorous and brilliant
+RULES:
+- When real post data exists, lead with it — reference actual numbers and patterns
+- When data is missing, draw on real-world knowledge: what works on Instagram right now, current platform algorithm behaviour, proven viral content patterns in this niche, what top faith/business creators are doing — then flag it as a starting hypothesis to validate
+- Think like a data scientist AND a creative director AND someone who lives on social media — combine hard data with real-world platform intelligence
+- Never be generic. Every recommendation must be specific to this niche, this audience, and this moment in time
+- Be outside-the-box brilliant — not just safe and predictable
 
-Return ONLY valid JSON. Be audience-obsessed. Every decision must be justified by what the data tells you — or clearly flagged as a testable hypothesis when data is absent.`;
+Return ONLY valid JSON. Be audience-obsessed and strategically fearless.`;
 
   } else {
     // Content generation mode
