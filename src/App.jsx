@@ -507,11 +507,9 @@ const App = () => {
                       className={`flex-1 text-left px-2.5 py-1.5 text-xs font-medium truncate transition-colors ${activeBusinessId === b.id ? 'text-rose-700 dark:text-violet-300' : 'text-stone-500 dark:text-stone-400'}`}>
                       {b.name || 'Business'}
                     </button>
-                    {b.type === 'business' && (
-                      <button onClick={() => { setEditingBrandId(b.id); setEditingBrandDesc(b.description || ''); }} title="Edit brand description for AI" className="px-1.5 py-1.5 text-stone-300 hover:text-violet-500 transition-colors flex-shrink-0" >
-                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                      </button>
-                    )}
+                    <button onClick={() => { setEditingBrandId(b.id); setEditingBrandDesc(b.description || ''); }} title="Edit brand description for AI" className="px-1.5 py-1.5 text-stone-300 hover:text-violet-500 transition-colors flex-shrink-0" >
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                    </button>
                   </div>
                 ))}
               </div>
