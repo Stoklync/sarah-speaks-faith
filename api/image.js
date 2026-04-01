@@ -8,9 +8,29 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   const { mediaType = 'image', prompt, style, ratio, model = 'kling', duration = 5 } = req.body || {};
-  if (!prompt) return res.status(400).json({ error: 'prompt is required' });
   const apiKey = process.env.FAL_API_KEY;
   if (!apiKey) return res.status(503).json({ error: 'Media generation not configured. Add FAL_API_KEY to Vercel.' });
+
+  // --- REMOVE BACKGROUND ---
+  if (mediaType === 'remove-bg') {
+    const { imageUrl } = req.body;
+    if (!imageUrl) return res.status(400).json({ error: 'imageUrl required' });
+    try {
+      const r = await fetch('https://fal.run/fal-ai/imageutils/rembg', {
+        method: 'POST',
+        headers: { 'Authorization': `Key ${apiKey}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ image_url: imageUrl }),
+      });
+      const data = await r.json();
+      const url = data.image?.url;
+      if (!url) return res.status(500).json({ error: 'Background removal failed' });
+      return res.status(200).json({ url });
+    } catch (e) {
+      return res.status(500).json({ error: 'Background removal failed: ' + e.message });
+    }
+  }
+
+  if (!prompt) return res.status(400).json({ error: 'prompt is required' });
 
   // --- VIDEO ---
   if (mediaType === 'video') {
