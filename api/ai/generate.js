@@ -414,23 +414,25 @@ Generate in valid JSON:
 Return ONLY the JSON object.`;
   }
 
-  // Helper: call Gemini
+  // Helper: call Gemini (tries 2.0-flash first, falls back to 1.5-flash)
   const callGemini = async (maxTokens) => {
     const geminiKey = process.env.GEMINI_API_KEY;
     if (!geminiKey) throw new Error('No Gemini key');
-    const geminiRes = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiKey}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { maxOutputTokens: maxTokens } }),
-      }
-    );
-    const d = await geminiRes.json();
-    if (d.error) throw new Error(`Gemini error: ${d.error.message}`);
-    const t = d.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    if (!t) throw new Error('Empty Gemini response');
-    return t;
+    for (const model of ['gemini-2.0-flash', 'gemini-1.5-flash']) {
+      const geminiRes = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiKey}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { maxOutputTokens: maxTokens } }),
+        }
+      );
+      const d = await geminiRes.json();
+      if (d.error) { console.error(`Gemini ${model} error:`, d.error.message); continue; }
+      const t = d.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      if (t) return t;
+    }
+    throw new Error('Both gemini-2.0-flash and gemini-1.5-flash failed or returned empty');
   };
 
   // Helper: call OpenAI GPT-4o mini
@@ -517,7 +519,7 @@ Return ONLY the JSON object.`;
       try { return res.status(200).json({ ...parseChatText(await callGemini(1000)), model: 'Gemini' }); }
       catch (e) {
         console.error('Gemini preferred failed:', e.message);
-        // Fall through to auto chain silently — don't break the conversation
+        return res.status(200).json({ reply: `⚠️ Gemini error: ${e.message} — falling back to Groq.`, model: 'System', action: null });
       }
     }
     if (preferredModel === 'openai') {
