@@ -7,6 +7,9 @@ export function FloatingAIChat({ businesses = [], activeBusinessId, onAction }) 
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [preferredModel, setPreferredModel] = useState(() => {
+    try { return localStorage.getItem('kreativelync-chat-model') || 'auto'; } catch { return 'auto'; }
+  });
   const bottomRef = useRef(null);
 
   const activeBiz = businesses.find(b => b?.id === activeBusinessId);
@@ -63,6 +66,7 @@ export function FloatingAIChat({ businesses = [], activeBusinessId, onAction }) 
           brandType,
           brandDesc,
           chatHistory: [...history, userMsg],
+          preferredModel,
         }),
       });
       const data = await res.json();
@@ -83,23 +87,42 @@ export function FloatingAIChat({ businesses = [], activeBusinessId, onAction }) 
       {open && (
         <div className="fixed bottom-20 right-4 z-50 w-80 md:w-[420px] bg-white dark:bg-stone-900 rounded-2xl shadow-2xl border border-violet-100 dark:border-stone-700 flex flex-col overflow-hidden" style={{ height: '80vh', maxHeight: 700 }}>
           {/* Header */}
-          <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-violet-600 to-indigo-600">
-            <div className="flex items-center gap-2">
-              <Sparkles size={16} className="text-white" />
-              <span className="text-white font-bold text-sm">KreativeLync AI</span>
-              <span className="text-violet-200 text-xs">· {brandName}</span>
+          <div className="bg-gradient-to-r from-violet-600 to-indigo-600">
+            <div className="flex items-center justify-between px-4 pt-3 pb-2">
+              <div className="flex items-center gap-2">
+                <Sparkles size={16} className="text-white" />
+                <span className="text-white font-bold text-sm">KreativeLync AI</span>
+                <span className="text-violet-200 text-xs">· {brandName}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => { if (confirm('Clear this conversation?')) { const fresh = [{ role: 'assistant', text: WELCOME }]; setMessages(fresh); try { localStorage.setItem(storageKey, JSON.stringify(fresh)); } catch {} } }}
+                  className="text-white/50 hover:text-white text-[10px] font-semibold"
+                  title="Clear chat"
+                >
+                  Clear
+                </button>
+                <button onClick={() => setOpen(false)} className="text-white/70 hover:text-white">
+                  <X size={16} />
+                </button>
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => { if (confirm('Clear this conversation?')) { const fresh = [{ role: 'assistant', text: WELCOME }]; setMessages(fresh); try { localStorage.setItem(storageKey, JSON.stringify(fresh)); } catch {} } }}
-                className="text-white/50 hover:text-white text-[10px] font-semibold"
-                title="Clear chat"
-              >
-                Clear
-              </button>
-              <button onClick={() => setOpen(false)} className="text-white/70 hover:text-white">
-                <X size={16} />
-              </button>
+            {/* Model switcher */}
+            <div className="flex gap-1.5 px-4 pb-2.5">
+              {[
+                { id: 'auto', label: '⚡ Auto (Free)' },
+                { id: 'claude', label: '◆ Claude' },
+                { id: 'gemini', label: '✦ Gemini' },
+                { id: 'openai', label: '⊕ GPT-4o' },
+              ].map(opt => (
+                <button
+                  key={opt.id}
+                  onClick={() => { setPreferredModel(opt.id); try { localStorage.setItem('kreativelync-chat-model', opt.id); } catch {} }}
+                  className={`px-2 py-0.5 rounded-full text-[10px] font-bold transition-all ${preferredModel === opt.id ? 'bg-white text-violet-700' : 'bg-white/20 text-white/80 hover:bg-white/30'}`}
+                >
+                  {opt.label}
+                </button>
+              ))}
             </div>
           </div>
 

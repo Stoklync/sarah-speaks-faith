@@ -8,7 +8,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { mode, topic, description, niche, format, analyticsData, chatHistory, brandName, brandType, brandDesc } = req.body || {};
+  const { mode, topic, description, niche, format, analyticsData, chatHistory, brandName, brandType, brandDesc, preferredModel } = req.body || {};
 
   if (!topic && !analyticsData) {
     return res.status(400).json({ error: 'topic or analyticsData is required' });
@@ -492,33 +492,46 @@ Return ONLY the JSON object.`;
     return JSON.parse(match[0]);
   };
 
-  // --- CHAT MODE: Gemini first (free + smart), Groq fallback ---
+  // --- CHAT MODE: respect preferredModel, then fallback chain ---
   if (isChat) {
+    const callClaude = async () => {
+      if (!process.env.ANTHROPIC_API_KEY) throw new Error('No Anthropic key');
+      const { default: Anthropic } = await import('@anthropic-ai/sdk');
+      const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+      const message = await client.messages.create({ model: 'claude-sonnet-4-5', max_tokens: 1200, messages: [{ role: 'user', content: prompt }] });
+      return message.content[0]?.text || '';
+    };
+
+    // If user picked a specific model, try it first
+    if (preferredModel === 'claude') {
+      try { return res.status(200).json({ ...parseChatText(await callClaude()), model: 'Claude' }); }
+      catch (e) { console.error('Claude preferred failed:', e.message); }
+    }
+    if (preferredModel === 'gemini') {
+      try { return res.status(200).json({ ...parseChatText(await callGemini(1000)), model: 'Gemini' }); }
+      catch (e) { console.error('Gemini preferred failed:', e.message); }
+    }
+    if (preferredModel === 'openai') {
+      try { return res.status(200).json({ ...parseChatText(await callOpenAI(800)), model: 'GPT-4o' }); }
+      catch (e) { console.error('GPT preferred failed:', e.message); }
+    }
+
+    // Auto / fallback chain: Gemini → Groq → GPT-4o → Claude
     if (process.env.GEMINI_API_KEY) {
-      try {
-        const text = await callGemini(1000);
-        return res.status(200).json({ ...parseChatText(text), model: 'Gemini' });
-      } catch (e) { console.error('Gemini chat failed:', e.message); }
+      try { return res.status(200).json({ ...parseChatText(await callGemini(1000)), model: 'Gemini' }); }
+      catch (e) { console.error('Gemini chat failed:', e.message); }
     }
     if (process.env.GROQ_API_KEY) {
-      try {
-        const text = await callGroq(800);
-        return res.status(200).json({ ...parseChatText(text), model: 'Groq' });
-      } catch (e) { console.error('Groq chat failed:', e.message); }
+      try { return res.status(200).json({ ...parseChatText(await callGroq(800)), model: 'Groq' }); }
+      catch (e) { console.error('Groq chat failed:', e.message); }
     }
     if (process.env.OPENAI_API_KEY) {
-      try {
-        const text = await callOpenAI(800);
-        return res.status(200).json({ ...parseChatText(text), model: 'GPT-4o' });
-      } catch (e) { console.error('OpenAI chat failed:', e.message); }
+      try { return res.status(200).json({ ...parseChatText(await callOpenAI(800)), model: 'GPT-4o' }); }
+      catch (e) { console.error('OpenAI chat failed:', e.message); }
     }
     if (process.env.ANTHROPIC_API_KEY) {
-      try {
-        const { default: Anthropic } = await import('@anthropic-ai/sdk');
-        const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-        const message = await client.messages.create({ model: 'claude-haiku-4-5-20251001', max_tokens: 800, messages: [{ role: 'user', content: prompt }] });
-        return res.status(200).json({ ...parseChatText(message.content[0]?.text || ''), model: 'Claude' });
-      } catch (e) { console.error('Anthropic chat failed:', e.message); }
+      try { return res.status(200).json({ ...parseChatText(await callClaude()), model: 'Claude' }); }
+      catch (e) { console.error('Anthropic chat failed:', e.message); }
     }
     return res.status(500).json({ error: 'No AI available for chat.' });
   }
