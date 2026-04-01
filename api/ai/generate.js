@@ -8,9 +8,11 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { mode, topic, description, niche, format, analyticsData, chatHistory, brandName, brandType, brandDesc, preferredModel } = req.body || {};
+  const { mode, topic, description, niche, format, analyticsData, chatHistory, brandName, brandType, brandDesc, preferredModel,
+          bookTitle, bookSubtitle, bookTopic, bookAudience, bookType: bookTypeParam } = req.body || {};
 
-  if (!topic && !analyticsData) {
+  const skipTopicCheck = mode === 'chat' || mode === 'outline';
+  if (!skipTopicCheck && !topic && !analyticsData) {
     return res.status(400).json({ error: 'topic or analyticsData is required' });
   }
 
@@ -389,6 +391,36 @@ YOUR JOB: Be brutally honest and genius-level strategic. Return ONLY valid JSON:
   "stealThisIdea": "One specific video concept from their top performers you can reframe for your brand RIGHT NOW",
   "positioningStatement": "One sentence that defines how ${brandName || 'you'} should position against this competitor — what makes you the better choice for their audience"
 }`;
+
+  } else if (mode === 'outline') {
+    // ── Book outline — returns a raw JSON array ONLY, no plain-text rules ──
+    const typeLabel = {
+      devotional: 'Devotional', ebook: 'eBook', workbook: 'Workbook',
+      journal: 'Guided Journal', course: 'Course Guide', brand: 'Brand Playbook',
+    }[bookTypeParam] || 'Book';
+    const chapterCount = bookTypeParam === 'devotional'
+      ? '7 entries (label them Day 1 through Day 7)'
+      : bookTypeParam === 'course' ? '6-8 lessons'
+      : '5-8 chapters';
+
+    prompt = `Create a ${typeLabel} chapter outline.
+
+Title: "${bookTitle || 'Untitled'}"${bookSubtitle ? `\nSubtitle: "${bookSubtitle}"` : ''}
+Topic: ${bookTopic || topic || 'general'}
+Audience: ${bookAudience || 'general readers'}
+Author brand: ${brandName || 'the author'} (${brandType || 'general'})
+
+RULES:
+- Return ONLY a raw JSON array. Nothing before [. Nothing after ]. No markdown. No commentary.
+- Generate exactly ${chapterCount}.
+- Titles must be specific and compelling — not generic like "Chapter 1".
+- Each subtitle is one sentence that teases the key insight or transformation.
+- Each keyPoints array has 3 specific, concrete points that will be covered.
+
+[
+  {"title": "Day/Chapter title", "subtitle": "One sentence tease of the transformation", "keyPoints": ["concrete point 1", "concrete point 2", "concrete point 3"]},
+  {"title": "Day/Chapter title", "subtitle": "One sentence tease", "keyPoints": ["point 1", "point 2", "point 3"]}
+]`;
 
   } else {
     // Content generation mode — brand-type aware

@@ -95,23 +95,23 @@ export function BookCreator() {
     if (!title.trim() || !topic.trim()) return;
     setLoading(true);
     try {
-      const bookTypeLabel = BOOK_TYPES.find(b => b.id === bookType)?.label || bookType;
-      const reply = await ai(
-        `⚠️ SYSTEM OVERRIDE FOR THIS REQUEST ONLY: Ignore the plain-text instruction. You MUST return a raw JSON array and nothing else.
-
-Create a chapter outline for a ${bookTypeLabel} called "${title}"${subtitle ? ` — "${subtitle}"` : ''}.
-Topic: ${topic}
-Target audience: ${audience || 'general'}
-Brand: ${bizName} (${bizType})
-
-OUTPUT FORMAT — return ONLY this JSON array, no explanation, no markdown, no extra text:
-[
-  {"title": "Chapter title", "subtitle": "One-line description", "keyPoints": ["point 1", "point 2", "point 3"]},
-  {"title": "Chapter title", "subtitle": "One-line description", "keyPoints": ["point 1", "point 2", "point 3"]}
-]
-
-Rules: devotional = 7 entries (Day 1–7), ebook/workbook = 5–8 chapters, course = 6–8 lessons. Titles should be punchy and specific. Start your reply with [ and end with ].`
-      );
+      // Use dedicated 'outline' mode — bypasses plain-text rules, returns pure JSON array
+      const r = await fetch('/api/ai/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          mode: 'outline',
+          bookTitle: title,
+          bookSubtitle: subtitle,
+          bookTopic: topic,
+          bookAudience: audience,
+          bookType: bookType,
+          brandName: bizName,
+          brandType: bizType,
+        }),
+      });
+      const d = await r.json();
+      const reply = d.reply || '';
 
       let parsed = [];
       try {
