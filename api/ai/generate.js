@@ -502,16 +502,25 @@ Return ONLY the JSON object.`;
       return message.content[0]?.text || '';
     };
 
-    // If user picked a specific model, try it first
+    // If user picked a specific model, try it — if not connected, tell them clearly
     if (preferredModel === 'claude') {
+      if (!process.env.ANTHROPIC_API_KEY) {
+        return res.status(200).json({ reply: "◆ Claude isn't connected yet. To use it, add your Anthropic API key to Vercel (Settings → Environment Variables → ANTHROPIC_API_KEY). It's pay-per-use — pennies per conversation. For now, switch to Auto to keep using Gemini for free.", model: 'System', action: null });
+      }
       try { return res.status(200).json({ ...parseChatText(await callClaude()), model: 'Claude' }); }
-      catch (e) { console.error('Claude preferred failed:', e.message); }
+      catch (e) { return res.status(200).json({ reply: `Claude ran into an issue: ${e.message}. Try switching to Auto.`, model: 'System', action: null }); }
     }
     if (preferredModel === 'gemini') {
+      if (!process.env.GEMINI_API_KEY) {
+        return res.status(200).json({ reply: "✦ Gemini isn't connected. Add GEMINI_API_KEY to Vercel to use it.", model: 'System', action: null });
+      }
       try { return res.status(200).json({ ...parseChatText(await callGemini(1000)), model: 'Gemini' }); }
       catch (e) { console.error('Gemini preferred failed:', e.message); }
     }
     if (preferredModel === 'openai') {
+      if (!process.env.OPENAI_API_KEY) {
+        return res.status(200).json({ reply: "⊕ GPT-4o isn't connected yet. Add your OPENAI_API_KEY to Vercel when you're ready. Switch to Auto to use Gemini for free in the meantime.", model: 'System', action: null });
+      }
       try { return res.status(200).json({ ...parseChatText(await callOpenAI(800)), model: 'GPT-4o' }); }
       catch (e) { console.error('GPT preferred failed:', e.message); }
     }
