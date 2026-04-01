@@ -562,161 +562,70 @@ const App = () => {
 
           {/* Settings Modal */}
         {showSettings && (
-          <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4 overflow-y-auto" onClick={() => setShowSettings(false)}>
-            <div className="bg-white dark:bg-stone-900 rounded-2xl w-full max-w-lg shadow-2xl border border-stone-200 dark:border-stone-700 my-8 overflow-hidden" onClick={e => e.stopPropagation()}>
-              {/* Header */}
-              <div className="flex items-center justify-between px-6 py-4 border-b border-stone-100 dark:border-stone-800">
-                <h3 className="text-lg font-black text-stone-800 dark:text-stone-100">Settings</h3>
-                <button onClick={() => setShowSettings(false)} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-stone-100 dark:hover:bg-stone-800 text-stone-400 transition-colors">✕</button>
+          <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-end sm:items-center justify-center z-50 p-0 sm:p-6" onClick={() => setShowSettings(false)}>
+            <div className="bg-white dark:bg-stone-950 w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
+
+              {/* Drag handle (mobile) */}
+              <div className="flex justify-center pt-3 pb-1 sm:hidden">
+                <div className="w-10 h-1 bg-stone-200 dark:bg-stone-700 rounded-full" />
               </div>
 
-              {(() => {
-                const activeBiz = businesses.find(b => b.id === activeBusinessId);
+              {/* Header */}
+              <div className="flex items-center justify-between px-6 pt-4 pb-3 border-b border-stone-100 dark:border-stone-800">
+                <p className="text-base font-black text-stone-900 dark:text-white tracking-tight">App Settings</p>
+                <button onClick={() => setShowSettings(false)} className="w-7 h-7 flex items-center justify-center rounded-full bg-stone-100 dark:bg-stone-800 text-stone-500 hover:text-stone-800 dark:hover:text-white text-sm transition-colors">✕</button>
+              </div>
 
-                const BRAND_COLORS = ['#7c3aed','#e11d48','#0891b2','#059669','#d97706','#dc2626','#7c3aed','#4f46e5','#db2777','#000000'];
+              <div className="px-6 py-5 space-y-1">
 
-                return (
+                {/* Appearance */}
+                <p className="text-[10px] font-black text-stone-400 uppercase tracking-widest mb-3">Appearance</p>
+                <div className="flex items-center justify-between py-3 border-b border-stone-100 dark:border-stone-800/60">
                   <div>
-                    {/* Tabs */}
-                    <div className="flex border-b border-stone-100 dark:border-stone-800 px-2">
-                      {[['brand','Brand'],['connections','Connections'],['appearance','Appearance'],['data','Data']].map(([id, label]) => (
-                        <button key={id} onClick={() => setSettingsTab(id)}
-                          className={`px-4 py-3 text-sm font-semibold border-b-2 transition-colors ${settingsTab === id ? 'border-violet-500 text-violet-600 dark:text-violet-400' : 'border-transparent text-stone-500 hover:text-stone-700 dark:hover:text-stone-300'}`}>
-                          {label}
-                        </button>
-                      ))}
-                    </div>
-
-                    <div className="p-6 space-y-5 max-h-[60vh] overflow-y-auto">
-
-                      {/* ── Brand Tab ── */}
-                      {settingsTab === 'brand' && activeBiz && (
-                        <div className="space-y-4">
-                          <div>
-                            <label className="block text-xs font-bold text-stone-500 uppercase tracking-wider mb-1.5">Brand Name</label>
-                            <input
-                              defaultValue={activeBiz.name}
-                              onBlur={e => setBusinesses(prev => prev.map(b => b.id === activeBusinessId ? { ...b, name: e.target.value.trim() || b.name } : b))}
-                              className="w-full bg-stone-50 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-xl px-4 py-2.5 text-sm text-stone-800 dark:text-stone-100 focus:outline-none focus:ring-2 focus:ring-violet-400"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-xs font-bold text-stone-500 uppercase tracking-wider mb-1.5">Brand Type</label>
-                            <div className="grid grid-cols-3 gap-2">
-                              {[['business','💼 Business'],['faith','✝️ Faith'],['stewardship','💚 Stewardship']].map(([val, label]) => (
-                                <button key={val} onClick={() => setBusinesses(prev => prev.map(b => b.id === activeBusinessId ? { ...b, type: val } : b))}
-                                  className={`py-2 rounded-xl border text-xs font-bold transition-colors ${activeBiz.type === val ? 'border-violet-500 bg-violet-50 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300' : 'border-stone-200 dark:border-stone-700 text-stone-600 dark:text-stone-400 hover:border-violet-300'}`}>
-                                  {label}
-                                </button>
-                              ))}
-                            </div>
-                          </div>
-                          <div>
-                            <label className="block text-xs font-bold text-stone-500 uppercase tracking-wider mb-1.5">Brand Description <span className="font-normal text-stone-400">(tells the AI exactly what you do)</span></label>
-                            <textarea
-                              defaultValue={activeBiz.description || ''}
-                              onBlur={e => setBusinesses(prev => prev.map(b => b.id === activeBusinessId ? { ...b, description: e.target.value.trim() } : b))}
-                              rows={3}
-                              placeholder="What does this brand do? Who is the audience? What's the mission or product?"
-                              className="w-full bg-stone-50 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-xl px-4 py-2.5 text-sm text-stone-800 dark:text-stone-100 placeholder-stone-400 resize-none focus:outline-none focus:ring-2 focus:ring-violet-400"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-xs font-bold text-stone-500 uppercase tracking-wider mb-2">Brand Color</label>
-                            <div className="flex flex-wrap gap-2 items-center">
-                              {BRAND_COLORS.map(c => (
-                                <button key={c} onClick={() => setBusinesses(prev => prev.map(b => b.id === activeBusinessId ? { ...b, brandColor: c } : b))}
-                                  style={{ background: c }}
-                                  className={`w-8 h-8 rounded-full border-2 transition-all ${activeBiz.brandColor === c ? 'border-stone-800 dark:border-white scale-110' : 'border-transparent hover:scale-105'}`}
-                                />
-                              ))}
-                              <input type="color" value={activeBiz.brandColor || '#7c3aed'}
-                                onChange={e => setBusinesses(prev => prev.map(b => b.id === activeBusinessId ? { ...b, brandColor: e.target.value } : b))}
-                                className="w-8 h-8 rounded-full border border-stone-200 dark:border-stone-700 cursor-pointer bg-transparent"
-                                title="Custom color"
-                              />
-                              <span className="text-xs text-stone-400 font-mono">{activeBiz.brandColor || '#7c3aed'}</span>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* ── Connections Tab ── */}
-                      {settingsTab === 'connections' && (
-                        <div className="space-y-4">
-                          <div className="p-4 bg-stone-50 dark:bg-stone-800 rounded-xl border border-stone-200 dark:border-stone-700">
-                            <p className="text-xs font-bold text-stone-500 uppercase tracking-wider mb-0.5">Adobe Express</p>
-                            <p className="text-xs text-stone-400 mb-3">Required for Express Design tab — professional design templates</p>
-                            <input
-                              type="text"
-                              defaultValue={localStorage.getItem('kreativelync-adobe-client-id') || ''}
-                              onChange={e => localStorage.setItem('kreativelync-adobe-client-id', e.target.value.trim())}
-                              placeholder="Adobe Client ID..."
-                              className="w-full bg-white dark:bg-stone-700 border border-stone-200 dark:border-stone-600 rounded-xl px-4 py-2.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-red-400"
-                            />
-                            <a href="https://developer.adobe.com/express/embed-sdk/" target="_blank" rel="noopener noreferrer" className="text-xs text-red-500 hover:underline mt-1.5 inline-block">Get Client ID at developer.adobe.com →</a>
-                          </div>
-                          <div className="p-4 bg-stone-50 dark:bg-stone-800 rounded-xl border border-stone-200 dark:border-stone-700">
-                            <p className="text-xs font-bold text-stone-500 uppercase tracking-wider mb-0.5">Social Accounts</p>
-                            <p className="text-xs text-stone-400 mb-3">Connect Instagram and YouTube in the Analytics tab to sync your posts and audience data</p>
-                            <button onClick={() => setShowSettings(false) || setActiveTab('analytics')}
-                              className="px-4 py-2 rounded-xl bg-violet-500 text-white text-sm font-bold hover:bg-violet-600 transition-colors">
-                              Go to Analytics → Connect
-                            </button>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* ── Appearance Tab ── */}
-                      {settingsTab === 'appearance' && (
-                        <div className="space-y-4">
-                          <div className="flex items-center justify-between p-4 bg-stone-50 dark:bg-stone-800 rounded-xl border border-stone-200 dark:border-stone-700">
-                            <div>
-                              <p className="text-sm font-bold text-stone-800 dark:text-stone-100">Dark Mode</p>
-                              <p className="text-xs text-stone-400 mt-0.5">Switch between light and dark theme</p>
-                            </div>
-                            <button onClick={toggleTheme}
-                              className={`w-12 h-6 rounded-full transition-colors relative ${isDark ? 'bg-violet-500' : 'bg-stone-200'}`}>
-                              <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${isDark ? 'translate-x-6' : 'translate-x-0.5'}`} />
-                            </button>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* ── Data Tab ── */}
-                      {settingsTab === 'data' && (
-                        <div className="space-y-3">
-                          <p className="text-xs text-stone-500 dark:text-stone-400">All your data is stored locally in your browser. Export a backup regularly.</p>
-                          <button onClick={() => {
-                            const data = {};
-                            try { Object.keys(localStorage).filter(k => k.startsWith('kreativelync')).forEach(k => { data[k] = localStorage.getItem(k); }); } catch {}
-                            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-                            const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `kreativelync-backup-${new Date().toISOString().slice(0,10)}.json`; a.click(); URL.revokeObjectURL(a.href);
-                          }} className="w-full py-2.5 rounded-xl border border-stone-200 dark:border-stone-700 text-sm font-semibold text-stone-700 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-stone-800 transition-colors">
-                            Export Backup
-                          </button>
-                          <label className="block w-full py-2.5 rounded-xl border border-stone-200 dark:border-stone-700 text-sm font-semibold text-stone-700 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-stone-800 transition-colors text-center cursor-pointer">
-                            Import Backup
-                            <input type="file" accept=".json" className="hidden" onChange={(e) => {
-                              const f = e.target.files?.[0]; if (!f) return;
-                              const r = new FileReader();
-                              r.onload = () => { try { const d = JSON.parse(r.result); Object.entries(d).forEach(([k, v]) => { if (k.startsWith('kreativelync') && v) localStorage.setItem(k, v); }); window.location.reload(); } catch { alert('Invalid backup file'); } };
-                              r.readAsText(f);
-                            }} />
-                          </label>
-                          <button onClick={clearAllData} className="w-full py-2.5 rounded-xl border border-red-200 dark:border-red-900/50 text-red-600 dark:text-red-400 text-sm font-semibold hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
-                            Clear All Data
-                          </button>
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="px-6 py-4 border-t border-stone-100 dark:border-stone-800">
-                      <button onClick={() => setShowSettings(false)} className="w-full py-2.5 rounded-xl bg-violet-500 text-white font-bold hover:bg-violet-600 transition-colors">Done</button>
-                    </div>
+                    <p className="text-sm font-semibold text-stone-800 dark:text-stone-100">Dark Mode</p>
+                    <p className="text-xs text-stone-400 mt-0.5">Switch between light and dark</p>
                   </div>
-                );
-              })()}
+                  <button onClick={toggleTheme} className={`relative w-11 h-6 rounded-full transition-all duration-200 ${isDark ? 'bg-violet-500' : 'bg-stone-200 dark:bg-stone-700'}`}>
+                    <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow-md transition-transform duration-200 ${isDark ? 'translate-x-5' : 'translate-x-0'}`} />
+                  </button>
+                </div>
+
+                {/* Data */}
+                <div className="pt-4">
+                  <p className="text-[10px] font-black text-stone-400 uppercase tracking-widest mb-3">Your Data</p>
+                  <p className="text-xs text-stone-400 dark:text-stone-500 mb-4 leading-relaxed">All your content, brands, and analytics are stored in your browser. Export regularly so you never lose your work.</p>
+                  <div className="space-y-2">
+                    <button onClick={() => {
+                      const data = {};
+                      try { Object.keys(localStorage).filter(k => k.startsWith('kreativelync')).forEach(k => { data[k] = localStorage.getItem(k); }); } catch {}
+                      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `kreativelync-backup-${new Date().toISOString().slice(0,10)}.json`; a.click(); URL.revokeObjectURL(a.href);
+                    }} className="w-full py-3 rounded-2xl bg-stone-900 dark:bg-white text-white dark:text-stone-900 text-sm font-bold hover:opacity-90 transition-opacity">
+                      Export Backup
+                    </button>
+                    <label className="block w-full py-3 rounded-2xl border-2 border-stone-200 dark:border-stone-700 text-sm font-bold text-stone-700 dark:text-stone-300 hover:border-stone-400 dark:hover:border-stone-500 transition-colors text-center cursor-pointer">
+                      Import Backup
+                      <input type="file" accept=".json" className="hidden" onChange={e => {
+                        const f = e.target.files?.[0]; if (!f) return;
+                        const r = new FileReader();
+                        r.onload = () => { try { const d = JSON.parse(r.result); Object.entries(d).forEach(([k, v]) => { if (k.startsWith('kreativelync') && v) localStorage.setItem(k, v); }); window.location.reload(); } catch { alert('Invalid backup file'); } };
+                        r.readAsText(f);
+                      }} />
+                    </label>
+                    <button onClick={clearAllData} className="w-full py-3 rounded-2xl border-2 border-red-100 dark:border-red-900/40 text-red-500 text-sm font-bold hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
+                      Clear All Data
+                    </button>
+                  </div>
+                </div>
+
+              </div>
+
+              <div className="px-6 pb-8 pt-2">
+                <button onClick={() => setShowSettings(false)} className="w-full py-3.5 rounded-2xl bg-violet-600 text-white font-black text-sm hover:bg-violet-500 transition-colors">
+                  Done
+                </button>
+              </div>
+
             </div>
           </div>
         )}
@@ -731,11 +640,20 @@ const App = () => {
               <p className="text-xs font-bold text-stone-500 mb-2">What type is this brand?</p>
               <div className="grid grid-cols-3 gap-2 mb-3">
                 {[
-                  { value: 'business', label: '💼 Business', desc: 'Sales, marketing, SEO, revenue' },
+                  { value: 'business', label: '💼 Business', desc: 'Sales, marketing, revenue' },
                   { value: 'faith', label: '✝️ Faith', desc: 'Ministry, gospel, community' },
-                  { value: 'stewardship', label: '💚 Stewardship', desc: 'Faith + finances podcast' },
+                  { value: 'stewardship', label: '💚 Stewardship', desc: 'Faith + finances' },
+                  { value: 'personal', label: '🙋 Personal Brand', desc: 'You as the brand' },
+                  { value: 'podcast', label: '🎙️ Podcast', desc: 'Audio-first show' },
+                  { value: 'coaching', label: '🎯 Coaching', desc: 'Programs, 1-on-1, courses' },
+                  { value: 'ministry', label: '⛪ Ministry', desc: 'Church, outreach, gospel' },
+                  { value: 'agency', label: '🏢 Agency', desc: 'Serving multiple clients' },
+                  { value: 'client', label: '👥 Client Brand', desc: "Managed for a client" },
+                  { value: 'ecommerce', label: '🛒 E-Commerce', desc: 'Products, shop, drops' },
+                  { value: 'nonprofit', label: '❤️ Nonprofit', desc: 'Mission-driven org' },
+                  { value: 'other', label: '✨ Other', desc: 'Custom / mixed' },
                 ].map(opt => (
-                  <button key={opt.value} onClick={() => setNewBusinessType(opt.value)} className={`p-3 rounded-xl border-2 text-left transition-all ${newBusinessType === opt.value ? 'border-violet-500 bg-violet-50 dark:bg-rose-900/20' : 'border-stone-200 dark:border-stone-600 hover:border-violet-300'}`}>
+                  <button key={opt.value} onClick={() => setNewBusinessType(opt.value)} className={`p-3 rounded-xl border-2 text-left transition-all ${newBusinessType === opt.value ? 'border-violet-500 bg-violet-50 dark:bg-violet-900/20' : 'border-stone-200 dark:border-stone-600 hover:border-violet-300'}`}>
                     <p className="font-bold text-xs text-stone-800 dark:text-stone-100">{opt.label}</p>
                     <p className="text-xs text-stone-400 mt-0.5">{opt.desc}</p>
                   </button>
@@ -792,7 +710,20 @@ const App = () => {
                   <div>
                     <label className="block text-xs font-bold text-stone-500 uppercase tracking-wider mb-1.5">Brand Type</label>
                     <div className="grid grid-cols-3 gap-2">
-                      {[['business','💼 Business'],['faith','✝️ Faith'],['stewardship','💚 Stewardship']].map(([val, label]) => (
+                      {[
+                        ['business','💼 Business'],
+                        ['faith','✝️ Faith'],
+                        ['stewardship','💚 Stewardship'],
+                        ['personal','🙋 Personal Brand'],
+                        ['podcast','🎙️ Podcast'],
+                        ['coaching','🎯 Coaching'],
+                        ['ministry','⛪ Ministry'],
+                        ['agency','🏢 Agency'],
+                        ['client','👥 Client Brand'],
+                        ['ecommerce','🛒 E-Commerce'],
+                        ['nonprofit','❤️ Nonprofit'],
+                        ['other','✨ Other'],
+                      ].map(([val, label]) => (
                         <button key={val} onClick={() => saveBrandField('type', val)}
                           className={`py-2 rounded-xl border text-xs font-bold transition-colors ${eb.type === val ? 'border-violet-500 bg-violet-50 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300' : 'border-stone-200 dark:border-stone-700 text-stone-500 hover:border-violet-300'}`}>
                           {label}
@@ -813,7 +744,14 @@ const App = () => {
                       <input type="color" value={eb.brandColor || '#7c3aed'}
                         onChange={e => saveBrandField('brandColor', e.target.value)}
                         className="w-8 h-8 rounded-full border border-stone-200 dark:border-stone-700 cursor-pointer bg-transparent" title="Custom color" />
-                      <span className="text-xs text-stone-400 font-mono">{eb.brandColor || '#7c3aed'}</span>
+                      <input
+                        type="text"
+                        defaultValue={eb.brandColor || '#7c3aed'}
+                        onBlur={e => { const v = e.target.value.trim(); if (/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(v)) saveBrandField('brandColor', v); else e.target.value = eb.brandColor || '#7c3aed'; }}
+                        placeholder="#7c3aed"
+                        maxLength={7}
+                        className="w-24 bg-stone-50 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-lg px-2 py-1 text-xs font-mono text-stone-700 dark:text-stone-300 focus:outline-none focus:ring-2 focus:ring-violet-400"
+                      />
                     </div>
                   </div>
 
