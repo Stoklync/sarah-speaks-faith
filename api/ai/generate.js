@@ -418,6 +418,7 @@ Return ONLY the JSON object.`;
   const callGemini = async (maxTokens) => {
     const geminiKey = process.env.GEMINI_API_KEY;
     if (!geminiKey) throw new Error('No Gemini key');
+    const errors = [];
     for (const model of ['gemini-2.0-flash', 'gemini-1.5-flash']) {
       const geminiRes = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiKey}`,
@@ -428,11 +429,17 @@ Return ONLY the JSON object.`;
         }
       );
       const d = await geminiRes.json();
-      if (d.error) { console.error(`Gemini ${model} error:`, d.error.message); continue; }
+      if (d.error) {
+        const msg = `${model}: ${d.error.status || d.error.code || ''} — ${d.error.message}`;
+        console.error('Gemini error:', msg);
+        errors.push(msg);
+        continue;
+      }
       const t = d.candidates?.[0]?.content?.parts?.[0]?.text || '';
       if (t) return t;
+      errors.push(`${model}: empty response`);
     }
-    throw new Error('Both gemini-2.0-flash and gemini-1.5-flash failed or returned empty');
+    throw new Error(errors.join(' | '));
   };
 
   // Helper: call OpenAI GPT-4o mini
