@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Sparkles, Download, Loader2, Plus, Trash2, ChevronDown, ChevronRight, BookOpen, FileText, Edit3, Check, X, Wand2, AlignLeft } from 'lucide-react';
 import { useStudio } from '../App';
 
@@ -11,6 +11,21 @@ const BOOK_TYPES = [
   { id: 'brand',       label: '💼 Brand Playbook',  desc: 'Strategy doc for your business' },
 ];
 
+// ── Persist book state per brand ──────────────────────────────────────────
+const BOOK_KEY = (brandId) => `kreativelync-book-${brandId || 'default'}`;
+
+const loadBook = (brandId) => {
+  try {
+    const raw = localStorage.getItem(BOOK_KEY(brandId));
+    if (raw) return JSON.parse(raw);
+  } catch {}
+  return null;
+};
+
+const saveBook = (brandId, data) => {
+  try { localStorage.setItem(BOOK_KEY(brandId), JSON.stringify(data)); } catch {}
+};
+
 export function BookCreator() {
   const { businesses, activeBusinessId } = useStudio();
   const activeBiz = (businesses || []).find(b => b?.id === activeBusinessId);
@@ -18,14 +33,17 @@ export function BookCreator() {
   const bizType = activeBiz?.type || 'faith';
   const bizDesc = activeBiz?.description || '';
 
-  const [step, setStep] = useState('setup'); // setup | outline | write | preview
-  const [bookType, setBookType] = useState('devotional');
-  const [title, setTitle] = useState('');
-  const [subtitle, setSubtitle] = useState('');
-  const [topic, setTopic] = useState('');
-  const [audience, setAudience] = useState('');
-  const [chapters, setChapters] = useState([]);
-  const [activeChapter, setActiveChapter] = useState(0);
+  // Load saved state for this brand on mount / brand switch
+  const saved = loadBook(activeBusinessId);
+
+  const [step, setStep] = useState(saved?.step || 'setup');
+  const [bookType, setBookType] = useState(saved?.bookType || 'devotional');
+  const [title, setTitle] = useState(saved?.title || '');
+  const [subtitle, setSubtitle] = useState(saved?.subtitle || '');
+  const [topic, setTopic] = useState(saved?.topic || '');
+  const [audience, setAudience] = useState(saved?.audience || '');
+  const [chapters, setChapters] = useState(saved?.chapters || []);
+  const [activeChapter, setActiveChapter] = useState(saved?.activeChapter || 0);
   const [loading, setLoading] = useState(false);
   const [writingChapter, setWritingChapter] = useState(null);
   const [editingTitle, setEditingTitle] = useState(null);
@@ -35,6 +53,27 @@ export function BookCreator() {
   const [paraphraseLoading, setParaphraseLoading] = useState(false);
 
   const previewRef = useRef();
+
+  // Reload book state when switching brands
+  const prevBrandId = useRef(activeBusinessId);
+  useEffect(() => {
+    if (prevBrandId.current === activeBusinessId) return;
+    prevBrandId.current = activeBusinessId;
+    const s = loadBook(activeBusinessId);
+    setStep(s?.step || 'setup');
+    setBookType(s?.bookType || 'devotional');
+    setTitle(s?.title || '');
+    setSubtitle(s?.subtitle || '');
+    setTopic(s?.topic || '');
+    setAudience(s?.audience || '');
+    setChapters(s?.chapters || []);
+    setActiveChapter(s?.activeChapter || 0);
+  }, [activeBusinessId]);
+
+  // Auto-save whenever anything important changes
+  useEffect(() => {
+    saveBook(activeBusinessId, { step, bookType, title, subtitle, topic, audience, chapters, activeChapter });
+  }, [activeBusinessId, step, bookType, title, subtitle, topic, audience, chapters, activeChapter]);
 
   const ai = async (userPrompt) => {
     const r = await fetch('/api/ai/generate', {
@@ -318,10 +357,20 @@ ${ch.content}
           <h2 className="text-xl font-bold text-stone-800 dark:text-stone-100 truncate">{title}</h2>
           {subtitle && <p className="text-stone-400 text-sm">{subtitle}</p>}
         </div>
-        <div className="flex gap-2 shrink-0">
+        <div className="flex gap-2 shrink-0 flex-wrap">
           <button onClick={() => setStep('setup')}
             className="px-3 py-2 rounded-xl bg-stone-100 dark:bg-stone-700 text-stone-500 text-xs font-semibold hover:bg-stone-200">
             Edit Setup
+          </button>
+          <button
+            onClick={() => {
+              if (!window.confirm('Start a new book? Your current book will be saved — go to Edit Setup to come back to it, or clear it from there.')) return;
+              // Save current then reset
+              const blank = { step: 'setup', bookType: 'devotional', title: '', subtitle: '', topic: '', audience: '', chapters: [], activeChapter: 0 };
+              setStep('setup'); setBookType('devotional'); setTitle(''); setSubtitle(''); setTopic(''); setAudience(''); setChapters([]); setActiveChapter(0);
+            }}
+            className="px-3 py-2 rounded-xl bg-stone-100 dark:bg-stone-700 text-stone-500 text-xs font-semibold hover:bg-stone-200 flex items-center gap-1">
+            <Plus size={11} /> New Book
           </button>
           <button onClick={exportPDF} disabled={exporting || chapters.every(c => !c.content)}
             className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-violet-500 text-white text-xs font-bold hover:bg-violet-600 disabled:opacity-40">
