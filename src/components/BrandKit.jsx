@@ -10,14 +10,41 @@ const PILLARS_STEWARDSHIP = ['Budgeting', 'Debt Freedom', 'Investing', 'Biblical
 const PILLARS_BUSINESS = ['Education', 'Behind the Scenes', 'Social Proof', 'Product Features', 'Customer Stories', 'Tips & How-To', 'Brand Story', 'Promotions'];
 
 const BRAND_COLORS = [
-  { label: 'Violet', value: '#7c3aed' },
-  { label: 'Indigo', value: '#4f46e5' },
-  { label: 'Rose', value: '#e11d48' },
-  { label: 'Emerald', value: '#059669' },
-  { label: 'Amber', value: '#d97706' },
-  { label: 'Sky', value: '#0284c7' },
-  { label: 'Slate', value: '#475569' },
-  { label: 'Stone', value: '#78716c' },
+  // Purples & Pinks
+  { label: 'Violet',      value: '#7c3aed' },
+  { label: 'Purple',      value: '#9333ea' },
+  { label: 'Indigo',      value: '#4f46e5' },
+  { label: 'Fuchsia',     value: '#c026d3' },
+  { label: 'Pink',        value: '#db2777' },
+  { label: 'Rose',        value: '#e11d48' },
+  // Reds & Oranges
+  { label: 'Red',         value: '#dc2626' },
+  { label: 'Orange',      value: '#ea580c' },
+  { label: 'Amber',       value: '#d97706' },
+  { label: 'Yellow',      value: '#ca8a04' },
+  // Greens
+  { label: 'Lime',        value: '#65a30d' },
+  { label: 'Green',       value: '#16a34a' },
+  { label: 'Emerald',     value: '#059669' },
+  { label: 'Teal',        value: '#0d9488' },
+  // Blues
+  { label: 'Cyan',        value: '#0891b2' },
+  { label: 'Sky',         value: '#0284c7' },
+  { label: 'Blue',        value: '#2563eb' },
+  { label: 'Navy',        value: '#1e3a5f' },
+  // Neutrals & Darks
+  { label: 'Slate',       value: '#475569' },
+  { label: 'Stone',       value: '#78716c' },
+  { label: 'Charcoal',    value: '#374151' },
+  { label: 'Black',       value: '#111827' },
+  { label: 'Gold',        value: '#b45309' },
+  { label: 'Bronze',      value: '#92400e' },
+  { label: 'Mauve',       value: '#9d174d' },
+  { label: 'Sage',        value: '#4d7c5f' },
+  { label: 'Dusty Rose',  value: '#be6f8c' },
+  { label: 'Blush',       value: '#f9a8c9' },
+  { label: 'Cream',       value: '#fef3c7' },
+  { label: 'White',       value: '#f8fafc' },
 ];
 
 const TABS = ['Identity', 'Voice & Audience', 'Platforms', 'Products'];
@@ -171,18 +198,68 @@ export function BrandKit() {
           {/* Brand color */}
           <div className="bg-white dark:bg-stone-800 border border-violet-100 dark:border-stone-700 rounded-2xl p-5">
             <label className="text-xs font-bold text-stone-400 uppercase tracking-widest block mb-3">Brand Color</label>
-            <div className="flex gap-2 flex-wrap">
+
+            {/* Colour swatches */}
+            <div className="flex gap-2 flex-wrap mb-4">
               {BRAND_COLORS.map(c => (
                 <button key={c.value} onClick={() => update('brandColor', c.value)} title={c.label}
-                  className={`w-9 h-9 rounded-xl transition-all ${colorValue === c.value ? 'ring-2 ring-offset-2 ring-stone-400 scale-110' : 'hover:scale-105'}`}
+                  className={`w-8 h-8 rounded-lg transition-all border-2 ${colorValue === c.value ? 'border-stone-700 dark:border-white scale-110 shadow-md' : 'border-transparent hover:scale-105 hover:border-stone-300'}`}
                   style={{ background: c.value }} />
               ))}
-              <div className="flex items-center gap-2 ml-2">
-                <input type="color" value={colorValue} onChange={e => update('brandColor', e.target.value)}
-                  className="w-9 h-9 rounded-xl cursor-pointer border-0 p-0" title="Custom color" />
-                <span className="text-xs text-stone-400">Custom</span>
-              </div>
             </div>
+
+            {/* Custom colour row: native picker + hex input */}
+            <div className="flex items-center gap-3">
+              {/* Native colour wheel */}
+              <div className="relative">
+                <input
+                  type="color"
+                  value={colorValue}
+                  onChange={e => update('brandColor', e.target.value)}
+                  className="opacity-0 absolute inset-0 w-full h-full cursor-pointer"
+                  title="Open colour picker"
+                />
+                <div
+                  className="w-10 h-10 rounded-xl border-2 border-stone-200 dark:border-stone-600 cursor-pointer shadow-sm flex items-center justify-center"
+                  style={{ background: colorValue }}
+                  title="Open colour picker"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.8)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="13.5" cy="6.5" r=".5"/><circle cx="17.5" cy="10.5" r=".5"/><circle cx="8.5" cy="7.5" r=".5"/><circle cx="6.5" cy="12.5" r=".5"/>
+                    <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.47-1.125-.29-.289-.47-.688-.47-1.125a1.648 1.648 0 0 1 1.648-1.648h1.94c3.148 0 5.704-2.557 5.704-5.705C22 6.257 17.523 2 12 2z"/>
+                  </svg>
+                </div>
+              </div>
+
+              {/* Hex text input */}
+              <div className="flex items-center gap-1 flex-1 bg-stone-50 dark:bg-stone-700 border border-stone-200 dark:border-stone-600 rounded-xl px-3 py-2">
+                <span className="text-stone-400 text-sm font-mono">#</span>
+                <input
+                  type="text"
+                  value={(colorValue || '#7c3aed').replace('#', '')}
+                  onChange={e => {
+                    const v = e.target.value.replace(/[^0-9a-fA-F]/g, '').slice(0, 6);
+                    e.target.value = v;
+                    if (v.length === 6) update('brandColor', '#' + v);
+                  }}
+                  onBlur={e => {
+                    const v = e.target.value.trim();
+                    if (v.length === 3 || v.length === 6) update('brandColor', '#' + v);
+                  }}
+                  maxLength={6}
+                  placeholder="7c3aed"
+                  className="flex-1 bg-transparent text-stone-700 dark:text-stone-200 text-sm font-mono focus:outline-none uppercase"
+                />
+              </div>
+
+              {/* Live preview swatch */}
+              <div
+                className="w-10 h-10 rounded-xl border border-stone-200 dark:border-stone-600 shadow-sm shrink-0"
+                style={{ background: colorValue }}
+                title="Current brand colour"
+              />
+            </div>
+            <p className="text-[11px] text-stone-400 mt-2">Click the circle to open the colour wheel, or type any hex code directly.</p>
           </div>
         </div>
       )}
