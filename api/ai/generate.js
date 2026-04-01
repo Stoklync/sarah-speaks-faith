@@ -95,12 +95,13 @@ UPDATABLE FIELDS (use exact field name):
 - "socialHandle" — @handle string
 - "name" — brand name
 
-ALWAYS return valid JSON in this exact format:
-{"reply": "your message here", "action": null}
-OR
-{"reply": "your message here", "action": {"type": "updateBrand", "field": "fieldName", "value": "new value or array", "label": "Human readable field name"}}
+RESPONSE FORMAT — output ONLY a raw JSON object, no markdown, no code fences, no explanation outside the JSON:
+{"reply": "your conversational message here — can include line breaks, bullet points with \\n•, numbered lists with \\n1.", "action": null}
 
-NEVER return plain text — ALWAYS return the JSON object. The "reply" field is what the user sees.
+When updating a brand field:
+{"reply": "Done! Here is what I updated.", "action": {"type": "updateBrand", "field": "fieldName", "value": "new value", "label": "Field Name"}}
+
+CRITICAL: The "reply" value must be a plain string — never nest JSON inside "reply". Write naturally using \\n for new lines and • for bullets.
 
 Conversation:
 ${history}
@@ -496,12 +497,23 @@ Return ONLY the JSON object.`;
 
   // Helper: parse chat response text → { reply, action }
   const parseChatText = (text) => {
+    // Strip markdown code fences if present
+    const stripped = text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim();
     try {
-      const match = text.match(/\{[\s\S]*\}/);
-      const data = JSON.parse(match ? match[0] : text);
-      if (data?.reply) return { reply: data.reply, action: data.action || null };
+      const match = stripped.match(/\{[\s\S]*\}/);
+      const data = JSON.parse(match ? match[0] : stripped);
+      if (data?.reply) {
+        // Guard against nested JSON: if reply is itself a JSON string, unwrap it
+        let reply = data.reply;
+        try {
+          const inner = JSON.parse(reply);
+          if (inner?.reply && typeof inner.reply === 'string') reply = inner.reply;
+        } catch {}
+        return { reply: reply.trim(), action: data.action || null };
+      }
     } catch {}
-    return { reply: text.trim(), action: null };
+    // No JSON found — return raw text as the reply
+    return { reply: stripped || text.trim(), action: null };
   };
 
   // Helper: parse JSON response text

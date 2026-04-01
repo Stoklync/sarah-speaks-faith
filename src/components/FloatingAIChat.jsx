@@ -121,12 +121,20 @@ export function FloatingAIChat({ businesses = [], activeBusinessId, onAction }) 
           <div className="flex-1 overflow-y-auto p-3 space-y-3">
             {messages.map((m, i) => (
               <div key={i} className={`flex flex-col ${m.role === 'user' ? 'items-end' : 'items-start'}`}>
-                <div className={`max-w-[85%] px-3 py-2 rounded-2xl text-sm whitespace-pre-wrap ${
+                <div className={`max-w-[85%] px-3 py-2 rounded-2xl text-sm ${
                   m.role === 'user'
                     ? 'bg-violet-500 text-white rounded-br-sm'
                     : 'bg-stone-100 dark:bg-stone-800 text-stone-800 dark:text-stone-100 rounded-bl-sm'
                 }`}>
-                  {m.text}
+                  {m.role === 'assistant'
+                    ? m.text.split('\n').map((line, li) => (
+                        <span key={li}>
+                          {li > 0 && <br />}
+                          {line}
+                        </span>
+                      ))
+                    : m.text
+                  }
                 </div>
                 {m.role === 'assistant' && m.model && (
                   <div className="mt-0.5 ml-1 text-[9px] text-stone-400 dark:text-stone-500 font-mono">
