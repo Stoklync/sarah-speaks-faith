@@ -495,25 +495,41 @@ Return ONLY the JSON object.`;
     return t;
   };
 
+  // Extract the FIRST complete JSON object from text (brace-depth matching)
+  const extractFirstJson = (text) => {
+    let depth = 0, start = -1;
+    for (let i = 0; i < text.length; i++) {
+      if (text[i] === '{') { if (depth === 0) start = i; depth++; }
+      else if (text[i] === '}') { depth--; if (depth === 0 && start !== -1) return text.slice(start, i + 1); }
+    }
+    return null;
+  };
+
   // Helper: parse chat response text → { reply, action }
   const parseChatText = (text) => {
-    // Strip markdown code fences if present
-    const stripped = text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim();
-    try {
-      const match = stripped.match(/\{[\s\S]*\}/);
-      const data = JSON.parse(match ? match[0] : stripped);
-      if (data?.reply) {
-        // Guard against nested JSON: if reply is itself a JSON string, unwrap it
-        let reply = data.reply;
-        try {
-          const inner = JSON.parse(reply);
-          if (inner?.reply && typeof inner.reply === 'string') reply = inner.reply;
-        } catch {}
-        return { reply: reply.trim(), action: data.action || null };
-      }
-    } catch {}
-    // No JSON found — return raw text as the reply
-    return { reply: stripped || text.trim(), action: null };
+    // Strip markdown code fences
+    const clean = text.replace(/```(?:json)?/gi, '').trim();
+    // Try to find and parse first JSON object
+    const jsonStr = extractFirstJson(clean);
+    if (jsonStr) {
+      try {
+        const obj = JSON.parse(jsonStr);
+        let reply = obj?.reply;
+        if (reply) {
+          // Unwrap if reply is itself a JSON string (up to 2 levels deep)
+          for (let i = 0; i < 2; i++) {
+            if (typeof reply === 'string' && reply.trim().startsWith('{')) {
+              try { const inner = JSON.parse(reply); if (inner?.reply) { reply = inner.reply; continue; } } catch {}
+            }
+            break;
+          }
+          return { reply: String(reply).trim(), action: obj.action || null };
+        }
+      } catch {}
+    }
+    // No valid JSON — return the raw text (strip any leftover JSON prefix)
+    const fallback = clean.replace(/^\s*\{[^}]*"reply"\s*:\s*"/, '').replace(/"[,\s]*"action"[\s\S]*$/, '').trim();
+    return { reply: fallback || clean, action: null };
   };
 
   // Helper: parse JSON response text
