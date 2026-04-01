@@ -17,6 +17,7 @@ import { CaptionOverlay } from './components/CaptionOverlay';
 import { CreatorInsights } from './components/CreatorInsights';
 import { AdobeExpressEditor } from './components/AdobeExpressEditor';
 import { VideoTab } from './components/VideoPlanner';
+import { CompetitorIntel } from './components/CompetitorIntel';
 import { FloatingAIChat } from './components/FloatingAIChat';
 import { 
   Scissors, 
@@ -78,7 +79,8 @@ import {
   Hash as HashIcon,
   Clock as ClockIcon,
   Flame,
-  Users
+  Users,
+  Brain
 } from 'lucide-react';
 
 // --- App Context ---
@@ -303,6 +305,7 @@ const App = () => {
     ['pro', Zap, 'Content Studio'],
     ['social', Share2, 'Social & Podcast'],
     ['analytics', BarChart2, 'Analytics'],
+    ['intel', Brain, 'Intelligence'],
   ];
 
   const [newBusinessType, setNewBusinessType] = useState('business');
@@ -668,7 +671,8 @@ const App = () => {
             {activeTab === 'social' && <SocialPublisher />}
             {activeTab === 'traffic' && <TrafficHub />}
             {activeTab === 'analytics' && <PostAnalytics onOpenSettings={() => setShowSettings(true)} />}
-            {!['start','video','design','pro','social','traffic','analytics'].includes(activeTab) && <StartHere setActiveTab={setActiveTab} />}
+            {activeTab === 'intel' && <CompetitorIntel businesses={businesses} activeBusinessId={activeBusinessId} />}
+            {!['start','video','design','pro','social','traffic','analytics','intel'].includes(activeTab) && <StartHere setActiveTab={setActiveTab} />}
           </div>
         </main>
       </div>

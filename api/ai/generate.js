@@ -313,6 +313,51 @@ RULES:
 
 Return ONLY valid JSON. Be audience-obsessed and strategically fearless.`;
 
+  } else if (mode === 'competitor') {
+    // Competitor intelligence — analyze a competitor's channel vs the user's own brand
+    const { competitor, myStats } = req.body || {};
+    const ch = competitor?.channel || {};
+    const topVids = (competitor?.topVideos || []).slice(0, 8);
+
+    const myContext = myStats
+      ? `\n\nYOUR STATS (${brandName}):\nSubscribers: ${myStats.subscribers || 'unknown'}\nAvg views: ${myStats.avgViews || 'unknown'}\nPosting: ${myStats.postingFrequency || 'unknown'}`
+      : '';
+
+    const topVidList = topVids
+      .map((v, i) => `${i + 1}. "${v.title}" — ${(v.views || 0).toLocaleString()} views, ${(v.likes || 0).toLocaleString()} likes, ${(v.comments || 0).toLocaleString()} comments`)
+      .join('\n');
+
+    prompt = `You are a world-class competitive intelligence analyst and content strategist. Analyze this competitor and give ${brandName || 'the creator'} a ruthless, specific battle plan to beat them.
+
+COMPETITOR: ${ch.name || 'Unknown'}
+Channel URL: ${ch.url || ''}
+Subscribers: ${(ch.subscribers || 0).toLocaleString()}
+Total views: ${(ch.totalViews || 0).toLocaleString()}
+Videos posted: ${ch.videoCount || 0}
+Posting frequency: ${ch.postingFrequency || 'unknown'}
+Avg views (top 12): ${(ch.avgViewsTop12 || 0).toLocaleString()}
+Niche/description: ${ch.description?.slice(0, 200) || 'N/A'}
+
+TOP PERFORMING VIDEOS:
+${topVidList || 'No video data'}
+${myContext}
+
+YOUR JOB: Be brutally honest and genius-level strategic. Return ONLY valid JSON:
+{
+  "theirStrategy": "2-3 sentences: what content strategy is clearly working for them based on their top videos",
+  "contentPatterns": ["Pattern 1 — specific observation about their hooks/topics/format", "Pattern 2", "Pattern 3"],
+  "audienceTheyOwn": "Who exactly is their core audience and what emotional need are they serving",
+  "weaknesses": ["Gap 1 — something their audience clearly wants but they're not delivering", "Gap 2 — format or topic weakness", "Gap 3"],
+  "yourEdge": "Specific competitive advantage ${brandName || 'you'} can own that this competitor cannot easily copy",
+  "beatThemPlan": [
+    {"action": "Specific content move to take their audience", "why": "Why this works against their weakness", "urgency": "high|medium"},
+    {"action": "Second move", "why": "Why", "urgency": "high|medium"},
+    {"action": "Third move", "why": "Why", "urgency": "high|medium"}
+  ],
+  "stealThisIdea": "One specific video concept from their top performers you can reframe for your brand RIGHT NOW",
+  "positioningStatement": "One sentence that defines how ${brandName || 'you'} should position against this competitor — what makes you the better choice for their audience"
+}`;
+
   } else {
     // Content generation mode — brand-type aware
     const cgType = brandType || 'faith';
