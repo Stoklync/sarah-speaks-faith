@@ -414,30 +414,39 @@ Generate in valid JSON:
 Return ONLY the JSON object.`;
   }
 
-  // Helper: call Gemini (tries 2.0-flash first, falls back to 1.5-flash)
+  // Helper: call Gemini — tries multiple models across v1 and v1beta
   const callGemini = async (maxTokens) => {
-    const geminiKey = process.env.GEMINI_API_KEY;
+    const geminiKey = process.env.GEMINI_API_KEY?.trim();
     if (!geminiKey) throw new Error('No Gemini key');
+    const attempts = [
+      { version: 'v1beta', model: 'gemini-2.0-flash' },
+      { version: 'v1beta', model: 'gemini-2.0-flash-lite' },
+      { version: 'v1',     model: 'gemini-1.5-flash' },
+      { version: 'v1',     model: 'gemini-1.5-flash-latest' },
+      { version: 'v1',     model: 'gemini-1.5-pro' },
+    ];
     const errors = [];
-    for (const model of ['gemini-2.0-flash', 'gemini-1.5-flash']) {
-      const geminiRes = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiKey}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { maxOutputTokens: maxTokens } }),
+    for (const { version, model } of attempts) {
+      try {
+        const geminiRes = await fetch(
+          `https://generativelanguage.googleapis.com/${version}/models/${model}:generateContent?key=${geminiKey}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { maxOutputTokens: maxTokens } }),
+          }
+        );
+        const d = await geminiRes.json();
+        if (d.error) {
+          errors.push(`${model}: ${d.error.status} — ${d.error.message?.slice(0, 80)}`);
+          continue;
         }
-      );
-      const d = await geminiRes.json();
-      if (d.error) {
-        const msg = `${model}: ${d.error.status || d.error.code || ''} — ${d.error.message}`;
-        console.error('Gemini error:', msg);
-        errors.push(msg);
-        continue;
+        const t = d.candidates?.[0]?.content?.parts?.[0]?.text || '';
+        if (t) return t;
+        errors.push(`${model}: empty response`);
+      } catch (e) {
+        errors.push(`${model}: ${e.message}`);
       }
-      const t = d.candidates?.[0]?.content?.parts?.[0]?.text || '';
-      if (t) return t;
-      errors.push(`${model}: empty response`);
     }
     throw new Error(errors.join(' | '));
   };

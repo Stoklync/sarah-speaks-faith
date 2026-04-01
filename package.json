@@ -13,6 +13,7 @@
     "@anthropic-ai/sdk": "^0.80.0",
     "@ffmpeg/ffmpeg": "^0.12.15",
     "@ffmpeg/util": "^0.12.2",
+    "@google/generative-ai": "^0.24.1",
     "@supabase/supabase-js": "^2.97.0",
     "lucide-react": "^0.575.0",
     "qrcode": "^1.5.4",
