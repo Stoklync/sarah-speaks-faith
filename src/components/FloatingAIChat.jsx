@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { MessageSquare, X, Send, Sparkles, Loader2, Pencil } from 'lucide-react';
 
 const WELCOME = "Hi! I'm KreativeLync AI 👋 I know your brands and your content. Ask me anything — content ideas, captions, strategy, what to post next. I'm here to help.";
@@ -7,9 +7,24 @@ export function FloatingAIChat({ businesses = [], activeBusinessId, onAction }) 
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showModelPicker, setShowModelPicker] = useState(false);
   const [preferredModel, setPreferredModel] = useState(() => {
     try { return localStorage.getItem('kreativelync-chat-model') || 'auto'; } catch { return 'auto'; }
   });
+
+  const MODEL_OPTIONS = [
+    { id: 'auto', label: 'Auto (Free)', icon: '⚡', desc: 'Gemini → Groq → GPT-4o' },
+    { id: 'claude', label: 'Claude', icon: '◆', desc: 'Best for deep strategy' },
+    { id: 'gemini', label: 'Gemini', icon: '✦', desc: 'Google AI, free tier' },
+    { id: 'openai', label: 'GPT-4o', icon: '⊕', desc: 'OpenAI, great writing' },
+  ];
+  const activeModel = MODEL_OPTIONS.find(m => m.id === preferredModel) || MODEL_OPTIONS[0];
+
+  const pickModel = (id) => {
+    setPreferredModel(id);
+    setShowModelPicker(false);
+    try { localStorage.setItem('kreativelync-chat-model', id); } catch {}
+  };
   const bottomRef = useRef(null);
 
   const activeBiz = businesses.find(b => b?.id === activeBusinessId);
@@ -87,42 +102,18 @@ export function FloatingAIChat({ businesses = [], activeBusinessId, onAction }) 
       {open && (
         <div className="fixed bottom-20 right-4 z-50 w-80 md:w-[420px] bg-white dark:bg-stone-900 rounded-2xl shadow-2xl border border-violet-100 dark:border-stone-700 flex flex-col overflow-hidden" style={{ height: '80vh', maxHeight: 700 }}>
           {/* Header */}
-          <div className="bg-gradient-to-r from-violet-600 to-indigo-600">
-            <div className="flex items-center justify-between px-4 pt-3 pb-2">
-              <div className="flex items-center gap-2">
-                <Sparkles size={16} className="text-white" />
-                <span className="text-white font-bold text-sm">KreativeLync AI</span>
-                <span className="text-violet-200 text-xs">· {brandName}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => { if (confirm('Clear this conversation?')) { const fresh = [{ role: 'assistant', text: WELCOME }]; setMessages(fresh); try { localStorage.setItem(storageKey, JSON.stringify(fresh)); } catch {} } }}
-                  className="text-white/50 hover:text-white text-[10px] font-semibold"
-                  title="Clear chat"
-                >
-                  Clear
-                </button>
-                <button onClick={() => setOpen(false)} className="text-white/70 hover:text-white">
-                  <X size={16} />
-                </button>
-              </div>
+          <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-violet-600 to-indigo-600">
+            <div className="flex items-center gap-2">
+              <Sparkles size={16} className="text-white" />
+              <span className="text-white font-bold text-sm">KreativeLync AI</span>
+              <span className="text-violet-200 text-xs">· {brandName}</span>
             </div>
-            {/* Model switcher */}
-            <div className="flex gap-1.5 px-4 pb-2.5">
-              {[
-                { id: 'auto', label: '⚡ Auto (Free)' },
-                { id: 'claude', label: '◆ Claude' },
-                { id: 'gemini', label: '✦ Gemini' },
-                { id: 'openai', label: '⊕ GPT-4o' },
-              ].map(opt => (
-                <button
-                  key={opt.id}
-                  onClick={() => { setPreferredModel(opt.id); try { localStorage.setItem('kreativelync-chat-model', opt.id); } catch {} }}
-                  className={`px-2 py-0.5 rounded-full text-[10px] font-bold transition-all ${preferredModel === opt.id ? 'bg-white text-violet-700' : 'bg-white/20 text-white/80 hover:bg-white/30'}`}
-                >
-                  {opt.label}
-                </button>
-              ))}
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => { if (confirm('Clear this conversation?')) { const fresh = [{ role: 'assistant', text: WELCOME }]; setMessages(fresh); try { localStorage.setItem(storageKey, JSON.stringify(fresh)); } catch {} } }}
+                className="text-white/50 hover:text-white text-[10px] font-semibold"
+              >Clear</button>
+              <button onClick={() => setOpen(false)} className="text-white/70 hover:text-white"><X size={16} /></button>
             </div>
           </div>
 
@@ -188,22 +179,54 @@ export function FloatingAIChat({ businesses = [], activeBusinessId, onAction }) 
             <div ref={bottomRef} />
           </div>
 
-          {/* Input */}
-          <div className="p-3 border-t border-stone-100 dark:border-stone-700 flex gap-2">
-            <input
-              value={input}
-              onChange={e => setInput(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && !e.shiftKey && send()}
-              placeholder="Ask anything about your content..."
-              className="flex-1 bg-stone-50 dark:bg-stone-800 border border-stone-200 dark:border-stone-600 rounded-xl px-3 py-2 text-sm outline-none focus:border-violet-400"
-            />
-            <button
-              onClick={send}
-              disabled={loading || !input.trim()}
-              className="p-2 rounded-xl bg-violet-500 text-white hover:bg-violet-600 disabled:opacity-40"
-            >
-              <Send size={14} />
-            </button>
+          {/* Input + model picker */}
+          <div className="border-t border-stone-100 dark:border-stone-700">
+            {/* Model dropdown */}
+            <div className="relative px-3 pt-2">
+              <button
+                onClick={() => setShowModelPicker(p => !p)}
+                className="flex items-center gap-1.5 text-[11px] font-semibold text-stone-500 dark:text-stone-400 hover:text-violet-500 transition-colors"
+              >
+                <span>{activeModel.icon}</span>
+                <span>{activeModel.label}</span>
+                <span className="text-[9px] opacity-60">▾</span>
+              </button>
+              {showModelPicker && (
+                <div className="absolute bottom-7 left-3 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-xl shadow-xl overflow-hidden z-10 w-52">
+                  {MODEL_OPTIONS.map(opt => (
+                    <button
+                      key={opt.id}
+                      onClick={() => pickModel(opt.id)}
+                      className={`w-full flex items-center gap-2.5 px-3 py-2.5 text-left hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-colors ${preferredModel === opt.id ? 'bg-violet-50 dark:bg-violet-900/20' : ''}`}
+                    >
+                      <span className="text-base">{opt.icon}</span>
+                      <div>
+                        <p className={`text-xs font-bold ${preferredModel === opt.id ? 'text-violet-600 dark:text-violet-400' : 'text-stone-700 dark:text-stone-200'}`}>{opt.label}</p>
+                        <p className="text-[10px] text-stone-400">{opt.desc}</p>
+                      </div>
+                      {preferredModel === opt.id && <span className="ml-auto text-violet-500 text-xs">✓</span>}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+            <div className="flex gap-2 p-3 pt-1.5">
+              <input
+                value={input}
+                onChange={e => setInput(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { setShowModelPicker(false); send(); } }}
+                onClick={() => setShowModelPicker(false)}
+                placeholder="Ask anything about your content..."
+                className="flex-1 bg-stone-50 dark:bg-stone-800 border border-stone-200 dark:border-stone-600 rounded-xl px-3 py-2 text-sm outline-none focus:border-violet-400"
+              />
+              <button
+                onClick={send}
+                disabled={loading || !input.trim()}
+                className="p-2 rounded-xl bg-violet-500 text-white hover:bg-violet-600 disabled:opacity-40"
+              >
+                <Send size={14} />
+              </button>
+            </div>
           </div>
         </div>
       )}

@@ -515,7 +515,10 @@ Return ONLY the JSON object.`;
         return res.status(200).json({ reply: "✦ Gemini isn't connected. Add GEMINI_API_KEY to Vercel to use it.", model: 'System', action: null });
       }
       try { return res.status(200).json({ ...parseChatText(await callGemini(1000)), model: 'Gemini' }); }
-      catch (e) { console.error('Gemini preferred failed:', e.message); }
+      catch (e) {
+        console.error('Gemini preferred failed:', e.message);
+        // Fall through to auto chain silently — don't break the conversation
+      }
     }
     if (preferredModel === 'openai') {
       if (!process.env.OPENAI_API_KEY) {
