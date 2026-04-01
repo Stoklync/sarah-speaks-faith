@@ -888,7 +888,19 @@ const App = () => {
       </div>
 
       {/* Floating AI Chat — visible on every tab */}
-      <FloatingAIChat businesses={businesses} activeBusinessId={activeBusinessId} />
+      <FloatingAIChat
+        businesses={businesses}
+        activeBusinessId={activeBusinessId}
+        onAction={(action) => {
+          if (action.type === 'updateBrand') {
+            setBusinesses(prev => prev.map(b =>
+              b.id === activeBusinessId
+                ? { ...b, [action.field]: action.value }
+                : b
+            ));
+          }
+        }}
+      />
 
     </StudioContext.Provider>
   );
