@@ -80,6 +80,28 @@ RULES:
 - Be a genius strategist, not a cheerleader — say the hard truth when needed
 - Think outside the box. The best advice is often unexpected
 
+ACTIONS YOU CAN TAKE:
+If the user explicitly asks you to update, change, edit, or save a Brand Kit field — return an action. ONLY include an action if the user clearly wants to make a change. For regular conversation and advice, set action to null.
+
+UPDATABLE FIELDS (use exact field name):
+- "contentPillars" — their core content themes (comma-separated)
+- "targetAudience" — who this brand serves
+- "description" — what the brand does / sells
+- "brandVoice" — tone (must be one of: Inspirational, Educational, Bold, Conversational, Prophetic, Professional, Encouraging, Raw & Real)
+- "contentGoals" — array like ["Grow audience","Drive sales"]
+- "activePlatforms" — array like ["Instagram","YouTube","TikTok"]
+- "website" — URL string
+- "podcastName" — podcast name string
+- "socialHandle" — @handle string
+- "name" — brand name
+
+ALWAYS return valid JSON in this exact format:
+{"reply": "your message here", "action": null}
+OR
+{"reply": "your message here", "action": {"type": "updateBrand", "field": "fieldName", "value": "new value or array", "label": "Human readable field name"}}
+
+NEVER return plain text — ALWAYS return the JSON object. The "reply" field is what the user sees.
+
 Conversation:
 ${history}
 Coach:`;
@@ -410,7 +432,14 @@ Return ONLY the JSON object.`;
       if (groqData.error) throw new Error(`Groq API error: ${groqData.error.message}`);
       const text = groqData.choices?.[0]?.message?.content || '';
       if (text) {
-        if (isChat) return res.status(200).json({ reply: text.trim() });
+        if (isChat) {
+          try {
+            const match = text.match(/\{[\s\S]*\}/);
+            const data = JSON.parse(match ? match[0] : text);
+            if (data && data.reply) return res.status(200).json({ reply: data.reply, action: data.action || null });
+          } catch {}
+          return res.status(200).json({ reply: text.trim(), action: null });
+        }
         const match = text.match(/\{[\s\S]*\}/);
         if (!match) throw new Error('No JSON in Groq response');
         const result = JSON.parse(match[0]);
@@ -457,7 +486,14 @@ Return ONLY the JSON object.`;
         messages: [{ role: 'user', content: prompt }],
       });
       const text = message.content[0]?.text || '';
-      if (isChat) return res.status(200).json({ reply: text.trim() });
+      if (isChat) {
+        try {
+          const match = text.match(/\{[\s\S]*\}/);
+          const data = JSON.parse(match ? match[0] : text);
+          if (data && data.reply) return res.status(200).json({ reply: data.reply, action: data.action || null });
+        } catch {}
+        return res.status(200).json({ reply: text.trim(), action: null });
+      }
       const match = text.match(/\{[\s\S]*\}/);
       const result = JSON.parse(match ? match[0] : text);
       return res.status(200).json(result);

@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { MessageSquare, X, Send, Sparkles, Loader2 } from 'lucide-react';
+import { MessageSquare, X, Send, Sparkles, Loader2, Pencil } from 'lucide-react';
 
-export function FloatingAIChat({ businesses = [], activeBusinessId }) {
+export function FloatingAIChat({ businesses = [], activeBusinessId, onAction }) {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState([
     { role: 'assistant', text: "Hi! I'm KreativeLync AI 👋 I know your brands and your content. Ask me anything — content ideas, captions, strategy, what to post next. I'm here to help." }
@@ -42,8 +42,9 @@ export function FloatingAIChat({ businesses = [], activeBusinessId }) {
         }),
       });
       const data = await res.json();
-      const reply = data.result || data.text || data.caption || "I'm here — try asking again!";
-      setMessages(prev => [...prev, { role: 'assistant', text: reply }]);
+      const reply = data.reply || data.result || data.text || data.caption || "I'm here — try asking again!";
+      const action = data.action || null;
+      setMessages(prev => [...prev, { role: 'assistant', text: reply, action }]);
     } catch {
       setMessages(prev => [...prev, { role: 'assistant', text: "Something went wrong. Try again!" }]);
     } finally {
@@ -71,7 +72,7 @@ export function FloatingAIChat({ businesses = [], activeBusinessId }) {
           {/* Messages */}
           <div className="flex-1 overflow-y-auto p-3 space-y-3">
             {messages.map((m, i) => (
-              <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+              <div key={i} className={`flex flex-col ${m.role === 'user' ? 'items-end' : 'items-start'}`}>
                 <div className={`max-w-[85%] px-3 py-2 rounded-2xl text-sm whitespace-pre-wrap ${
                   m.role === 'user'
                     ? 'bg-violet-500 text-white rounded-br-sm'
@@ -79,6 +80,40 @@ export function FloatingAIChat({ businesses = [], activeBusinessId }) {
                 }`}>
                   {m.text}
                 </div>
+                {m.role === 'assistant' && m.actionApplied && (
+                  <div className="mt-1 ml-1 flex items-center gap-1 text-[11px] text-green-600 dark:text-green-400 font-semibold">
+                    <span>✓ Applied to Brand Kit</span>
+                  </div>
+                )}
+                {m.role === 'assistant' && m.action && !m.actionApplied && (
+                  <div className="mt-1.5 w-[85%] bg-violet-50 dark:bg-violet-900/30 border border-violet-200 dark:border-violet-700 rounded-xl p-2.5 text-xs">
+                    <div className="flex items-center gap-1.5 mb-1.5">
+                      <Pencil size={11} className="text-violet-500" />
+                      <span className="font-bold text-violet-700 dark:text-violet-300">Brand Kit Update</span>
+                      <span className="text-violet-400">· {m.action.label}</span>
+                    </div>
+                    <p className="text-stone-600 dark:text-stone-300 mb-2 font-mono text-[10px] bg-white dark:bg-stone-800 rounded-lg px-2 py-1 truncate">
+                      {Array.isArray(m.action.value) ? m.action.value.join(', ') : m.action.value}
+                    </p>
+                    <div className="flex gap-1.5">
+                      <button
+                        onClick={() => {
+                          onAction && onAction(m.action);
+                          setMessages(prev => prev.map((msg, idx) => idx === i ? { ...msg, action: null, actionApplied: true } : msg));
+                        }}
+                        className="flex-1 py-1 rounded-lg bg-violet-500 text-white font-bold hover:bg-violet-600 transition-colors"
+                      >
+                        Apply ✓
+                      </button>
+                      <button
+                        onClick={() => setMessages(prev => prev.map((msg, idx) => idx === i ? { ...msg, action: null } : msg))}
+                        className="px-3 py-1 rounded-lg border border-stone-200 dark:border-stone-600 text-stone-500 font-semibold hover:bg-stone-50 dark:hover:bg-stone-800 transition-colors"
+                      >
+                        Dismiss
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             ))}
             {loading && (
