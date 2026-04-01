@@ -302,7 +302,6 @@ const App = () => {
 
   const primaryNav = [
     ['video', Film, 'Video'],
-    ['design', Palette, 'Express Design'],
     ['pro', Zap, 'Content Studio'],
     ['social', Share2, 'Social & Podcast'],
     ['analytics', BarChart2, 'Analytics'],
@@ -876,13 +875,12 @@ const App = () => {
         <div className="mx-auto flex-1 min-h-0 flex flex-col max-w-7xl p-4 md:p-10 pb-24" style={{ minHeight: 400 }}>
             {activeTab === 'start' && <StartHere setActiveTab={setActiveTab} />}
             {activeTab === 'video' && <VideoTab businesses={businesses} activeBusinessId={activeBusinessId} setActiveTab={setActiveTab} />}
-            {activeTab === 'design' && <AdobeExpressEditor />}
             {activeTab === 'pro' && <ProContentToolkit />}
             {activeTab === 'social' && <SocialPublisher />}
             {activeTab === 'traffic' && <TrafficHub />}
             {activeTab === 'analytics' && <PostAnalytics onOpenSettings={() => setShowSettings(true)} />}
             {activeTab === 'intel' && <CompetitorIntel businesses={businesses} activeBusinessId={activeBusinessId} />}
-            {!['start','video','design','pro','social','traffic','analytics','intel'].includes(activeTab) && <StartHere setActiveTab={setActiveTab} />}
+            {!['start','video','pro','social','traffic','analytics','intel'].includes(activeTab) && <StartHere setActiveTab={setActiveTab} />}
           </div>
         </main>
       </div>
