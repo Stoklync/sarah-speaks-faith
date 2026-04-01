@@ -8038,7 +8038,13 @@ const PostAnalytics = ({ onOpenSettings }) => {
   const [posts, setPosts] = useState(() => { try { return JSON.parse(localStorage.getItem('kreativelync-post-analytics') || '[]'); } catch { return []; } });
   const [editingId, setEditingId] = useState(null);
   const [editBuf, setEditBuf] = useState({});
-  const [aiInsights, setAiInsights] = useState(null);
+  const [aiInsights, setAiInsightsState] = useState(() => {
+    try { return JSON.parse(localStorage.getItem(`kreativelync-ai-insights-brand-${activeBusinessId}`) || 'null'); } catch { return null; }
+  });
+  const setAiInsights = (data) => {
+    setAiInsightsState(data);
+    try { localStorage.setItem(`kreativelync-ai-insights-brand-${activeBusinessId}`, JSON.stringify(data)); } catch {}
+  };
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState(null);
 
@@ -8531,7 +8537,7 @@ const PostAnalytics = ({ onOpenSettings }) => {
           </ul>
           <div className="mt-4 pt-4 border-t border-stone-200 dark:border-stone-600">
             <button onClick={async () => {
-              setAiLoading(true); setAiError(null); setAiInsights(null);
+              setAiLoading(true); setAiError(null);
               try {
                 const businessName = businesses?.find(b => b.id === activeBusinessId)?.name || 'Your brand';
                 const r = await fetch('/api/ai/generate', {
