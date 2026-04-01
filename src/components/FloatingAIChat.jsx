@@ -44,7 +44,8 @@ export function FloatingAIChat({ businesses = [], activeBusinessId, onAction }) 
       const data = await res.json();
       const reply = data.reply || data.result || data.text || data.caption || "I'm here — try asking again!";
       const action = data.action || null;
-      setMessages(prev => [...prev, { role: 'assistant', text: reply, action }]);
+      const model = data.model || null;
+      setMessages(prev => [...prev, { role: 'assistant', text: reply, action, model }]);
     } catch {
       setMessages(prev => [...prev, { role: 'assistant', text: "Something went wrong. Try again!" }]);
     } finally {
@@ -80,6 +81,11 @@ export function FloatingAIChat({ businesses = [], activeBusinessId, onAction }) 
                 }`}>
                   {m.text}
                 </div>
+                {m.role === 'assistant' && m.model && (
+                  <div className="mt-0.5 ml-1 text-[9px] text-stone-400 dark:text-stone-500 font-mono">
+                    {m.model === 'Gemini' ? '✦ Gemini 2.0 Flash' : m.model === 'Groq' ? '⚡ Groq / Llama' : '◆ Claude'}
+                  </div>
+                )}
                 {m.role === 'assistant' && m.actionApplied && (
                   <div className="mt-1 ml-1 flex items-center gap-1 text-[11px] text-green-600 dark:text-green-400 font-semibold">
                     <span>✓ Applied to Brand Kit</span>

@@ -476,13 +476,13 @@ Return ONLY the JSON object.`;
     if (process.env.GEMINI_API_KEY) {
       try {
         const text = await callGemini(1000);
-        return res.status(200).json(parseChatText(text));
+        return res.status(200).json({ ...parseChatText(text), model: 'Gemini' });
       } catch (e) { console.error('Gemini chat failed:', e.message); }
     }
     if (process.env.GROQ_API_KEY) {
       try {
         const text = await callGroq(800);
-        return res.status(200).json(parseChatText(text));
+        return res.status(200).json({ ...parseChatText(text), model: 'Groq' });
       } catch (e) { console.error('Groq chat failed:', e.message); }
     }
     if (process.env.ANTHROPIC_API_KEY) {
@@ -490,7 +490,7 @@ Return ONLY the JSON object.`;
         const { default: Anthropic } = await import('@anthropic-ai/sdk');
         const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
         const message = await client.messages.create({ model: 'claude-haiku-4-5-20251001', max_tokens: 800, messages: [{ role: 'user', content: prompt }] });
-        return res.status(200).json(parseChatText(message.content[0]?.text || ''));
+        return res.status(200).json({ ...parseChatText(message.content[0]?.text || ''), model: 'Claude' });
       } catch (e) { console.error('Anthropic chat failed:', e.message); }
     }
     return res.status(500).json({ error: 'No AI available for chat.' });
