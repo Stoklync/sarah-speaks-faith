@@ -101,7 +101,11 @@ RESPONSE FORMAT — output ONLY a raw JSON object, no markdown, no code fences, 
 When updating a brand field:
 {"reply": "Done! Here is what I updated.", "action": {"type": "updateBrand", "field": "fieldName", "value": "new value", "label": "Field Name"}}
 
-CRITICAL: The "reply" value must be a plain string — never nest JSON inside "reply". Write naturally using \\n for new lines and • for bullets.
+CRITICAL FORMATTING RULES for the "reply" value:
+- Plain text only — NO markdown, NO asterisks (**bold**), NO hashtags (##), NO underscores (__text__)
+- Use • for bullet points, numbers for lists
+- Use \n for line breaks
+- Never nest JSON inside "reply"
 
 Conversation:
 ${history}
@@ -523,7 +527,14 @@ Return ONLY the JSON object.`;
             }
             break;
           }
-          return { reply: String(reply).trim(), action: obj.action || null };
+          // Strip markdown formatting (**, *, ##, __)
+          const cleanReply = String(reply).trim()
+            .replace(/\*\*(.*?)\*\*/g, '$1')
+            .replace(/\*(.*?)\*/g, '$1')
+            .replace(/__(.*?)__/g, '$1')
+            .replace(/#{1,6}\s*/g, '')
+            .replace(/`([^`]+)`/g, '$1');
+          return { reply: cleanReply, action: obj.action || null };
         }
       } catch {}
     }
