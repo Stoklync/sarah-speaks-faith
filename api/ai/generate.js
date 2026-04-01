@@ -414,67 +414,105 @@ Generate in valid JSON:
 Return ONLY the JSON object.`;
   }
 
-  // Try Groq first (fast)
-  const groqKey = process.env.GROQ_API_KEY;
-  if (groqKey) {
-    try {
-      const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+  // Helper: call Gemini
+  const callGemini = async (maxTokens) => {
+    const geminiKey = process.env.GEMINI_API_KEY;
+    if (!geminiKey) throw new Error('No Gemini key');
+    const geminiRes = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiKey}`,
+      {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${groqKey}` },
-        body: JSON.stringify({
-          model: 'llama-3.3-70b-versatile',
-          messages: [{ role: 'user', content: prompt }],
-          max_tokens: isChat ? 800 : (mode === 'roadmap' || mode === 'analytics') ? 4000 : 1500,
-          temperature: 0.7,
-        }),
-      });
-      const groqData = await groqRes.json();
-      if (groqData.error) throw new Error(`Groq API error: ${groqData.error.message}`);
-      const text = groqData.choices?.[0]?.message?.content || '';
-      if (text) {
-        if (isChat) {
-          try {
-            const match = text.match(/\{[\s\S]*\}/);
-            const data = JSON.parse(match ? match[0] : text);
-            if (data && data.reply) return res.status(200).json({ reply: data.reply, action: data.action || null });
-          } catch {}
-          return res.status(200).json({ reply: text.trim(), action: null });
-        }
-        const match = text.match(/\{[\s\S]*\}/);
-        if (!match) throw new Error('No JSON in Groq response');
-        const result = JSON.parse(match[0]);
-        return res.status(200).json(result);
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { maxOutputTokens: maxTokens } }),
       }
-    } catch (e) {
-      console.error('Groq failed:', e.message);
-      // For roadmap/analytics, try Gemini as fallback since it supports longer responses
-      if ((mode === 'roadmap' || mode === 'analytics') && process.env.GEMINI_API_KEY) {
-        try {
-          const geminiRes = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
-            {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { maxOutputTokens: 4000 } }),
-            }
-          );
-          const geminiData = await geminiRes.json();
-          const gText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || '';
-          if (gText) {
-            const match = gText.match(/\{[\s\S]*\}/);
-            if (match) {
-              const result = JSON.parse(match[0]);
-              return res.status(200).json({ ...result, poweredBy: 'gemini' });
-            }
-          }
-        } catch (ge) {
-          console.error('Gemini fallback failed:', ge.message);
-        }
-      }
+    );
+    const d = await geminiRes.json();
+    if (d.error) throw new Error(`Gemini error: ${d.error.message}`);
+    const t = d.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    if (!t) throw new Error('Empty Gemini response');
+    return t;
+  };
+
+  // Helper: call Groq/Llama
+  const callGroq = async (maxTokens) => {
+    const groqKey = process.env.GROQ_API_KEY;
+    if (!groqKey) throw new Error('No Groq key');
+    const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${groqKey}` },
+      body: JSON.stringify({
+        model: 'llama-3.3-70b-versatile',
+        messages: [{ role: 'user', content: prompt }],
+        max_tokens: maxTokens,
+        temperature: 0.7,
+      }),
+    });
+    const d = await groqRes.json();
+    if (d.error) throw new Error(`Groq error: ${d.error.message}`);
+    const t = d.choices?.[0]?.message?.content || '';
+    if (!t) throw new Error('Empty Groq response');
+    return t;
+  };
+
+  // Helper: parse chat response text → { reply, action }
+  const parseChatText = (text) => {
+    try {
+      const match = text.match(/\{[\s\S]*\}/);
+      const data = JSON.parse(match ? match[0] : text);
+      if (data?.reply) return { reply: data.reply, action: data.action || null };
+    } catch {}
+    return { reply: text.trim(), action: null };
+  };
+
+  // Helper: parse JSON response text
+  const parseJsonText = (text) => {
+    const match = text.match(/\{[\s\S]*\}/);
+    if (!match) throw new Error('No JSON in response');
+    return JSON.parse(match[0]);
+  };
+
+  // --- CHAT MODE: Gemini first (free + smart), Groq fallback ---
+  if (isChat) {
+    if (process.env.GEMINI_API_KEY) {
+      try {
+        const text = await callGemini(1000);
+        return res.status(200).json(parseChatText(text));
+      } catch (e) { console.error('Gemini chat failed:', e.message); }
     }
+    if (process.env.GROQ_API_KEY) {
+      try {
+        const text = await callGroq(800);
+        return res.status(200).json(parseChatText(text));
+      } catch (e) { console.error('Groq chat failed:', e.message); }
+    }
+    if (process.env.ANTHROPIC_API_KEY) {
+      try {
+        const { default: Anthropic } = await import('@anthropic-ai/sdk');
+        const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+        const message = await client.messages.create({ model: 'claude-haiku-4-5-20251001', max_tokens: 800, messages: [{ role: 'user', content: prompt }] });
+        return res.status(200).json(parseChatText(message.content[0]?.text || ''));
+      } catch (e) { console.error('Anthropic chat failed:', e.message); }
+    }
+    return res.status(500).json({ error: 'No AI available for chat.' });
   }
 
-  // Fallback: Anthropic Claude
+  // --- ALL OTHER MODES: Groq first (fast), Gemini fallback (long context), Anthropic last ---
+  const maxTokens = (mode === 'roadmap' || mode === 'analytics') ? 4000 : 1500;
+
+  if (process.env.GROQ_API_KEY) {
+    try {
+      const text = await callGroq(maxTokens);
+      return res.status(200).json(parseJsonText(text));
+    } catch (e) { console.error('Groq failed:', e.message); }
+  }
+
+  if (process.env.GEMINI_API_KEY) {
+    try {
+      const text = await callGemini(maxTokens);
+      return res.status(200).json({ ...parseJsonText(text), poweredBy: 'gemini' });
+    } catch (e) { console.error('Gemini failed:', e.message); }
+  }
+
   const anthropicKey = process.env.ANTHROPIC_API_KEY;
   if (anthropicKey) {
     try {
@@ -482,18 +520,10 @@ Return ONLY the JSON object.`;
       const client = new Anthropic({ apiKey: anthropicKey });
       const message = await client.messages.create({
         model: 'claude-haiku-4-5-20251001',
-        max_tokens: isChat ? 800 : 1500,
+        max_tokens: 1500,
         messages: [{ role: 'user', content: prompt }],
       });
       const text = message.content[0]?.text || '';
-      if (isChat) {
-        try {
-          const match = text.match(/\{[\s\S]*\}/);
-          const data = JSON.parse(match ? match[0] : text);
-          if (data && data.reply) return res.status(200).json({ reply: data.reply, action: data.action || null });
-        } catch {}
-        return res.status(200).json({ reply: text.trim(), action: null });
-      }
       const match = text.match(/\{[\s\S]*\}/);
       const result = JSON.parse(match ? match[0] : text);
       return res.status(200).json(result);
