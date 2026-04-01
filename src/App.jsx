@@ -307,15 +307,18 @@ const App = () => {
   const [canvaKey, setCanvaKey] = useState(() => { try { return localStorage.getItem('kreativelync-canva-api-key') || ''; } catch { return ''; } });
 
   const primaryNav = [
-    ['brandkit', Briefcase, 'Brand Kit'],
-    ['images', ImageIcon, 'AI Images'],
-    ['video', Film, 'AI Video'],
-    ['design', Palette, 'Design'],
-    ['book', BookOpen, 'Book Creator'],
-    ['pro', Zap, 'Content Studio'],
-    ['social', Share2, 'Social & Podcast'],
+    // 1. Set up your brand
+    ['brandkit', Briefcase,  'Brand Kit'],
+    // 2. Create content
+    ['pro',      Zap,        'Content Studio'],
+    ['images',   ImageIcon,  'AI Images'],
+    ['video',    Film,       'AI Video'],
+    ['design',   Palette,    'Design Studio'],
+    ['book',     BookOpen,   'Book Creator'],
+    ['social',   Share2,     'Social & Publish'],
+    // 3. Measure & grow
     ['analytics', BarChart2, 'Analytics'],
-    ['intel', Brain, 'Intelligence'],
+    ['intel',    Brain,      'Intelligence'],
   ];
 
   const [newBusinessType, setNewBusinessType] = useState('business');
