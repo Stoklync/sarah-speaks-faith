@@ -295,6 +295,7 @@ const App = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [settingsTab, setSettingsTab] = useState('brand');
   const [geminiKey, setGeminiKey] = useState('');
   const [openaiKey, setOpenaiKey] = useState('');
   const [canvaKey, setCanvaKey] = useState(() => { try { return localStorage.getItem('kreativelync-canva-api-key') || ''; } catch { return ''; } });
@@ -571,7 +572,7 @@ const App = () => {
 
               {(() => {
                 const activeBiz = businesses.find(b => b.id === activeBusinessId);
-                const [settingsTab, setSettingsTab] = React.useState('brand');
+
                 const BRAND_COLORS = ['#7c3aed','#e11d48','#0891b2','#059669','#d97706','#dc2626','#7c3aed','#4f46e5','#db2777','#000000'];
 
                 return (
@@ -758,16 +759,177 @@ const App = () => {
         {editingBrandId && (() => {
           const eb = (businesses || []).find(b => b.id === editingBrandId);
           if (!eb) return null;
+          const saveBrandField = (field, value) => setBusinesses(prev => prev.map(b => b.id === editingBrandId ? { ...b, [field]: value } : b));
+          const BRAND_COLORS = ['#7c3aed','#e11d48','#0891b2','#059669','#d97706','#dc2626','#4f46e5','#db2777','#000000','#1e293b'];
+          const VOICES = ['Inspirational','Conversational','Educational','Bold & Direct','Warm & Nurturing','Professional','Raw & Authentic','Motivational'];
+          const GOALS = ['Grow audience','Build trust','Generate leads','Drive sales','Spread the gospel','Build community','Educate','Entertain'];
+          const PLATFORMS = ['Instagram','YouTube','TikTok','Facebook','Pinterest','LinkedIn','Spotify','X (Twitter)'];
+
           return (
-            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-              <div className="bg-white dark:bg-stone-800 rounded-2xl p-6 max-w-md w-full shadow-xl border border-stone-200 dark:border-stone-700">
-                <h3 className="text-lg font-bold text-stone-800 dark:text-stone-100 mb-1">✏️ Brand Description — {eb.name}</h3>
-                <p className="text-xs text-stone-400 mb-3">This is what the AI reads to understand your brand. Be specific — products, services, target audience, niche, goal.</p>
-                <textarea value={editingBrandDesc} onChange={e => setEditingBrandDesc(e.target.value)} rows={5} placeholder={`Example: ${eb.name} sells premium skincare products targeting women aged 25-45 who struggle with acne and uneven skin tone. We focus on natural ingredients, no harsh chemicals. Our goal is to educate and sell through Instagram and TikTok. Price range $30-$80.`} className="w-full bg-stone-50 dark:bg-stone-700 border border-stone-200 dark:border-stone-600 rounded-xl px-4 py-3 text-sm text-stone-800 dark:text-stone-100 placeholder-stone-400 resize-none mb-4" />
-                <div className="flex gap-2">
-                  <button onClick={() => setEditingBrandId(null)} className="flex-1 py-2 rounded-xl border border-stone-200 dark:border-stone-600 text-stone-600 dark:text-stone-400 font-medium">Cancel</button>
-                  <button onClick={() => saveBrandDesc(editingBrandId, editingBrandDesc)} className="flex-1 py-2 rounded-xl bg-violet-500 text-white font-bold hover:bg-violet-600">Save Description</button>
+            <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4 overflow-y-auto">
+              <div className="bg-white dark:bg-stone-900 rounded-2xl w-full max-w-lg shadow-2xl border border-stone-200 dark:border-stone-700 my-8 overflow-hidden">
+
+                {/* Header */}
+                <div className="flex items-center justify-between px-6 py-4 border-b border-stone-100 dark:border-stone-800">
+                  <div>
+                    <h3 className="text-lg font-black text-stone-800 dark:text-stone-100">Brand Kit — {eb.name}</h3>
+                    <p className="text-xs text-stone-400 mt-0.5">Everything the AI uses to create content and strategy for this brand</p>
+                  </div>
+                  <button onClick={() => setEditingBrandId(null)} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-stone-100 dark:hover:bg-stone-800 text-stone-400">✕</button>
                 </div>
+
+                <div className="p-6 space-y-5 max-h-[72vh] overflow-y-auto">
+
+                  {/* Name */}
+                  <div>
+                    <label className="block text-xs font-bold text-stone-500 uppercase tracking-wider mb-1.5">Brand Name</label>
+                    <input defaultValue={eb.name}
+                      onBlur={e => saveBrandField('name', e.target.value.trim() || eb.name)}
+                      className="w-full bg-stone-50 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-xl px-4 py-2.5 text-sm text-stone-800 dark:text-stone-100 focus:outline-none focus:ring-2 focus:ring-violet-400" />
+                  </div>
+
+                  {/* Type */}
+                  <div>
+                    <label className="block text-xs font-bold text-stone-500 uppercase tracking-wider mb-1.5">Brand Type</label>
+                    <div className="grid grid-cols-3 gap-2">
+                      {[['business','💼 Business'],['faith','✝️ Faith'],['stewardship','💚 Stewardship']].map(([val, label]) => (
+                        <button key={val} onClick={() => saveBrandField('type', val)}
+                          className={`py-2 rounded-xl border text-xs font-bold transition-colors ${eb.type === val ? 'border-violet-500 bg-violet-50 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300' : 'border-stone-200 dark:border-stone-700 text-stone-500 hover:border-violet-300'}`}>
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Brand Color */}
+                  <div>
+                    <label className="block text-xs font-bold text-stone-500 uppercase tracking-wider mb-2">Brand Color</label>
+                    <div className="flex flex-wrap gap-2 items-center">
+                      {BRAND_COLORS.map(c => (
+                        <button key={c} onClick={() => saveBrandField('brandColor', c)}
+                          style={{ background: c }}
+                          className={`w-8 h-8 rounded-full border-2 transition-all ${eb.brandColor === c ? 'border-stone-900 dark:border-white scale-110' : 'border-transparent hover:scale-105'}`} />
+                      ))}
+                      <input type="color" value={eb.brandColor || '#7c3aed'}
+                        onChange={e => saveBrandField('brandColor', e.target.value)}
+                        className="w-8 h-8 rounded-full border border-stone-200 dark:border-stone-700 cursor-pointer bg-transparent" title="Custom color" />
+                      <span className="text-xs text-stone-400 font-mono">{eb.brandColor || '#7c3aed'}</span>
+                    </div>
+                  </div>
+
+                  {/* Description */}
+                  <div>
+                    <label className="block text-xs font-bold text-stone-500 uppercase tracking-wider mb-1.5">What This Brand Does <span className="font-normal text-stone-400">(the AI's main context)</span></label>
+                    <textarea defaultValue={eb.description || ''}
+                      onBlur={e => saveBrandField('description', e.target.value.trim())}
+                      rows={3} placeholder="Products/services, who you serve, what problem you solve, pricing, niche..."
+                      className="w-full bg-stone-50 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-xl px-4 py-2.5 text-sm text-stone-800 dark:text-stone-100 placeholder-stone-400 resize-none focus:outline-none focus:ring-2 focus:ring-violet-400" />
+                  </div>
+
+                  {/* Target Audience */}
+                  <div>
+                    <label className="block text-xs font-bold text-stone-500 uppercase tracking-wider mb-1.5">Target Audience</label>
+                    <input defaultValue={eb.targetAudience || ''}
+                      onBlur={e => saveBrandField('targetAudience', e.target.value.trim())}
+                      placeholder="e.g. Christian women 25-45, single professionals, small business owners..."
+                      className="w-full bg-stone-50 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-xl px-4 py-2.5 text-sm text-stone-800 dark:text-stone-100 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-violet-400" />
+                  </div>
+
+                  {/* Brand Voice */}
+                  <div>
+                    <label className="block text-xs font-bold text-stone-500 uppercase tracking-wider mb-2">Brand Voice</label>
+                    <div className="flex flex-wrap gap-2">
+                      {VOICES.map(v => (
+                        <button key={v} onClick={() => saveBrandField('brandVoice', v)}
+                          className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${eb.brandVoice === v ? 'bg-violet-500 border-violet-500 text-white' : 'border-stone-200 dark:border-stone-700 text-stone-600 dark:text-stone-400 hover:border-violet-300'}`}>
+                          {v}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Content Goals */}
+                  <div>
+                    <label className="block text-xs font-bold text-stone-500 uppercase tracking-wider mb-2">Content Goals <span className="font-normal text-stone-400">(pick all that apply)</span></label>
+                    <div className="flex flex-wrap gap-2">
+                      {GOALS.map(g => {
+                        const goals = eb.contentGoals || [];
+                        const active = goals.includes(g);
+                        return (
+                          <button key={g} onClick={() => saveBrandField('contentGoals', active ? goals.filter(x => x !== g) : [...goals, g])}
+                            className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${active ? 'bg-indigo-500 border-indigo-500 text-white' : 'border-stone-200 dark:border-stone-700 text-stone-600 dark:text-stone-400 hover:border-indigo-300'}`}>
+                            {g}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Active Platforms */}
+                  <div>
+                    <label className="block text-xs font-bold text-stone-500 uppercase tracking-wider mb-2">Active Platforms</label>
+                    <div className="flex flex-wrap gap-2">
+                      {PLATFORMS.map(p => {
+                        const active = (eb.activePlatforms || []).includes(p);
+                        return (
+                          <button key={p} onClick={() => saveBrandField('activePlatforms', active ? (eb.activePlatforms||[]).filter(x=>x!==p) : [...(eb.activePlatforms||[]),p])}
+                            className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${active ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-stone-200 dark:border-stone-700 text-stone-600 dark:text-stone-400 hover:border-emerald-300'}`}>
+                            {p}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Content Pillars */}
+                  <div>
+                    <label className="block text-xs font-bold text-stone-500 uppercase tracking-wider mb-1.5">Content Pillars <span className="font-normal text-stone-400">(3–5 core themes, comma separated)</span></label>
+                    <input defaultValue={eb.contentPillars || ''}
+                      onBlur={e => saveBrandField('contentPillars', e.target.value.trim())}
+                      placeholder="e.g. Faith & prayer, Financial freedom, Business tips, Personal growth"
+                      className="w-full bg-stone-50 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-xl px-4 py-2.5 text-sm text-stone-800 dark:text-stone-100 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-violet-400" />
+                  </div>
+
+                  {/* Website + Podcast */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-bold text-stone-500 uppercase tracking-wider mb-1.5">Website</label>
+                      <input defaultValue={eb.website || ''}
+                        onBlur={e => saveBrandField('website', e.target.value.trim())}
+                        placeholder="https://..."
+                        className="w-full bg-stone-50 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-xl px-3 py-2.5 text-sm text-stone-800 dark:text-stone-100 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-violet-400" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-stone-500 uppercase tracking-wider mb-1.5">Podcast Name</label>
+                      <input defaultValue={eb.podcastName || ''}
+                        onBlur={e => saveBrandField('podcastName', e.target.value.trim())}
+                        placeholder="e.g. Her Stewardship"
+                        className="w-full bg-stone-50 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-xl px-3 py-2.5 text-sm text-stone-800 dark:text-stone-100 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-violet-400" />
+                    </div>
+                  </div>
+
+                  {/* Main Social Handle */}
+                  <div>
+                    <label className="block text-xs font-bold text-stone-500 uppercase tracking-wider mb-1.5">Main Social Handle</label>
+                    <input defaultValue={eb.socialHandle || ''}
+                      onBlur={e => saveBrandField('socialHandle', e.target.value.trim())}
+                      placeholder="@yourbrand"
+                      className="w-full bg-stone-50 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-xl px-4 py-2.5 text-sm text-stone-800 dark:text-stone-100 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-violet-400" />
+                  </div>
+
+                </div>
+
+                {/* Footer */}
+                <div className="px-6 py-4 border-t border-stone-100 dark:border-stone-800 flex gap-2">
+                  <button onClick={() => setEditingBrandId(null)} className="flex-1 py-2.5 rounded-xl border border-stone-200 dark:border-stone-700 text-stone-600 dark:text-stone-400 font-semibold text-sm hover:bg-stone-50 dark:hover:bg-stone-800 transition-colors">Done</button>
+                  {businesses.length > 1 && (
+                    <button onClick={() => { if (confirm(`Delete ${eb.name}? This cannot be undone.`)) { setBusinesses(prev => prev.filter(b => b.id !== editingBrandId)); setEditingBrandId(null); } }}
+                      className="px-4 py-2.5 rounded-xl border border-red-200 dark:border-red-900/50 text-red-500 text-sm font-semibold hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
+                      Delete Brand
+                    </button>
+                  )}
+                </div>
+
               </div>
             </div>
           );
