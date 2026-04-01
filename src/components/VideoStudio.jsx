@@ -80,10 +80,10 @@ export function VideoStudio() {
     setLoading(true);
     setError('');
     try {
-      const r = await fetch('/api/image', {
+      const r = await fetch('/api/video', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mediaType: 'video', prompt, model, ratio, duration }),
+        body: JSON.stringify({ prompt, model, ratio, duration }),
       });
       const data = await r.json();
       if (!r.ok || data.error) throw new Error(data.error || 'Generation failed');

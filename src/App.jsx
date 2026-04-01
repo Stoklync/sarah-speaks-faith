@@ -1,4 +1,5 @@
 import React, { useState, createContext, useContext, useRef, useEffect, useCallback, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { useEditorStore } from './stores/editorStore';
 import { useEditor } from './hooks/useEditor';
 import { useTimeline } from './hooks/useTimeline';
@@ -15,9 +16,12 @@ import { Stage, EXPORT_PRESETS, derivePresetFromPlatforms } from './components/S
 import { LayeredTimelineTracks } from './components/LayeredTimelineTracks';
 import { CaptionOverlay } from './components/CaptionOverlay';
 import { CreatorInsights } from './components/CreatorInsights';
-import { AdobeExpressEditor } from './components/AdobeExpressEditor';
-import { VideoTab } from './components/VideoPlanner';
 import { CompetitorIntel } from './components/CompetitorIntel';
+import { ImageStudio } from './components/ImageStudio';
+import { VideoStudio } from './components/VideoStudio';
+import { DesignStudio } from './components/DesignStudio';
+import { BookCreator } from './components/BookCreator';
+import { BrandKit } from './components/BrandKit';
 import { FloatingAIChat } from './components/FloatingAIChat';
 import { 
   Scissors, 
@@ -80,7 +84,9 @@ import {
   Clock as ClockIcon,
   Flame,
   Users,
-  Brain
+  Brain,
+  BookOpen,
+  Briefcase
 } from 'lucide-react';
 
 // --- App Context ---
@@ -98,13 +104,13 @@ const DEFAULT_STUDIO = {
   voiceIsolation: false, setVoiceIsolation: noop, deReverb: false, setDeReverb: noop, deReverbStrength: 80, setDeReverbStrength: noop,
   aiUpscale: false, setAiUpscale: noop, cinematicGrade: false, setCinematicGrade: noop,
   igPosts: [], setIgPosts: noop, pinterestPins: [], setPinterestPins: noop,
-  businesses: [], activeBusinessId: null, setActiveBusinessId: noop, addBusiness: noop,
+  businesses: [], setBusinesses: noop, activeBusinessId: null, setActiveBusinessId: noop, addBusiness: noop,
   showAddBusiness: false, setShowAddBusiness: noop, newBusinessName: '', setNewBusinessName: noop,
   newBusinessDesc: '', setNewBusinessDesc: noop, newBusinessType: 'business', setNewBusinessType: noop,
   editingBrandId: null, setEditingBrandId: noop, editingBrandDesc: '', setEditingBrandDesc: noop, saveBrandDesc: noop,
   setActiveTab: noop, theme: 'light', isDark: false, toggleTheme: noop, setSidebarOpen: noop
 };
-const useStudio = () => useContext(StudioContext) ?? DEFAULT_STUDIO;
+export const useStudio = () => useContext(StudioContext) ?? DEFAULT_STUDIO;
 
 // Inner error boundary — when timeline throws, your imported media stays (assets live in parent)
 class EditorErrorBoundary extends React.Component {
@@ -301,7 +307,11 @@ const App = () => {
   const [canvaKey, setCanvaKey] = useState(() => { try { return localStorage.getItem('kreativelync-canva-api-key') || ''; } catch { return ''; } });
 
   const primaryNav = [
-    ['video', Film, 'Video'],
+    ['brandkit', Briefcase, 'Brand Kit'],
+    ['images', ImageIcon, 'AI Images'],
+    ['video', Film, 'AI Video'],
+    ['design', Palette, 'Design'],
+    ['book', BookOpen, 'Book Creator'],
     ['pro', Zap, 'Content Studio'],
     ['social', Share2, 'Social & Podcast'],
     ['analytics', BarChart2, 'Analytics'],
@@ -422,6 +432,7 @@ const App = () => {
     pinterestPins,
     setPinterestPins,
     businesses,
+    setBusinesses,
     activeBusinessId,
     setActiveBusinessId,
     addBusiness,
@@ -536,8 +547,12 @@ const App = () => {
             <h2 className="font-semibold text-stone-800 dark:text-stone-100 tracking-tight flex items-center gap-3 flex-wrap flex-1 min-w-0 truncate text-lg md:text-2xl">
               <span>
                 {activeTab === 'start' && 'Start Here'}
-                {activeTab === 'photo-edit' && 'Photo Editor'}
+                {activeTab === 'brandkit' && 'Brand Kit'}
+                {activeTab === 'images' && 'AI Image Studio'}
+                {activeTab === 'video' && 'AI Video Studio'}
                 {activeTab === 'design' && 'Design Studio'}
+                {activeTab === 'book' && 'Book Creator'}
+                {activeTab === 'photo-edit' && 'Photo Editor'}
                 {activeTab === 'pro' && 'Content Studio'}
                 {activeTab === 'social' && 'Social & Podcast'}
                 {activeTab === 'traffic' && 'Traffic Links'}
@@ -560,7 +575,7 @@ const App = () => {
           )}
 
           {/* Settings Modal */}
-        {showSettings && (
+        {showSettings && createPortal(
           <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-end sm:items-center justify-center z-50 p-0 sm:p-6" onClick={() => setShowSettings(false)}>
             <div className="bg-white dark:bg-stone-950 w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
 
@@ -584,7 +599,7 @@ const App = () => {
                     <p className="text-sm font-semibold text-stone-800 dark:text-stone-100">Dark Mode</p>
                     <p className="text-xs text-stone-400 mt-0.5">Switch between light and dark</p>
                   </div>
-                  <button onClick={toggleTheme} className={`relative w-11 h-6 rounded-full transition-all duration-200 ${isDark ? 'bg-violet-500' : 'bg-stone-200 dark:bg-stone-700'}`}>
+                  <button onClick={cycleTheme} className={`relative w-11 h-6 rounded-full transition-all duration-200 ${isDark ? 'bg-violet-500' : 'bg-stone-200 dark:bg-stone-700'}`}>
                     <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow-md transition-transform duration-200 ${isDark ? 'translate-x-5' : 'translate-x-0'}`} />
                   </button>
                 </div>
@@ -627,10 +642,10 @@ const App = () => {
 
             </div>
           </div>
-        )}
+        , document.body)}
 
           {/* Add Business Modal */}
-        {showAddBusiness && (
+        {showAddBusiness && createPortal(
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
             <div className="bg-white dark:bg-stone-800 rounded-2xl p-6 max-w-md w-full shadow-xl border border-violet-100 dark:border-stone-700">
               <h3 className="text-lg font-bold text-stone-800 dark:text-stone-100 mb-1">Add Brand or Business</h3>
@@ -670,7 +685,7 @@ const App = () => {
               </div>
             </div>
           </div>
-        )}
+        , document.body)}
 
         {/* Edit Brand Description modal */}
         {editingBrandId && (() => {
@@ -682,7 +697,7 @@ const App = () => {
           const GOALS = ['Grow audience','Build trust','Generate leads','Drive sales','Spread the gospel','Build community','Educate','Entertain'];
           const PLATFORMS = ['Instagram','YouTube','TikTok','Facebook','Pinterest','LinkedIn','Spotify','X (Twitter)'];
 
-          return (
+          return createPortal(
             <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4 overflow-y-auto">
               <div className="bg-white dark:bg-stone-900 rounded-2xl w-full max-w-lg shadow-2xl border border-stone-200 dark:border-stone-700 my-8 overflow-hidden">
 
@@ -869,18 +884,22 @@ const App = () => {
 
               </div>
             </div>
-          );
+          , document.body);
         })()}
 
         <div className="mx-auto flex-1 min-h-0 flex flex-col max-w-7xl p-4 md:p-10 pb-24" style={{ minHeight: 400 }}>
             {activeTab === 'start' && <StartHere setActiveTab={setActiveTab} />}
-            {activeTab === 'video' && <VideoTab businesses={businesses} activeBusinessId={activeBusinessId} setActiveTab={setActiveTab} />}
+            {activeTab === 'brandkit' && <BrandKit />}
+            {activeTab === 'images' && <ImageStudio />}
+            {activeTab === 'video' && <VideoStudio />}
+            {activeTab === 'design' && <DesignStudio />}
+            {activeTab === 'book' && <BookCreator />}
             {activeTab === 'pro' && <ProContentToolkit />}
             {activeTab === 'social' && <SocialPublisher />}
             {activeTab === 'traffic' && <TrafficHub />}
             {activeTab === 'analytics' && <PostAnalytics onOpenSettings={() => setShowSettings(true)} />}
             {activeTab === 'intel' && <CompetitorIntel businesses={businesses} activeBusinessId={activeBusinessId} />}
-            {!['start','video','pro','social','traffic','analytics','intel'].includes(activeTab) && <StartHere setActiveTab={setActiveTab} />}
+            {!['start','brandkit','images','video','design','book','pro','social','traffic','analytics','intel','photo-edit'].includes(activeTab) && <StartHere setActiveTab={setActiveTab} />}
           </div>
         </main>
       </div>

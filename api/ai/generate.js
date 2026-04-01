@@ -43,7 +43,17 @@ AUDIENCE: Christian women — real, raw, faith-filled content. Women at all life
 TOOLS: DaVinci Resolve (editing), Lightroom (photos), Canva (graphics). Walk her through step by step when asked.`;
 
     } else if (isStewardship) {
-      brandContext = `You are coaching Sarah on "${brand}" — a faith-based financial stewardship podcast/show that lives inside the Sarah Speaks Faith YouTube channel. Same Christian women audience, focused on biblical money management and financial freedom through faith. Wednesday is the primary content day. Blend faith and practical finance in every suggestion. Sarah is a single woman with no kids — never assume she is married or a parent.`;
+      brandContext = `You are coaching Sarah on "${brand}" — a biblical stewardship podcast for Christian women inside the Sarah Speaks Faith YouTube channel.
+
+THEOLOGY FOUNDATION: True biblical stewardship means God owns everything (Psalm 24:1) and we are managers of what He entrusts to us (Luke 16:10-12). This is NOT prosperity gospel. It is NOT "faith unlocks financial results." It IS faithful, obedient management of God's resources — contentment, generosity, wisdom, and trust in God's provision.
+
+SOUND DOCTRINE:
+- Avoid language like "faith isn't just for your spirit" — that frames money as separate from God, which is unbiblical. Everything belongs to God.
+- Avoid transactional faith framing — "give to get", "tithe to unlock blessings" — that is prosperity gospel and not sound
+- Root everything in scripture: Proverbs 3:9, Proverbs 27:23, Matthew 6:19-21, Luke 16:10-13, 1 Timothy 6:6-10, Philippians 4:11-13
+- The goal is faithful stewardship, not financial success. Peace and contentment over wealth and abundance.
+
+CONTENT FOCUS: Practical, biblically-grounded money wisdom — budgeting, debt, saving, giving — always through the lens of "this is God's money, how do I manage it faithfully." Wednesday is the primary content day. Sarah is a single woman with no kids — never assume she is married or a parent.`;
 
     } else {
       const descContext = brandDesc ? `\n\nBRAND DESCRIPTION (what this business actually is):\n${brandDesc}\n\nUse this to make every recommendation specific to what ${brand} sells, who they serve, and what problem they solve.` : `\n\nNOTE: No brand description provided yet — ask Sarah to describe what ${brand} sells and who it serves if you need more context.`;
@@ -71,7 +81,7 @@ TOOLS: DaVinci Resolve, Lightroom, Canva. Walk her through step by step when ask
 
     prompt = `${brandContext}
 
-CRITICAL: You are ONLY focused on "${brand}" right now. Do NOT mix in context from other brands.
+CRITICAL: You are coaching on "${brand}" right now. If the conversation history mentions other brands, ignore it — focus only on "${brand}".
 
 ANSWER STYLE — THIS IS NON-NEGOTIABLE:
 - Lead with the actual answer immediately. Never build up to it. If asked "what should my first post be?" — give the post first, then explain.
@@ -86,32 +96,21 @@ RULES:
 - Use real data when available, educated strategy when not
 - Be a genius, not a cheerleader — say the hard truth when needed
 
-ACTIONS YOU CAN TAKE:
-If the user explicitly asks you to update, change, edit, or save a Brand Kit field — return an action. ONLY include an action if the user clearly wants to make a change. For regular conversation and advice, set action to null.
+BRAND UPDATE ACTIONS:
+ONLY when the user explicitly asks you to save, update, or change a brand setting — start your reply with ACTION: followed by a single JSON line, then a newline, then your conversational response.
 
-UPDATABLE FIELDS (use exact field name):
-- "contentPillars" — their core content themes (comma-separated)
-- "targetAudience" — who this brand serves
-- "description" — what the brand does / sells
-- "brandVoice" — tone (must be one of: Inspirational, Educational, Bold, Conversational, Prophetic, Professional, Encouraging, Raw & Real)
-- "contentGoals" — array like ["Grow audience","Drive sales"]
-- "activePlatforms" — array like ["Instagram","YouTube","TikTok"]
-- "website" — URL string
-- "podcastName" — podcast name string
-- "socialHandle" — @handle string
-- "name" — brand name
+Example:
+ACTION: {"type":"updateBrand","field":"description","value":"New description here","label":"Brand Description"}
+Done! I've updated your brand description.
 
-RESPONSE FORMAT — output ONLY a raw JSON object, no markdown, no code fences, no explanation outside the JSON:
-{"reply": "your conversational message here — can include line breaks, bullet points with \\n•, numbered lists with \\n1.", "action": null}
+Updatable fields: contentPillars, targetAudience, description, brandVoice (one of: Inspirational, Educational, Bold, Conversational, Prophetic, Professional, Encouraging, Raw & Real), contentGoals (array), activePlatforms (array), website, podcastName, socialHandle, name.
 
-When updating a brand field:
-{"reply": "Done! Here is what I updated.", "action": {"type": "updateBrand", "field": "fieldName", "value": "new value", "label": "Field Name"}}
+For ALL other messages — just reply in plain conversational text. No JSON. No wrapper. No "ACTION:" prefix.
 
-CRITICAL FORMATTING RULES for the "reply" value:
-- Plain text only — NO markdown, NO asterisks (**bold**), NO hashtags (##), NO underscores (__text__)
-- Use • for bullet points, numbers for lists
-- Use \n for line breaks
-- Never nest JSON inside "reply"
+FORMATTING:
+- Plain text only — no asterisks, no markdown, no hashtags
+- Use • for bullet points
+- Short paragraphs, line breaks between them
 
 Conversation:
 ${history}
@@ -517,24 +516,28 @@ Return ONLY the JSON object.`;
 
   // Helper: parse chat response text → { reply, action }
   const parseChatText = (text) => {
-    // Strip markdown code fences
     const clean = text.replace(/```(?:json)?/gi, '').trim();
-    // Try to find and parse first JSON object
+
+    // New format: ACTION: {...json...}\nreply text
+    if (clean.startsWith('ACTION:')) {
+      const newline = clean.indexOf('\n');
+      if (newline > 7) {
+        const jsonPart = clean.slice(7, newline).trim();
+        const replyPart = clean.slice(newline + 1).trim();
+        try {
+          const action = JSON.parse(jsonPart);
+          return { reply: replyPart || 'Done!', action };
+        } catch {}
+      }
+    }
+
+    // Legacy JSON format fallback (still handle in case model outputs it)
     const jsonStr = extractFirstJson(clean);
     if (jsonStr) {
       try {
         const obj = JSON.parse(jsonStr);
-        let reply = obj?.reply;
-        if (reply) {
-          // Unwrap if reply is itself a JSON string (up to 2 levels deep)
-          for (let i = 0; i < 2; i++) {
-            if (typeof reply === 'string' && reply.trim().startsWith('{')) {
-              try { const inner = JSON.parse(reply); if (inner?.reply) { reply = inner.reply; continue; } } catch {}
-            }
-            break;
-          }
-          // Strip markdown formatting (**, *, ##, __)
-          const cleanReply = String(reply).trim()
+        if (obj?.reply) {
+          const cleanReply = String(obj.reply).trim()
             .replace(/\*\*(.*?)\*\*/g, '$1')
             .replace(/\*(.*?)\*/g, '$1')
             .replace(/__(.*?)__/g, '$1')
@@ -544,9 +547,16 @@ Return ONLY the JSON object.`;
         }
       } catch {}
     }
-    // No valid JSON — return the raw text (strip any leftover JSON prefix)
-    const fallback = clean.replace(/^\s*\{[^}]*"reply"\s*:\s*"/, '').replace(/"[,\s]*"action"[\s\S]*$/, '').trim();
-    return { reply: fallback || clean, action: null };
+
+    // Plain text — strip any markdown formatting and return as-is
+    const plainReply = clean
+      .replace(/\*\*(.*?)\*\*/g, '$1')
+      .replace(/\*(.*?)\*/g, '$1')
+      .replace(/__(.*?)__/g, '$1')
+      .replace(/#{1,6}\s*/g, '')
+      .replace(/`([^`]+)`/g, '$1')
+      .trim();
+    return { reply: plainReply || clean, action: null };
   };
 
   // Helper: parse JSON response text
@@ -578,7 +588,7 @@ Return ONLY the JSON object.`;
       if (!process.env.GEMINI_API_KEY) {
         return res.status(200).json({ reply: "✦ Gemini isn't connected. Add GEMINI_API_KEY to Vercel to use it.", model: 'System', action: null });
       }
-      try { return res.status(200).json({ ...parseChatText(await callGemini(1000)), model: 'Gemini' }); }
+      try { return res.status(200).json({ ...parseChatText(await callGemini(4000)), model: 'Gemini' }); }
       catch (e) {
         console.error('Gemini preferred failed:', e.message);
         return res.status(200).json({ reply: `⚠️ Gemini error: ${e.message} — falling back to Groq.`, model: 'System', action: null });
@@ -588,21 +598,21 @@ Return ONLY the JSON object.`;
       if (!process.env.OPENAI_API_KEY) {
         return res.status(200).json({ reply: "⊕ GPT-4o isn't connected yet. Add your OPENAI_API_KEY to Vercel when you're ready. Switch to Auto to use Gemini for free in the meantime.", model: 'System', action: null });
       }
-      try { return res.status(200).json({ ...parseChatText(await callOpenAI(800)), model: 'GPT-4o' }); }
+      try { return res.status(200).json({ ...parseChatText(await callOpenAI(1500)), model: 'GPT-4o' }); }
       catch (e) { console.error('GPT preferred failed:', e.message); }
     }
 
     // Auto / fallback chain: Gemini → Groq → GPT-4o → Claude
     if (process.env.GEMINI_API_KEY) {
-      try { return res.status(200).json({ ...parseChatText(await callGemini(1000)), model: 'Gemini' }); }
+      try { return res.status(200).json({ ...parseChatText(await callGemini(4000)), model: 'Gemini' }); }
       catch (e) { console.error('Gemini chat failed:', e.message); }
     }
     if (process.env.GROQ_API_KEY) {
-      try { return res.status(200).json({ ...parseChatText(await callGroq(800)), model: 'Groq' }); }
+      try { return res.status(200).json({ ...parseChatText(await callGroq(3000)), model: 'Groq' }); }
       catch (e) { console.error('Groq chat failed:', e.message); }
     }
     if (process.env.OPENAI_API_KEY) {
-      try { return res.status(200).json({ ...parseChatText(await callOpenAI(800)), model: 'GPT-4o' }); }
+      try { return res.status(200).json({ ...parseChatText(await callOpenAI(2000)), model: 'GPT-4o' }); }
       catch (e) { console.error('OpenAI chat failed:', e.message); }
     }
     if (process.env.ANTHROPIC_API_KEY) {
