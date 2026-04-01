@@ -138,6 +138,45 @@ const formatFileSize = (bytes) => {
   return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
 };
 
+// ── App accent colour themes ──────────────────────────────────────────────
+const ACCENT_THEMES = {
+  violet: { label:'Violet', hex:'#7c3aed', s:{50:'#f5f3ff',100:'#ede9fe',200:'#ddd6fe',300:'#c4b5fd',400:'#a78bfa',500:'#8b5cf6',600:'#7c3aed',700:'#6d28d9',800:'#5b21b6',900:'#4c1d95'} },
+  blue:   { label:'Blue',   hex:'#2563eb', s:{50:'#eff6ff',100:'#dbeafe',200:'#bfdbfe',300:'#93c5fd',400:'#60a5fa',500:'#3b82f6',600:'#2563eb',700:'#1d4ed8',800:'#1e40af',900:'#1e3a8a'} },
+  emerald:{ label:'Emerald',hex:'#059669', s:{50:'#ecfdf5',100:'#d1fae5',200:'#a7f3d0',300:'#6ee7b7',400:'#34d399',500:'#10b981',600:'#059669',700:'#047857',800:'#065f46',900:'#064e3b'} },
+  rose:   { label:'Rose',   hex:'#e11d48', s:{50:'#fff1f2',100:'#ffe4e6',200:'#fecdd3',300:'#fda4af',400:'#fb7185',500:'#f43f5e',600:'#e11d48',700:'#be123c',800:'#9f1239',900:'#881337'} },
+  orange: { label:'Orange', hex:'#ea580c', s:{50:'#fff7ed',100:'#ffedd5',200:'#fed7aa',300:'#fdba74',400:'#fb923c',500:'#f97316',600:'#ea580c',700:'#c2410c',800:'#9a3412',900:'#7c2d12'} },
+  teal:   { label:'Teal',   hex:'#0d9488', s:{50:'#f0fdfa',100:'#ccfbf1',200:'#99f6e4',300:'#5eead4',400:'#2dd4bf',500:'#14b8a6',600:'#0d9488',700:'#0f766e',800:'#115e59',900:'#134e4a'} },
+  pink:   { label:'Pink',   hex:'#db2777', s:{50:'#fdf2f8',100:'#fce7f3',200:'#fbcfe8',300:'#f9a8d4',400:'#f472b6',500:'#ec4899',600:'#db2777',700:'#be185d',800:'#9d174d',900:'#831843'} },
+  amber:  { label:'Amber',  hex:'#d97706', s:{50:'#fffbeb',100:'#fef3c7',200:'#fde68a',300:'#fcd34d',400:'#fbbf24',500:'#f59e0b',600:'#d97706',700:'#b45309',800:'#92400e',900:'#78350f'} },
+  indigo: { label:'Indigo', hex:'#4f46e5', s:{50:'#eef2ff',100:'#e0e7ff',200:'#c7d2fe',300:'#a5b4fc',400:'#818cf8',500:'#6366f1',600:'#4f46e5',700:'#4338ca',800:'#3730a3',900:'#312e81'} },
+  slate:  { label:'Slate',  hex:'#475569', s:{50:'#f8fafc',100:'#f1f5f9',200:'#e2e8f0',300:'#cbd5e1',400:'#94a3b8',500:'#64748b',600:'#475569',700:'#334155',800:'#1e293b',900:'#0f172a'} },
+};
+
+const applyAccentTheme = (name) => {
+  const t = ACCENT_THEMES[name];
+  const el = document.getElementById('kl-accent') || (() => { const s = document.createElement('style'); s.id = 'kl-accent'; document.head.appendChild(s); return s; })();
+  if (!t || name === 'violet') { el.textContent = ''; return; }
+  const ns = [50,100,200,300,400,500,600,700,800,900];
+  el.textContent = ns.map(n => {
+    const c = t.s[n]; if (!c) return '';
+    return [
+      `.bg-violet-${n}{background-color:${c}!important}`,
+      `.text-violet-${n}{color:${c}!important}`,
+      `.border-violet-${n}{border-color:${c}!important}`,
+      `.ring-violet-${n}{--tw-ring-color:${c}!important}`,
+      `.from-violet-${n}{--tw-gradient-from:${c}!important}`,
+      `.to-violet-${n}{--tw-gradient-to:${c}!important}`,
+      `.hover\\:bg-violet-${n}:hover{background-color:${c}!important}`,
+      `.hover\\:text-violet-${n}:hover{color:${c}!important}`,
+      `.hover\\:border-violet-${n}:hover{border-color:${c}!important}`,
+      `.dark .dark\\:bg-violet-${n}{background-color:${c}!important}`,
+      `.dark .dark\\:text-violet-${n}{color:${c}!important}`,
+      `.dark .dark\\:border-violet-${n}{border-color:${c}!important}`,
+      `.focus\\:ring-violet-${n}:focus{--tw-ring-color:${c}!important}`,
+    ].join('\n');
+  }).join('\n');
+};
+
 const App = () => {
   const [theme, setTheme] = useState(() => {
     try { return localStorage.getItem('kreativelync-theme') || 'system'; } catch { return 'light'; }
@@ -163,6 +202,14 @@ const App = () => {
   }, [theme, isDark]);
 
   const cycleTheme = () => setTheme(t => t === 'light' ? 'dark' : t === 'dark' ? 'system' : 'light');
+
+  const [accentTheme, setAccentTheme] = useState(() => {
+    try { return localStorage.getItem('kreativelync-accent') || 'violet'; } catch { return 'violet'; }
+  });
+  useEffect(() => {
+    applyAccentTheme(accentTheme);
+    try { localStorage.setItem('kreativelync-accent', accentTheme); } catch {}
+  }, [accentTheme]);
 
   // Restore uploaded videos/audio/images from IndexedDB on every page load,
   // then auto-place any videos on the NLE timeline if it's empty
@@ -605,6 +652,20 @@ const App = () => {
                   <button onClick={cycleTheme} className={`relative w-11 h-6 rounded-full transition-all duration-200 ${isDark ? 'bg-violet-500' : 'bg-stone-200 dark:bg-stone-700'}`}>
                     <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow-md transition-transform duration-200 ${isDark ? 'translate-x-5' : 'translate-x-0'}`} />
                   </button>
+                </div>
+
+                {/* Accent colour */}
+                <div className="pt-4 pb-3 border-b border-stone-100 dark:border-stone-800/60">
+                  <p className="text-sm font-semibold text-stone-800 dark:text-stone-100 mb-1">App Colour</p>
+                  <p className="text-xs text-stone-400 mb-3">Changes buttons, highlights, and active states throughout the app</p>
+                  <div className="flex flex-wrap gap-2">
+                    {Object.entries(ACCENT_THEMES).map(([key, t]) => (
+                      <button key={key} onClick={() => setAccentTheme(key)} title={t.label}
+                        className={`w-8 h-8 rounded-full border-2 transition-all ${accentTheme === key ? 'border-stone-700 dark:border-white scale-110 shadow-md' : 'border-transparent hover:scale-105'}`}
+                        style={{ background: t.hex }} />
+                    ))}
+                  </div>
+                  <p className="text-[11px] text-stone-400 mt-2">Currently: <span className="font-semibold" style={{ color: ACCENT_THEMES[accentTheme]?.hex }}>{ACCENT_THEMES[accentTheme]?.label}</span></p>
                 </div>
 
                 {/* Data */}

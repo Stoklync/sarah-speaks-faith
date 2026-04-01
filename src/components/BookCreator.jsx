@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Sparkles, Download, Loader2, Plus, Trash2, ChevronDown, ChevronRight, BookOpen, FileText, Edit3, Check, X, Wand2, AlignLeft } from 'lucide-react';
+import { Sparkles, Download, Loader2, Plus, Trash2, ChevronDown, ChevronRight, BookOpen, FileText, Edit3, Check, X, Wand2, AlignLeft, Eye, Upload, Code } from 'lucide-react';
 import { useStudio } from '../App';
 
 const BOOK_TYPES = [
@@ -51,6 +51,14 @@ export function BookCreator() {
   const [exporting, setExporting] = useState(false);
   const [grammarLoading, setGrammarLoading] = useState(false);
   const [paraphraseLoading, setParaphraseLoading] = useState(false);
+  const [authorName, setAuthorName] = useState(saved?.authorName || bizName);
+  const [coverStyle, setCoverStyle] = useState(saved?.coverStyle || 'bold');
+  const [showPreview, setShowPreview] = useState(false);
+  const [bookMode, setBookMode] = useState('write'); // 'write' | 'latex'
+  const [latexContent, setLatexContent] = useState('');
+  const [latexFileName, setLatexFileName] = useState('');
+  const [latexFixed, setLatexFixed] = useState('');
+  const [latexLoading, setLatexLoading] = useState('');
 
   const previewRef = useRef();
 
@@ -68,12 +76,14 @@ export function BookCreator() {
     setAudience(s?.audience || '');
     setChapters(s?.chapters || []);
     setActiveChapter(s?.activeChapter || 0);
+    setAuthorName(s?.authorName || bizName);
+    setCoverStyle(s?.coverStyle || 'bold');
   }, [activeBusinessId]);
 
   // Auto-save whenever anything important changes
   useEffect(() => {
-    saveBook(activeBusinessId, { step, bookType, title, subtitle, topic, audience, chapters, activeChapter });
-  }, [activeBusinessId, step, bookType, title, subtitle, topic, audience, chapters, activeChapter]);
+    saveBook(activeBusinessId, { step, bookType, title, subtitle, topic, audience, chapters, activeChapter, authorName, coverStyle });
+  }, [activeBusinessId, step, bookType, title, subtitle, topic, audience, chapters, activeChapter, authorName, coverStyle]);
 
   const ai = async (userPrompt) => {
     const r = await fetch('/api/ai/generate', {
@@ -213,6 +223,45 @@ ${ch.content}
     setActiveChapter(prev => Math.max(0, prev >= index ? prev - 1 : prev));
   };
 
+  // ── LaTeX fixer ──────────────────────────────────────────────────────────
+  const fixLatex = async (task) => {
+    if (!latexContent.trim()) return;
+    setLatexLoading(task);
+    try {
+      const r = await fetch('/api/ai/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          mode: 'chat',
+          brandName: bizName,
+          brandType: bizType,
+          chatHistory: [{ role: 'user', text:
+            task === 'fix'
+              ? `Fix all errors, typos, and issues in this LaTeX document. Return ONLY the corrected LaTeX code — no explanation, no markdown code fences, no commentary. Start directly with \\documentclass or the first LaTeX line.\n\n${latexContent}`
+              : task === 'format'
+              ? `Improve the formatting and structure of this LaTeX document — better section spacing, consistent style, cleaner layout. Return ONLY the improved LaTeX code — no explanation, no markdown fences.\n\n${latexContent}`
+              : `Rewrite and improve the writing quality in this LaTeX document while keeping all the LaTeX commands intact. Make the prose more engaging, clear, and professional. Return ONLY the improved LaTeX code.\n\n${latexContent}`
+          }],
+        }),
+      });
+      const d = await r.json();
+      // Strip markdown code fences if AI added them
+      const raw = (d.reply || '').replace(/^```(?:latex)?\n?/i, '').replace(/\n?```$/,'').trim();
+      if (raw) setLatexFixed(raw);
+    } catch (e) { console.error(e); }
+    setLatexLoading('');
+  };
+
+  const downloadLatex = (content, suffix = 'fixed') => {
+    const base = latexFileName.replace(/\.tex$/i, '') || 'document';
+    const blob = new Blob([content], { type: 'text/plain' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `${base}-${suffix}.tex`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  };
+
   const exportPDF = async () => {
     setExporting(true);
     try {
@@ -221,77 +270,273 @@ ${ch.content}
 
       const pageW = doc.internal.pageSize.getWidth();
       const pageH = doc.internal.pageSize.getHeight();
-      const margin = 20;
+      const margin = 25;
       const contentW = pageW - margin * 2;
 
-      // Cover page
-      doc.setFillColor(124, 58, 237);
-      doc.rect(0, 0, pageW, pageH, 'F');
-      doc.setTextColor(255, 255, 255);
-      doc.setFontSize(28);
-      doc.setFont('helvetica', 'bold');
-      const titleLines = doc.splitTextToSize(title, contentW);
-      doc.text(titleLines, pageW / 2, 80, { align: 'center' });
-      if (subtitle) {
-        doc.setFontSize(14);
-        doc.setFont('helvetica', 'normal');
-        doc.text(subtitle, pageW / 2, 80 + titleLines.length * 12 + 8, { align: 'center' });
-      }
-      doc.setFontSize(12);
-      doc.text(bizName, pageW / 2, pageH - 30, { align: 'center' });
+      // Brand colour → RGB
+      const hex = activeBiz?.brandColor || '#7c3aed';
+      const br = parseInt(hex.slice(1,3),16), bg = parseInt(hex.slice(3,5),16), bb = parseInt(hex.slice(5,7),16);
+      // Lighter tint (mix with white at 90%)
+      const tr = Math.round(br + (255-br)*0.88), tg = Math.round(bg + (255-bg)*0.88), tb = Math.round(bb + (255-bb)*0.88);
 
-      // Chapters
+      // ── COVER PAGE ───────────────────────────────────────────
+      if (coverStyle === 'bold') {
+        // Full colour cover
+        doc.setFillColor(br, bg, bb);
+        doc.rect(0, 0, pageW, pageH, 'F');
+        // Decorative bar
+        doc.setFillColor(255, 255, 255, 0.15);
+        doc.rect(0, pageH * 0.6, pageW, 2, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(32);
+        doc.setFont('helvetica', 'bold');
+        doc.text(doc.splitTextToSize(title, contentW), pageW / 2, pageH * 0.35, { align: 'center' });
+        if (subtitle) {
+          doc.setFontSize(13);
+          doc.setFont('helvetica', 'normal');
+          doc.setTextColor(255, 255, 255);
+          doc.text(subtitle, pageW / 2, pageH * 0.35 + 18, { align: 'center' });
+        }
+        doc.setFontSize(11);
+        doc.text(authorName || bizName, pageW / 2, pageH - 25, { align: 'center' });
+
+      } else if (coverStyle === 'minimal') {
+        // White cover with colour accent stripe
+        doc.setFillColor(255, 255, 255);
+        doc.rect(0, 0, pageW, pageH, 'F');
+        doc.setFillColor(br, bg, bb);
+        doc.rect(0, 0, 8, pageH, 'F');
+        doc.setTextColor(30, 30, 30);
+        doc.setFontSize(30);
+        doc.setFont('helvetica', 'bold');
+        doc.text(doc.splitTextToSize(title, contentW - 10), margin + 8, pageH * 0.38, { align: 'left' });
+        if (subtitle) {
+          doc.setFontSize(12);
+          doc.setFont('helvetica', 'normal');
+          doc.setTextColor(100, 100, 100);
+          doc.text(subtitle, margin + 8, pageH * 0.38 + 16);
+        }
+        doc.setFillColor(br, bg, bb);
+        doc.rect(margin + 8, pageH * 0.38 + 22, 40, 1, 'F');
+        doc.setFontSize(11);
+        doc.setTextColor(br, bg, bb);
+        doc.text(authorName || bizName, margin + 8, pageH - 28);
+
+      } else {
+        // Gradient-style: tint top, brand bottom strip
+        doc.setFillColor(tr, tg, tb);
+        doc.rect(0, 0, pageW, pageH * 0.75, 'F');
+        doc.setFillColor(br, bg, bb);
+        doc.rect(0, pageH * 0.75, pageW, pageH * 0.25, 'F');
+        doc.setTextColor(br, bg, bb);
+        doc.setFontSize(30);
+        doc.setFont('helvetica', 'bold');
+        doc.text(doc.splitTextToSize(title, contentW), pageW / 2, pageH * 0.32, { align: 'center' });
+        if (subtitle) {
+          doc.setFontSize(12);
+          doc.setFont('helvetica', 'normal');
+          doc.setTextColor(80, 80, 80);
+          doc.text(subtitle, pageW / 2, pageH * 0.32 + 16, { align: 'center' });
+        }
+        doc.setFontSize(12);
+        doc.setTextColor(255, 255, 255);
+        doc.text(authorName || bizName, pageW / 2, pageH * 0.85, { align: 'center' });
+      }
+
+      // ── CHAPTER PAGES ─────────────────────────────────────────
+      let pageNum = 1;
       for (const ch of chapters) {
         if (!ch.content) continue;
         doc.addPage();
+        pageNum++;
 
-        // Chapter header
-        doc.setFillColor(245, 243, 255);
-        doc.rect(0, 0, pageW, 35, 'F');
-        doc.setTextColor(109, 40, 217);
-        doc.setFontSize(9);
-        doc.setFont('helvetica', 'normal');
-        doc.text(title.toUpperCase(), margin, 12);
-        doc.setTextColor(30, 30, 30);
+        // Chapter header band
+        doc.setFillColor(tr, tg, tb);
+        doc.rect(0, 0, pageW, 40, 'F');
+        // Accent left bar
+        doc.setFillColor(br, bg, bb);
+        doc.rect(0, 0, 5, 40, 'F');
+
+        doc.setTextColor(br, bg, bb);
+        doc.setFontSize(8);
+        doc.setFont('helvetica', 'bold');
+        doc.text(title.toUpperCase(), margin, 14);
+
+        doc.setTextColor(25, 25, 25);
         doc.setFontSize(20);
         doc.setFont('helvetica', 'bold');
-        doc.text(ch.title, margin, 26);
+        doc.text(ch.title, margin, 28);
 
         if (ch.subtitle) {
-          doc.setFontSize(11);
+          doc.setFontSize(10);
           doc.setFont('helvetica', 'italic');
-          doc.setTextColor(100, 100, 100);
-          doc.text(ch.subtitle, margin, 33);
+          doc.setTextColor(90, 90, 90);
+          doc.text(ch.subtitle, margin, 36);
         }
 
-        // Content
+        // Body content
         doc.setFontSize(11);
         doc.setFont('helvetica', 'normal');
-        doc.setTextColor(40, 40, 40);
+        doc.setTextColor(45, 45, 45);
         const lines = doc.splitTextToSize(ch.content, contentW);
-        let y = 48;
+        let y = 52;
         for (const line of lines) {
-          if (y > pageH - margin) {
-            doc.addPage();
-            y = margin;
+          if (y > pageH - margin - 8) {
+            // Page footer
+            doc.setFontSize(8); doc.setTextColor(150,150,150);
+            doc.text(String(pageNum), pageW / 2, pageH - 10, { align: 'center' });
+            doc.addPage(); pageNum++;
+            // Continued header — thin
+            doc.setFillColor(br, bg, bb);
+            doc.rect(0, 0, pageW, 3, 'F');
+            doc.setFontSize(8); doc.setFont('helvetica','bold'); doc.setTextColor(br,bg,bb);
+            doc.text(`${title.toUpperCase()}  —  ${ch.title.toUpperCase()}`, margin, 10);
+            doc.setFontSize(11); doc.setFont('helvetica','normal'); doc.setTextColor(45,45,45);
+            y = 18;
           }
           doc.text(line, margin, y);
-          y += 6;
+          y += 6.5;
         }
+        // Page number
+        doc.setFontSize(8); doc.setTextColor(150,150,150);
+        doc.text(String(pageNum), pageW / 2, pageH - 10, { align: 'center' });
       }
 
       doc.save(`${title.replace(/[^a-zA-Z0-9]/g, '-')}.pdf`);
-    } catch (e) {
-      // fallback: print
-      window.print();
-    }
+    } catch (e) { window.print(); }
     setExporting(false);
   };
+
+  // ── MODE SWITCHER (top of every step) ──
+  const ModeSwitcher = () => (
+    <div className="flex gap-2 bg-stone-100 dark:bg-stone-800 p-1 rounded-2xl w-fit mb-6">
+      <button onClick={() => setBookMode('write')}
+        className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all ${bookMode === 'write' ? 'bg-white dark:bg-stone-700 shadow text-violet-600 dark:text-violet-400' : 'text-stone-500 hover:text-stone-700'}`}>
+        <BookOpen size={15} /> Write Book
+      </button>
+      <button onClick={() => setBookMode('latex')}
+        className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all ${bookMode === 'latex' ? 'bg-white dark:bg-stone-700 shadow text-violet-600 dark:text-violet-400' : 'text-stone-500 hover:text-stone-700'}`}>
+        <Code size={15} /> Fix LaTeX File
+      </button>
+    </div>
+  );
+
+  // ── LATEX MODE ──
+  if (bookMode === 'latex') {
+    return (
+      <div className="max-w-4xl mx-auto space-y-6">
+        <ModeSwitcher />
+        <div className="bg-gradient-to-br from-violet-50 to-indigo-50 dark:from-stone-800 dark:to-stone-800 border-2 border-violet-200 dark:border-violet-800 rounded-3xl p-6">
+          <h2 className="text-2xl font-bold text-stone-800 dark:text-stone-100 mb-1">📄 LaTeX File Fixer</h2>
+          <p className="text-stone-500 dark:text-stone-400 text-sm">Upload your .tex file — AI fixes errors, cleans formatting, and improves the writing. Download the fixed version.</p>
+        </div>
+
+        {/* Upload */}
+        {!latexContent ? (
+          <label className="flex flex-col items-center justify-center border-2 border-dashed border-violet-200 dark:border-violet-800 rounded-2xl p-12 cursor-pointer hover:border-violet-400 transition-colors bg-white dark:bg-stone-800">
+            <Upload size={36} className="text-violet-300 mb-3" />
+            <p className="text-stone-600 dark:text-stone-300 font-semibold">Click to upload your .tex file</p>
+            <p className="text-stone-400 text-sm mt-1">or paste LaTeX below</p>
+            <input type="file" accept=".tex,.txt" className="hidden" onChange={e => {
+              const f = e.target.files?.[0]; if (!f) return;
+              setLatexFileName(f.name);
+              const r = new FileReader();
+              r.onload = () => setLatexContent(r.result);
+              r.readAsText(f);
+            }} />
+          </label>
+        ) : (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <FileText size={16} className="text-violet-500" />
+                <span className="text-sm font-semibold text-stone-700 dark:text-stone-200">{latexFileName || 'Pasted LaTeX'}</span>
+                <span className="text-xs text-stone-400">{latexContent.split('\n').length} lines</span>
+              </div>
+              <button onClick={() => { setLatexContent(''); setLatexFixed(''); setLatexFileName(''); }}
+                className="text-xs text-stone-400 hover:text-red-400">Clear</button>
+            </div>
+
+            {/* Action buttons */}
+            <div className="flex flex-wrap gap-2">
+              {[
+                { key:'fix',     label:'Fix Errors',        icon:'🔧', desc:'Fix all LaTeX errors, syntax issues, typos' },
+                { key:'format',  label:'Improve Formatting', icon:'✨', desc:'Better spacing, structure, consistent style' },
+                { key:'improve', label:'Improve Writing',    icon:'✍️', desc:'Better prose, keeping all LaTeX commands intact' },
+              ].map(a => (
+                <button key={a.key} onClick={() => fixLatex(a.key)} disabled={!!latexLoading}
+                  title={a.desc}
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-violet-500 text-white text-sm font-bold hover:bg-violet-600 disabled:opacity-40">
+                  {latexLoading === a.key ? <Loader2 size={14} className="animate-spin" /> : <span>{a.icon}</span>}
+                  {a.label}
+                </button>
+              ))}
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              {/* Original */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-xs font-bold text-stone-400 uppercase tracking-widest">Original</p>
+                  <button onClick={() => downloadLatex(latexContent, 'original')} className="text-xs text-violet-500 hover:text-violet-600 flex items-center gap-1">
+                    <Download size={11} /> Download
+                  </button>
+                </div>
+                <textarea
+                  value={latexContent}
+                  onChange={e => setLatexContent(e.target.value)}
+                  className="w-full h-96 bg-stone-50 dark:bg-stone-900 border border-stone-200 dark:border-stone-700 rounded-xl px-4 py-3 text-xs font-mono text-stone-700 dark:text-stone-300 resize-none focus:outline-none focus:ring-2 focus:ring-violet-400"
+                  spellCheck={false}
+                />
+              </div>
+
+              {/* Fixed */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-xs font-bold text-stone-400 uppercase tracking-widest">
+                    {latexLoading ? 'AI is working…' : latexFixed ? 'Fixed Version ✅' : 'Fixed version will appear here'}
+                  </p>
+                  {latexFixed && (
+                    <button onClick={() => downloadLatex(latexFixed, 'fixed')} className="text-xs text-emerald-500 hover:text-emerald-600 flex items-center gap-1 font-bold">
+                      <Download size={11} /> Download Fixed
+                    </button>
+                  )}
+                </div>
+                <textarea
+                  value={latexLoading ? 'Working…' : latexFixed}
+                  onChange={e => setLatexFixed(e.target.value)}
+                  placeholder="Click Fix Errors, Improve Formatting, or Improve Writing above"
+                  className="w-full h-96 bg-stone-50 dark:bg-stone-900 border border-stone-200 dark:border-stone-700 rounded-xl px-4 py-3 text-xs font-mono text-stone-700 dark:text-stone-300 resize-none focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                  spellCheck={false}
+                  readOnly={!!latexLoading}
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Paste fallback */}
+        {!latexContent && (
+          <div>
+            <p className="text-xs font-bold text-stone-400 uppercase tracking-widest mb-2">Or paste your LaTeX here</p>
+            <textarea
+              placeholder="\documentclass{article}&#10;\begin{document}&#10;..."
+              rows={8}
+              className="w-full bg-stone-50 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-xl px-4 py-3 text-xs font-mono resize-none focus:outline-none focus:ring-2 focus:ring-violet-400"
+              onBlur={e => { if (e.target.value.trim()) { setLatexContent(e.target.value.trim()); setLatexFileName('pasted.tex'); } }}
+              spellCheck={false}
+            />
+          </div>
+        )}
+      </div>
+    );
+  }
 
   // ── SETUP STEP ──
   if (step === 'setup') {
     return (
       <div className="max-w-2xl mx-auto space-y-6">
+        <ModeSwitcher />
         <div className="bg-gradient-to-br from-violet-50 to-indigo-50 dark:from-stone-800 dark:to-stone-800 border-2 border-violet-200 dark:border-violet-800 rounded-3xl p-6">
           <h2 className="text-2xl font-bold text-stone-800 dark:text-stone-100 mb-1">📚 Book Creator</h2>
           <p className="text-stone-500 dark:text-stone-400 text-sm">Create a devotional, ebook, workbook, or brand guide — AI writes every chapter. Export as PDF and sell it.</p>
@@ -334,6 +579,31 @@ ${ch.content}
             <input value={audience} onChange={e => setAudience(e.target.value)} placeholder="e.g. Christian women navigating uncertainty and waiting seasons"
               className="w-full bg-stone-50 dark:bg-stone-700 border border-stone-200 dark:border-stone-600 rounded-xl px-4 py-3 text-sm" />
           </div>
+          <div>
+            <label className="text-xs font-bold text-stone-400 uppercase tracking-widest block mb-1.5">Author Name</label>
+            <input value={authorName} onChange={e => setAuthorName(e.target.value)} placeholder={bizName}
+              className="w-full bg-stone-50 dark:bg-stone-700 border border-stone-200 dark:border-stone-600 rounded-xl px-4 py-3 text-sm" />
+          </div>
+        </div>
+
+        {/* Cover style */}
+        <div className="bg-white dark:bg-stone-800 border border-violet-100 dark:border-stone-700 rounded-2xl p-5">
+          <p className="text-xs font-bold text-stone-400 uppercase tracking-widest mb-3">Cover Style <span className="font-normal text-stone-300">(uses your Brand Kit colour)</span></p>
+          <div className="grid grid-cols-3 gap-3">
+            {[
+              { id:'bold',    label:'Bold',    desc:'Full colour, white text — eye-catching', emoji:'🟦' },
+              { id:'minimal', label:'Minimal', desc:'White cover, colour accent stripe', emoji:'⬜' },
+              { id:'elegant', label:'Elegant', desc:'Colour-tinted panels, refined look', emoji:'🎨' },
+            ].map(cs => (
+              <button key={cs.id} onClick={() => setCoverStyle(cs.id)}
+                className={`p-3 rounded-xl border-2 text-left transition-all ${coverStyle === cs.id ? 'border-violet-500 bg-violet-50 dark:bg-violet-900/20' : 'border-stone-200 dark:border-stone-700 hover:border-violet-200'}`}>
+                <span className="text-lg block mb-1">{cs.emoji}</span>
+                <p className="text-sm font-bold text-stone-700 dark:text-stone-200">{cs.label}</p>
+                <p className="text-[11px] text-stone-400 mt-0.5">{cs.desc}</p>
+              </button>
+            ))}
+          </div>
+          <p className="text-[11px] text-stone-400 mt-3">💡 Set your brand colour in Brand Kit → Identity → Brand Color. It appears on the cover and chapter headers.</p>
         </div>
 
         <button onClick={generateOutline} disabled={loading || !title.trim() || !topic.trim()}
@@ -347,6 +617,7 @@ ${ch.content}
   // ── OUTLINE + WRITE STEP ──
   return (
     <div className="max-w-6xl mx-auto space-y-6">
+      <ModeSwitcher />
       {/* Header */}
       <div className="bg-gradient-to-br from-violet-50 to-indigo-50 dark:from-stone-800 dark:to-stone-800 border-2 border-violet-200 dark:border-violet-800 rounded-3xl p-5 flex items-start justify-between gap-4">
         <div className="min-w-0">
@@ -371,6 +642,10 @@ ${ch.content}
             }}
             className="px-3 py-2 rounded-xl bg-stone-100 dark:bg-stone-700 text-stone-500 text-xs font-semibold hover:bg-stone-200 flex items-center gap-1">
             <Plus size={11} /> New Book
+          </button>
+          <button onClick={() => setShowPreview(true)} disabled={chapters.every(c => !c.content)}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-stone-800 dark:bg-stone-600 text-white text-xs font-bold hover:opacity-80 disabled:opacity-40">
+            <Eye size={13} /> Preview Book
           </button>
           <button onClick={exportPDF} disabled={exporting || chapters.every(c => !c.content)}
             className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-violet-500 text-white text-xs font-bold hover:bg-violet-600 disabled:opacity-40">
@@ -544,6 +819,79 @@ ${ch.content}
           )}
         </div>
       </div>
+
+      {/* ── BOOK PREVIEW OVERLAY ── */}
+      {showPreview && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex flex-col" onClick={() => setShowPreview(false)}>
+          <div className="flex items-center justify-between px-6 py-4 shrink-0" onClick={e => e.stopPropagation()}>
+            <p className="text-white font-bold text-lg">📖 Book Preview</p>
+            <div className="flex items-center gap-3">
+              <button onClick={exportPDF} disabled={exporting}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-violet-500 text-white text-sm font-bold hover:bg-violet-600">
+                {exporting ? <Loader2 size={13} className="animate-spin" /> : <Download size={13} />} Export PDF
+              </button>
+              <button onClick={() => setShowPreview(false)} className="w-8 h-8 rounded-full bg-white/10 text-white hover:bg-white/20 flex items-center justify-center text-lg">✕</button>
+            </div>
+          </div>
+          <div className="flex-1 overflow-y-auto px-4 pb-8" onClick={e => e.stopPropagation()}>
+            <div className="max-w-2xl mx-auto space-y-6">
+              {/* Cover page */}
+              <div className="rounded-2xl overflow-hidden shadow-2xl aspect-[3/4] flex flex-col items-center justify-center relative"
+                style={{ background: coverStyle === 'minimal' ? '#ffffff' : activeBiz?.brandColor || '#7c3aed' }}>
+                {coverStyle === 'minimal' && (
+                  <div className="absolute left-0 inset-y-0 w-3" style={{ background: activeBiz?.brandColor || '#7c3aed' }} />
+                )}
+                {coverStyle === 'elegant' && (
+                  <div className="absolute inset-0" style={{ background: `linear-gradient(160deg, ${(activeBiz?.brandColor || '#7c3aed')}22 0%, ${activeBiz?.brandColor || '#7c3aed'} 100%)` }} />
+                )}
+                <div className="relative z-10 text-center px-10">
+                  <p className="text-3xl font-black leading-tight mb-3"
+                    style={{ color: coverStyle === 'minimal' ? (activeBiz?.brandColor || '#7c3aed') : '#fff', fontFamily: 'Georgia, serif' }}>
+                    {title}
+                  </p>
+                  {subtitle && (
+                    <p className="text-base font-normal mt-2 mb-6"
+                      style={{ color: coverStyle === 'minimal' ? '#888' : 'rgba(255,255,255,0.8)', fontFamily: 'Georgia, serif' }}>
+                      {subtitle}
+                    </p>
+                  )}
+                  <div className="w-12 h-0.5 mx-auto mb-4" style={{ background: coverStyle === 'minimal' ? (activeBiz?.brandColor || '#7c3aed') : 'rgba(255,255,255,0.5)' }} />
+                  <p className="text-sm font-semibold" style={{ color: coverStyle === 'minimal' ? (activeBiz?.brandColor || '#7c3aed') : 'rgba(255,255,255,0.9)' }}>
+                    {authorName || bizName}
+                  </p>
+                </div>
+                <div className="absolute bottom-6 text-[10px] tracking-widest uppercase"
+                  style={{ color: coverStyle === 'minimal' ? '#bbb' : 'rgba(255,255,255,0.4)' }}>
+                  {BOOK_TYPES.find(b => b.id === bookType)?.label?.replace(/^[^\s]+\s/, '') || 'Book'}
+                </div>
+              </div>
+
+              {/* Chapter pages */}
+              {chapters.filter(c => c.content).map((ch, i) => (
+                <div key={ch.id} className="bg-white rounded-2xl shadow-xl overflow-hidden">
+                  {/* Chapter header */}
+                  <div className="px-8 py-5" style={{ background: `${activeBiz?.brandColor || '#7c3aed'}18`, borderLeft: `4px solid ${activeBiz?.brandColor || '#7c3aed'}` }}>
+                    <p className="text-xs font-bold uppercase tracking-widest mb-1" style={{ color: activeBiz?.brandColor || '#7c3aed' }}>
+                      {bookType === 'devotional' ? `Day ${i + 1}` : `Chapter ${i + 1}`}
+                    </p>
+                    <h3 className="text-xl font-black text-stone-800" style={{ fontFamily: 'Georgia, serif' }}>{ch.title}</h3>
+                    {ch.subtitle && <p className="text-stone-500 text-sm mt-1 italic">{ch.subtitle}</p>}
+                  </div>
+                  {/* Chapter body */}
+                  <div className="px-8 py-6">
+                    <p className="text-stone-700 leading-[1.9] text-[15px] whitespace-pre-line" style={{ fontFamily: 'Georgia, serif' }}>
+                      {ch.content}
+                    </p>
+                  </div>
+                  <div className="px-8 pb-6 text-center">
+                    <p className="text-xs text-stone-300 tracking-widest">— {i + 2} —</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
