@@ -1,11 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { MessageSquare, X, Send, Sparkles, Loader2, Pencil } from 'lucide-react';
 
+const WELCOME = "Hi! I'm KreativeLync AI 👋 I know your brands and your content. Ask me anything — content ideas, captions, strategy, what to post next. I'm here to help.";
+
 export function FloatingAIChat({ businesses = [], activeBusinessId, onAction }) {
   const [open, setOpen] = useState(false);
-  const [messages, setMessages] = useState([
-    { role: 'assistant', text: "Hi! I'm KreativeLync AI 👋 I know your brands and your content. Ask me anything — content ideas, captions, strategy, what to post next. I'm here to help." }
-  ]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const bottomRef = useRef(null);
@@ -14,6 +13,31 @@ export function FloatingAIChat({ businesses = [], activeBusinessId, onAction }) 
   const brandName = activeBiz?.name || 'Your brand';
   const brandType = activeBiz?.type || 'faith';
   const brandDesc = activeBiz?.description || '';
+
+  // Load messages from localStorage per brand
+  const storageKey = `kreativelync-chat-${activeBusinessId || 'default'}`;
+  const [messages, setMessages] = useState(() => {
+    try {
+      const saved = localStorage.getItem(storageKey);
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return [{ role: 'assistant', text: WELCOME }];
+  });
+
+  // Save messages to localStorage whenever they change
+  useEffect(() => {
+    try { localStorage.setItem(storageKey, JSON.stringify(messages.slice(-60))); } catch {}
+  }, [messages, storageKey]);
+
+  // When switching brands, load that brand's history
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(storageKey);
+      setMessages(saved ? JSON.parse(saved) : [{ role: 'assistant', text: WELCOME }]);
+    } catch {
+      setMessages([{ role: 'assistant', text: WELCOME }]);
+    }
+  }, [activeBusinessId]);
 
   useEffect(() => {
     if (open) bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -65,9 +89,18 @@ export function FloatingAIChat({ businesses = [], activeBusinessId, onAction }) 
               <span className="text-white font-bold text-sm">KreativeLync AI</span>
               <span className="text-violet-200 text-xs">· {brandName}</span>
             </div>
-            <button onClick={() => setOpen(false)} className="text-white/70 hover:text-white">
-              <X size={16} />
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => { if (confirm('Clear this conversation?')) { const fresh = [{ role: 'assistant', text: WELCOME }]; setMessages(fresh); try { localStorage.setItem(storageKey, JSON.stringify(fresh)); } catch {} } }}
+                className="text-white/50 hover:text-white text-[10px] font-semibold"
+                title="Clear chat"
+              >
+                Clear
+              </button>
+              <button onClick={() => setOpen(false)} className="text-white/70 hover:text-white">
+                <X size={16} />
+              </button>
+            </div>
           </div>
 
           {/* Messages */}
