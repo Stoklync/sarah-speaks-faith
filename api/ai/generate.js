@@ -419,11 +419,12 @@ Return ONLY the JSON object.`;
     const geminiKey = process.env.GEMINI_API_KEY?.trim();
     if (!geminiKey) throw new Error('No Gemini key');
     const attempts = [
+      { version: 'v1beta', model: 'gemini-2.5-flash-preview-05-20' },
+      { version: 'v1beta', model: 'gemini-2.5-flash-preview-04-17' },
+      { version: 'v1beta', model: 'gemini-2.5-flash' },
       { version: 'v1beta', model: 'gemini-2.0-flash' },
       { version: 'v1beta', model: 'gemini-2.0-flash-lite' },
-      { version: 'v1',     model: 'gemini-1.5-flash' },
       { version: 'v1',     model: 'gemini-1.5-flash-latest' },
-      { version: 'v1',     model: 'gemini-1.5-pro' },
     ];
     const errors = [];
     for (const { version, model } of attempts) {
