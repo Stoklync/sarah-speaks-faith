@@ -433,6 +433,27 @@ Return ONLY the JSON object.`;
     return t;
   };
 
+  // Helper: call OpenAI GPT-4o mini
+  const callOpenAI = async (maxTokens) => {
+    const openaiKey = process.env.OPENAI_API_KEY;
+    if (!openaiKey) throw new Error('No OpenAI key');
+    const oRes = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${openaiKey}` },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: [{ role: 'user', content: prompt }],
+        max_tokens: maxTokens,
+        temperature: 0.7,
+      }),
+    });
+    const d = await oRes.json();
+    if (d.error) throw new Error(`OpenAI error: ${d.error.message}`);
+    const t = d.choices?.[0]?.message?.content || '';
+    if (!t) throw new Error('Empty OpenAI response');
+    return t;
+  };
+
   // Helper: call Groq/Llama
   const callGroq = async (maxTokens) => {
     const groqKey = process.env.GROQ_API_KEY;
@@ -485,6 +506,12 @@ Return ONLY the JSON object.`;
         return res.status(200).json({ ...parseChatText(text), model: 'Groq' });
       } catch (e) { console.error('Groq chat failed:', e.message); }
     }
+    if (process.env.OPENAI_API_KEY) {
+      try {
+        const text = await callOpenAI(800);
+        return res.status(200).json({ ...parseChatText(text), model: 'GPT-4o' });
+      } catch (e) { console.error('OpenAI chat failed:', e.message); }
+    }
     if (process.env.ANTHROPIC_API_KEY) {
       try {
         const { default: Anthropic } = await import('@anthropic-ai/sdk');
@@ -511,6 +538,13 @@ Return ONLY the JSON object.`;
       const text = await callGemini(maxTokens);
       return res.status(200).json({ ...parseJsonText(text), poweredBy: 'gemini' });
     } catch (e) { console.error('Gemini failed:', e.message); }
+  }
+
+  if (process.env.OPENAI_API_KEY) {
+    try {
+      const text = await callOpenAI(maxTokens);
+      return res.status(200).json({ ...parseJsonText(text), poweredBy: 'openai' });
+    } catch (e) { console.error('OpenAI failed:', e.message); }
   }
 
   const anthropicKey = process.env.ANTHROPIC_API_KEY;
