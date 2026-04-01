@@ -561,51 +561,161 @@ const App = () => {
 
           {/* Settings Modal */}
         {showSettings && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto" onClick={() => setShowSettings(false)}>
-            <div className="bg-white dark:bg-stone-800 rounded-2xl p-6 max-w-md w-full shadow-xl border border-violet-100 dark:border-stone-700 my-8" onClick={e => e.stopPropagation()}>
-              <h3 className="text-lg font-bold text-stone-800 dark:text-stone-100 mb-4">App Settings</h3>
-
-              <div className="space-y-5">
-                <section>
-                  <h4 className="text-xs font-bold text-stone-400 uppercase mb-2">AI — ChatGPT (recommended)</h4>
-                  <input type="password" value={openaiKey} onChange={(e) => { setOpenaiKey(e.target.value); try { localStorage.setItem('kreativelync-openai-api-key', e.target.value); } catch (_) {} }} placeholder="sk-..." className="w-full bg-violet-50 dark:bg-stone-700 border border-violet-100 dark:border-stone-600 rounded-xl px-4 py-3 text-sm font-mono" />
-                  <p className="text-[11px] text-stone-500 dark:text-stone-400 mt-1"><a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer" className="text-violet-500 hover:underline">Get key &rarr;</a></p>
-                </section>
-                <section>
-                  <h4 className="text-xs font-bold text-stone-400 uppercase mb-2">AI — Gemini (free)</h4>
-                  <input type="password" value={geminiKey} onChange={(e) => { setGeminiKey(e.target.value); try { localStorage.setItem('kreativelync-gemini-api-key', e.target.value); } catch (_) {} }} placeholder="AIza..." className="w-full bg-violet-50 dark:bg-stone-700 border border-violet-100 dark:border-stone-600 rounded-xl px-4 py-3 text-sm font-mono" />
-                  <p className="text-[11px] text-stone-500 dark:text-stone-400 mt-1"><a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer" className="text-violet-500 hover:underline">Get key &rarr;</a></p>
-                </section>
-                <section>
-                  <h4 className="text-xs font-bold text-stone-400 uppercase mb-2">Adobe Express — Photo & Video Editor</h4>
-                  <input type="text" defaultValue={localStorage.getItem('kreativelync-adobe-client-id') || ''} onChange={(e) => localStorage.setItem('kreativelync-adobe-client-id', e.target.value)} placeholder="Adobe Client ID..." className="w-full bg-violet-50 dark:bg-stone-700 border border-violet-100 dark:border-stone-600 rounded-xl px-4 py-3 text-sm font-mono" />
-                  <p className="text-[11px] text-stone-500 dark:text-stone-400 mt-1"><a href="https://developer.adobe.com/express/embed-sdk/" target="_blank" rel="noopener noreferrer" className="text-violet-500 hover:underline">Get Client ID at developer.adobe.com &rarr;</a></p>
-                </section>
-                <section>
-                  <h4 className="text-xs font-bold text-stone-400 uppercase mb-2">Backup</h4>
-                  <div className="flex flex-wrap gap-2">
-                    <button onClick={() => {
-                      const data = {};
-                      try { Object.keys(localStorage).filter(k => k.startsWith('kreativelync')).forEach(k => { data[k] = localStorage.getItem(k); }); } catch (_) {}
-                      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-                      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `kreativelync-backup-${new Date().toISOString().slice(0,10)}.json`; a.click(); URL.revokeObjectURL(a.href);
-                    }} className="px-4 py-2 rounded-xl border border-stone-200 dark:border-stone-600 text-sm font-medium hover:bg-stone-50 dark:hover:bg-stone-700">Export backup</button>
-                    <label className="px-4 py-2 rounded-xl border border-stone-200 dark:border-stone-600 text-sm font-medium hover:bg-stone-50 dark:hover:bg-stone-700 cursor-pointer">
-                      Import backup
-                      <input type="file" accept=".json" className="hidden" onChange={(e) => {
-                        const f = e.target.files?.[0];
-                        if (!f) return;
-                        const r = new FileReader();
-                        r.onload = () => { try { const d = JSON.parse(r.result); Object.entries(d).forEach(([k, v]) => { if (k.startsWith('kreativelync') && v) localStorage.setItem(k, v); }); window.location.reload(); } catch (_) { alert('Invalid backup file'); } };
-                        r.readAsText(f);
-                      }} />
-                    </label>
-                    <button onClick={clearAllData} className="px-4 py-2 rounded-xl border border-red-200 dark:border-red-900/50 text-red-600 dark:text-red-400 text-sm hover:bg-red-50 dark:hover:bg-red-900/20">Clear all data</button>
-                  </div>
-                </section>
+          <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4 overflow-y-auto" onClick={() => setShowSettings(false)}>
+            <div className="bg-white dark:bg-stone-900 rounded-2xl w-full max-w-lg shadow-2xl border border-stone-200 dark:border-stone-700 my-8 overflow-hidden" onClick={e => e.stopPropagation()}>
+              {/* Header */}
+              <div className="flex items-center justify-between px-6 py-4 border-b border-stone-100 dark:border-stone-800">
+                <h3 className="text-lg font-black text-stone-800 dark:text-stone-100">Settings</h3>
+                <button onClick={() => setShowSettings(false)} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-stone-100 dark:hover:bg-stone-800 text-stone-400 transition-colors">✕</button>
               </div>
 
-              <button onClick={() => setShowSettings(false)} className="mt-6 w-full py-2 rounded-xl bg-violet-500 text-white font-bold">Done</button>
+              {(() => {
+                const activeBiz = businesses.find(b => b.id === activeBusinessId);
+                const [settingsTab, setSettingsTab] = React.useState('brand');
+                const BRAND_COLORS = ['#7c3aed','#e11d48','#0891b2','#059669','#d97706','#dc2626','#7c3aed','#4f46e5','#db2777','#000000'];
+
+                return (
+                  <div>
+                    {/* Tabs */}
+                    <div className="flex border-b border-stone-100 dark:border-stone-800 px-2">
+                      {[['brand','Brand'],['connections','Connections'],['appearance','Appearance'],['data','Data']].map(([id, label]) => (
+                        <button key={id} onClick={() => setSettingsTab(id)}
+                          className={`px-4 py-3 text-sm font-semibold border-b-2 transition-colors ${settingsTab === id ? 'border-violet-500 text-violet-600 dark:text-violet-400' : 'border-transparent text-stone-500 hover:text-stone-700 dark:hover:text-stone-300'}`}>
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+
+                    <div className="p-6 space-y-5 max-h-[60vh] overflow-y-auto">
+
+                      {/* ── Brand Tab ── */}
+                      {settingsTab === 'brand' && activeBiz && (
+                        <div className="space-y-4">
+                          <div>
+                            <label className="block text-xs font-bold text-stone-500 uppercase tracking-wider mb-1.5">Brand Name</label>
+                            <input
+                              defaultValue={activeBiz.name}
+                              onBlur={e => setBusinesses(prev => prev.map(b => b.id === activeBusinessId ? { ...b, name: e.target.value.trim() || b.name } : b))}
+                              className="w-full bg-stone-50 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-xl px-4 py-2.5 text-sm text-stone-800 dark:text-stone-100 focus:outline-none focus:ring-2 focus:ring-violet-400"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-bold text-stone-500 uppercase tracking-wider mb-1.5">Brand Type</label>
+                            <div className="grid grid-cols-3 gap-2">
+                              {[['business','💼 Business'],['faith','✝️ Faith'],['stewardship','💚 Stewardship']].map(([val, label]) => (
+                                <button key={val} onClick={() => setBusinesses(prev => prev.map(b => b.id === activeBusinessId ? { ...b, type: val } : b))}
+                                  className={`py-2 rounded-xl border text-xs font-bold transition-colors ${activeBiz.type === val ? 'border-violet-500 bg-violet-50 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300' : 'border-stone-200 dark:border-stone-700 text-stone-600 dark:text-stone-400 hover:border-violet-300'}`}>
+                                  {label}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                          <div>
+                            <label className="block text-xs font-bold text-stone-500 uppercase tracking-wider mb-1.5">Brand Description <span className="font-normal text-stone-400">(tells the AI exactly what you do)</span></label>
+                            <textarea
+                              defaultValue={activeBiz.description || ''}
+                              onBlur={e => setBusinesses(prev => prev.map(b => b.id === activeBusinessId ? { ...b, description: e.target.value.trim() } : b))}
+                              rows={3}
+                              placeholder="What does this brand do? Who is the audience? What's the mission or product?"
+                              className="w-full bg-stone-50 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-xl px-4 py-2.5 text-sm text-stone-800 dark:text-stone-100 placeholder-stone-400 resize-none focus:outline-none focus:ring-2 focus:ring-violet-400"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-bold text-stone-500 uppercase tracking-wider mb-2">Brand Color</label>
+                            <div className="flex flex-wrap gap-2 items-center">
+                              {BRAND_COLORS.map(c => (
+                                <button key={c} onClick={() => setBusinesses(prev => prev.map(b => b.id === activeBusinessId ? { ...b, brandColor: c } : b))}
+                                  style={{ background: c }}
+                                  className={`w-8 h-8 rounded-full border-2 transition-all ${activeBiz.brandColor === c ? 'border-stone-800 dark:border-white scale-110' : 'border-transparent hover:scale-105'}`}
+                                />
+                              ))}
+                              <input type="color" value={activeBiz.brandColor || '#7c3aed'}
+                                onChange={e => setBusinesses(prev => prev.map(b => b.id === activeBusinessId ? { ...b, brandColor: e.target.value } : b))}
+                                className="w-8 h-8 rounded-full border border-stone-200 dark:border-stone-700 cursor-pointer bg-transparent"
+                                title="Custom color"
+                              />
+                              <span className="text-xs text-stone-400 font-mono">{activeBiz.brandColor || '#7c3aed'}</span>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* ── Connections Tab ── */}
+                      {settingsTab === 'connections' && (
+                        <div className="space-y-4">
+                          <div className="p-4 bg-stone-50 dark:bg-stone-800 rounded-xl border border-stone-200 dark:border-stone-700">
+                            <p className="text-xs font-bold text-stone-500 uppercase tracking-wider mb-0.5">Adobe Express</p>
+                            <p className="text-xs text-stone-400 mb-3">Required for Express Design tab — professional design templates</p>
+                            <input
+                              type="text"
+                              defaultValue={localStorage.getItem('kreativelync-adobe-client-id') || ''}
+                              onChange={e => localStorage.setItem('kreativelync-adobe-client-id', e.target.value.trim())}
+                              placeholder="Adobe Client ID..."
+                              className="w-full bg-white dark:bg-stone-700 border border-stone-200 dark:border-stone-600 rounded-xl px-4 py-2.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-red-400"
+                            />
+                            <a href="https://developer.adobe.com/express/embed-sdk/" target="_blank" rel="noopener noreferrer" className="text-xs text-red-500 hover:underline mt-1.5 inline-block">Get Client ID at developer.adobe.com →</a>
+                          </div>
+                          <div className="p-4 bg-stone-50 dark:bg-stone-800 rounded-xl border border-stone-200 dark:border-stone-700">
+                            <p className="text-xs font-bold text-stone-500 uppercase tracking-wider mb-0.5">Social Accounts</p>
+                            <p className="text-xs text-stone-400 mb-3">Connect Instagram and YouTube in the Analytics tab to sync your posts and audience data</p>
+                            <button onClick={() => setShowSettings(false) || setActiveTab('analytics')}
+                              className="px-4 py-2 rounded-xl bg-violet-500 text-white text-sm font-bold hover:bg-violet-600 transition-colors">
+                              Go to Analytics → Connect
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* ── Appearance Tab ── */}
+                      {settingsTab === 'appearance' && (
+                        <div className="space-y-4">
+                          <div className="flex items-center justify-between p-4 bg-stone-50 dark:bg-stone-800 rounded-xl border border-stone-200 dark:border-stone-700">
+                            <div>
+                              <p className="text-sm font-bold text-stone-800 dark:text-stone-100">Dark Mode</p>
+                              <p className="text-xs text-stone-400 mt-0.5">Switch between light and dark theme</p>
+                            </div>
+                            <button onClick={toggleTheme}
+                              className={`w-12 h-6 rounded-full transition-colors relative ${isDark ? 'bg-violet-500' : 'bg-stone-200'}`}>
+                              <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${isDark ? 'translate-x-6' : 'translate-x-0.5'}`} />
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* ── Data Tab ── */}
+                      {settingsTab === 'data' && (
+                        <div className="space-y-3">
+                          <p className="text-xs text-stone-500 dark:text-stone-400">All your data is stored locally in your browser. Export a backup regularly.</p>
+                          <button onClick={() => {
+                            const data = {};
+                            try { Object.keys(localStorage).filter(k => k.startsWith('kreativelync')).forEach(k => { data[k] = localStorage.getItem(k); }); } catch {}
+                            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                            const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `kreativelync-backup-${new Date().toISOString().slice(0,10)}.json`; a.click(); URL.revokeObjectURL(a.href);
+                          }} className="w-full py-2.5 rounded-xl border border-stone-200 dark:border-stone-700 text-sm font-semibold text-stone-700 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-stone-800 transition-colors">
+                            Export Backup
+                          </button>
+                          <label className="block w-full py-2.5 rounded-xl border border-stone-200 dark:border-stone-700 text-sm font-semibold text-stone-700 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-stone-800 transition-colors text-center cursor-pointer">
+                            Import Backup
+                            <input type="file" accept=".json" className="hidden" onChange={(e) => {
+                              const f = e.target.files?.[0]; if (!f) return;
+                              const r = new FileReader();
+                              r.onload = () => { try { const d = JSON.parse(r.result); Object.entries(d).forEach(([k, v]) => { if (k.startsWith('kreativelync') && v) localStorage.setItem(k, v); }); window.location.reload(); } catch { alert('Invalid backup file'); } };
+                              r.readAsText(f);
+                            }} />
+                          </label>
+                          <button onClick={clearAllData} className="w-full py-2.5 rounded-xl border border-red-200 dark:border-red-900/50 text-red-600 dark:text-red-400 text-sm font-semibold hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
+                            Clear All Data
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="px-6 py-4 border-t border-stone-100 dark:border-stone-800">
+                      <button onClick={() => setShowSettings(false)} className="w-full py-2.5 rounded-xl bg-violet-500 text-white font-bold hover:bg-violet-600 transition-colors">Done</button>
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           </div>
         )}
