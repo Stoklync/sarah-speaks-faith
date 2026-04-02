@@ -10,7 +10,94 @@ export default async function handler(req, res) {
 
   const { mode, topic, description, niche, format, analyticsData, chatHistory, brandName, brandType, brandDesc, preferredModel,
           bookTitle, bookSubtitle, bookTopic, bookAudience, bookType: bookTypeParam, chapterTitle, chapterContent,
-          frames, mediaType, platform } = req.body || {};
+          frames, mediaType, platform,
+          fileUri, fileMimeType } = req.body || {};
+
+  // ── FULL VIDEO ANALYSIS via Gemini File API (watches the actual video) ──
+  if (mode === 'video-analyze-full') {
+    if (!fileUri) return res.status(400).json({ error: 'fileUri is required' });
+
+    const geminiKey = process.env.GEMINI_API_KEY?.trim();
+    if (!geminiKey) return res.status(500).json({ error: 'GEMINI_API_KEY not set. Add it in Vercel → Settings → Environment Variables.' });
+
+    const brandCtx = brandName ? `for ${brandName}` : 'for a creator';
+    const platCtx = platform ? `targeting ${platform}` : 'for social media';
+
+    const prompt = `You are a professional video editor, colorist, and content strategist. Watch this full video ${brandCtx} ${platCtx}. You can SEE every frame, HEAR the audio, voice, and music.
+
+Respond ONLY in this exact JSON (no markdown, no code fences):
+{
+  "overallScore": "A/B/C/D",
+  "summary": "2-sentence honest assessment of what is working and what needs the most attention",
+  "pacing": {
+    "rating": "Fast/Medium/Slow/Uneven",
+    "feedback": "specific observation based on actual cuts you watched",
+    "fix": "exact step to take in CapCut"
+  },
+  "timestamps": [
+    {"time": "0:00", "issue": "specific issue you actually saw", "fix": "exact edit to make in CapCut"}
+  ],
+  "transitions": {
+    "current": "what transition types you actually saw",
+    "suggestion": "specific transition to use and why",
+    "where": "exact timestamp to apply it"
+  },
+  "audio": {
+    "voiceClarity": "assessment of voice/speech clarity and energy",
+    "backgroundNoise": "any noise issues heard",
+    "musicFit": "does current music match the mood — yes/no and why",
+    "suggestion": "specific music genre, BPM range, and sound style that fits this video"
+  },
+  "hooks": [
+    "Exact opening text overlay for first 3 seconds",
+    "Key moment text overlay",
+    "Closing CTA text"
+  ],
+  "textOverlays": [
+    {"when": "0:01", "text": "exact words to put on screen", "placement": "top/center/bottom", "style": "e.g. bold white serif"}
+  ],
+  "toneAndMood": {
+    "current": "what mood this video actually projects",
+    "target": "what mood it should have to stop the scroll on ${platform || 'social media'}",
+    "colorGrade": "specific grade to apply in CapCut (filter name + settings)",
+    "lightingNote": "what to fix next time you shoot"
+  },
+  "audienceRetention": {
+    "dropOffRisk": "the exact timestamp where viewers are most likely to leave and why",
+    "retentionFix": "exactly what to add or cut to keep them watching",
+    "loopTip": "how to make the ending lead back into a loop watch"
+  },
+  "topFix": "The single most important edit to make RIGHT NOW — be specific and direct"
+}`;
+
+    try {
+      const gRes = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${geminiKey}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{
+              role: 'user',
+              parts: [
+                { file_data: { mime_type: fileMimeType || 'video/mp4', file_uri: fileUri } },
+                { text: prompt },
+              ],
+            }],
+            generationConfig: { maxOutputTokens: 2500 },
+          }),
+        }
+      );
+      const gData = await gRes.json();
+      if (gData.error) return res.status(500).json({ error: `Gemini: ${gData.error.message}` });
+      const text = gData.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      const match = text.match(/\{[\s\S]*\}/);
+      if (match) return res.status(200).json({ ...JSON.parse(match[0]), poweredBy: 'gemini-video' });
+      return res.status(500).json({ error: 'Gemini returned an empty response. Try again.' });
+    } catch (e) {
+      return res.status(500).json({ error: e.message });
+    }
+  }
 
   // ── VIDEO / PHOTO ANALYSIS (vision AI) ─────────────────────────────
   if (mode === 'video-analyze') {

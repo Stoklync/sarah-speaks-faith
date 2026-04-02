@@ -173,31 +173,90 @@ export function VideoTab({ businesses = [], activeBusinessId, setActiveTab, init
     setAnalyzeResult(null);
     const isVideo = analyzeFiles[0].type.startsWith('video/');
     try {
-      let frames = [];
+      let data;
+
       if (isVideo) {
-        setAnalyzeStatus('Extracting frames from video...');
-        frames = await extractVideoFrames(analyzeFiles[0], 6);
+        // ── Full video upload to Gemini (watches the actual video) ──
+        const file = analyzeFiles[0];
+
+        setAnalyzeStatus('Starting upload to Gemini...');
+        const initRes = await fetch('/api/ai/gemini-upload', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ fileName: file.name, mimeType: file.type, fileSize: file.size }),
+        });
+        const initData = await initRes.json();
+        if (!initRes.ok || initData.error) throw new Error(initData.error || 'Upload init failed');
+
+        setAnalyzeStatus(`Uploading video (${(file.size / 1024 / 1024).toFixed(1)} MB)...`);
+        const uploadRes = await fetch(initData.uploadUrl, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': file.type,
+            'X-Goog-Upload-Command': 'upload, finalize',
+            'X-Goog-Upload-Offset': '0',
+          },
+          body: file,
+        });
+        if (!uploadRes.ok) throw new Error('Video upload to Gemini failed');
+        const uploadData = await uploadRes.json();
+        const fileUri = uploadData.file?.uri;
+        const fileName = uploadData.file?.name;
+        if (!fileUri) throw new Error('No file URI returned from Gemini');
+
+        // Poll until Gemini has processed the video
+        setAnalyzeStatus('Gemini is processing your video...');
+        let state = uploadData.file?.state;
+        let attempts = 0;
+        while (state === 'PROCESSING' && attempts < 20) {
+          await new Promise(r => setTimeout(r, 3000));
+          const stateRes = await fetch(`/api/ai/gemini-file-state?name=${encodeURIComponent(fileName)}`);
+          const stateData = await stateRes.json();
+          state = stateData.state;
+          attempts++;
+        }
+        if (state !== 'ACTIVE') throw new Error('Gemini timed out processing the video. Try a shorter clip.');
+
+        setAnalyzeStatus('Gemini is watching your full video...');
+        const res = await fetch('/api/ai/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            mode: 'video-analyze-full',
+            fileUri,
+            fileMimeType: file.type,
+            platform: analyzePlatform,
+            brandName,
+            brandType,
+          }),
+        });
+        data = await res.json();
+        if (!res.ok || data.error) throw new Error(data.error || 'Analysis failed');
+
       } else {
+        // ── Photos — keep frame extraction (small files, works great) ──
         setAnalyzeStatus('Processing images...');
+        const frames = [];
         for (const f of analyzeFiles.slice(0, 8)) {
           frames.push(await imageFileToFrame(f));
         }
+        setAnalyzeStatus('AI analyzing your photos...');
+        const res = await fetch('/api/ai/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            mode: 'video-analyze',
+            frames,
+            mediaType: 'photo',
+            platform: analyzePlatform,
+            brandName,
+            brandType,
+          }),
+        });
+        data = await res.json();
+        if (!res.ok || data.error) throw new Error(data.error || 'Analysis failed');
       }
-      setAnalyzeStatus('AI analyzing your content...');
-      const res = await fetch('/api/ai/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          mode: 'video-analyze',
-          frames,
-          mediaType: isVideo ? 'video' : 'photo',
-          platform: analyzePlatform,
-          brandName,
-          brandType,
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok || data.error) throw new Error(data.error || 'Analysis failed');
+
       setAnalyzeResult(data);
       const meta = { fileName: analyzeFiles[0]?.name || 'file', savedAt: new Date().toISOString() };
       setSavedAnalysisMeta(meta);
@@ -1025,6 +1084,18 @@ function AnalysisResults({ result, onReset }) {
           {result.transitions.current && <p className="text-sm text-stone-500 dark:text-stone-400 mb-1">Current: {result.transitions.current}</p>}
           <p className="text-sm font-semibold text-stone-700 dark:text-stone-300">{result.transitions.suggestion}</p>
           {result.transitions.where && <p className="text-xs text-stone-400 mt-1">Where: {result.transitions.where}</p>}
+        </AnalysisCard>
+      )}
+
+      {/* Audio (from full video analysis) */}
+      {result.audio && (
+        <AnalysisCard icon={<Mic size={16} className="text-violet-500" />} label="Audio & Voice">
+          <div className="space-y-1">
+            {result.audio.voiceClarity && <p className="text-sm text-stone-600 dark:text-stone-400"><span className="font-semibold text-stone-700 dark:text-stone-300">Voice:</span> {result.audio.voiceClarity}</p>}
+            {result.audio.backgroundNoise && <p className="text-sm text-stone-600 dark:text-stone-400"><span className="font-semibold text-stone-700 dark:text-stone-300">Background:</span> {result.audio.backgroundNoise}</p>}
+            {result.audio.musicFit && <p className="text-sm text-stone-600 dark:text-stone-400"><span className="font-semibold text-stone-700 dark:text-stone-300">Music fit:</span> {result.audio.musicFit}</p>}
+            {result.audio.suggestion && <p className="text-sm font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 px-3 py-2 rounded-xl mt-1">{result.audio.suggestion}</p>}
+          </div>
         </AnalysisCard>
       )}
 
