@@ -157,30 +157,7 @@ Respond ONLY in this exact JSON (no markdown, no explanation):
   "topFix": "The single most important edit to make RIGHT NOW — be specific and direct"
 }`;
 
-    // Try Claude Vision first (best for this task)
-    const anthropicKey = process.env.ANTHROPIC_API_KEY;
-    if (anthropicKey) {
-      try {
-        const { default: Anthropic } = await import('@anthropic-ai/sdk');
-        const client = new Anthropic({ apiKey: anthropicKey });
-        const content = [];
-        frames.forEach((f, i) => {
-          content.push({ type: 'text', text: `${isPhoto ? `Photo ${i + 1}` : `Frame ${i + 1} (at ${f.time}s into the video)`}:` });
-          content.push({ type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: f.data } });
-        });
-        content.push({ type: 'text', text: analysisPrompt });
-        const msg = await client.messages.create({
-          model: 'claude-sonnet-4-6',
-          max_tokens: 2000,
-          messages: [{ role: 'user', content }],
-        });
-        const text = msg.content[0]?.text || '';
-        const match = text.match(/\{[\s\S]*\}/);
-        if (match) return res.status(200).json({ ...JSON.parse(match[0]), poweredBy: 'claude' });
-      } catch (e) { console.error('Claude vision failed:', e.message); }
-    }
-
-    // Fallback: Gemini Vision — try multiple models
+    // Photo analysis — Gemini only (no Claude, preserves your Anthropic credit)
     const geminiKey = process.env.GEMINI_API_KEY?.trim();
     if (geminiKey) {
       const geminiVisionModels = [
@@ -213,7 +190,7 @@ Respond ONLY in this exact JSON (no markdown, no explanation):
       }
       const quotaHit = geminiErrors.some(e => e.includes('quota') || e.includes('RESOURCE_EXHAUSTED'));
       if (quotaHit) {
-        return res.status(429).json({ error: 'Your Gemini API free quota is used up for today. It resets at midnight Pacific. To analyze now, add an ANTHROPIC_API_KEY to Vercel — Claude Vision is pay-per-use (~$0.05/analysis, no daily limit).' });
+        return res.status(429).json({ error: 'Gemini free quota is used up for today — resets at midnight Pacific time. Try again tomorrow or upgrade to a Gemini paid plan at aistudio.google.com.' });
       }
       return res.status(500).json({ error: `Vision errors — ${geminiErrors.join(' | ')}` });
     }

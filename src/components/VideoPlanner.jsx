@@ -117,27 +117,45 @@ export function VideoTab({ businesses = [], activeBusinessId, setActiveTab, init
 
   // Load saved data on mount / business switch
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem(STORE_ANALYSIS);
-      if (saved) {
-        const { result, platform: plat, fileName, savedAt } = JSON.parse(saved);
-        setAnalyzeResult(result);
-        if (plat) setAnalyzePlatform(plat);
-        setSavedAnalysisMeta({ fileName, savedAt });
-      } else {
-        setAnalyzeResult(null);
-        setSavedAnalysisMeta(null);
-      }
-    } catch {}
-    try {
-      const saved = localStorage.getItem(STORE_BLUEPRINT);
-      if (saved) {
-        const { script: s, concept: c, platform: p } = JSON.parse(saved);
-        if (s) { setScript(s); setStep(1); }
-        if (c) setConcept(c);
-        if (p) { const found = PLATFORMS.find(pl => pl.id === p); if (found) setPlatform(found); }
-      }
-    } catch {}
+    // Try the business-specific key first, then fall back to 'default'
+    const keys = activeBusinessId
+      ? [`ssf_video_analysis_${activeBusinessId}`, 'ssf_video_analysis_default']
+      : ['ssf_video_analysis_default'];
+    let loaded = false;
+    for (const key of keys) {
+      try {
+        const saved = localStorage.getItem(key);
+        if (saved) {
+          const { result, platform: plat, fileName, savedAt } = JSON.parse(saved);
+          setAnalyzeResult(result);
+          if (plat) setAnalyzePlatform(plat);
+          setSavedAnalysisMeta({ fileName, savedAt });
+          loaded = true;
+          break;
+        }
+      } catch {}
+    }
+    // Only clear if we're switching between two known businesses and found nothing
+    if (!loaded && activeBusinessId) {
+      setAnalyzeResult(null);
+      setSavedAnalysisMeta(null);
+    }
+
+    const bpKeys = activeBusinessId
+      ? [`ssf_video_blueprint_${activeBusinessId}`, 'ssf_video_blueprint_default']
+      : ['ssf_video_blueprint_default'];
+    for (const key of bpKeys) {
+      try {
+        const saved = localStorage.getItem(key);
+        if (saved) {
+          const { script: s, concept: c, platform: p } = JSON.parse(saved);
+          if (s) { setScript(s); setStep(1); }
+          if (c) setConcept(c);
+          if (p) { const found = PLATFORMS.find(pl => pl.id === p); if (found) setPlatform(found); }
+          break;
+        }
+      } catch {}
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeBusinessId]);
 
