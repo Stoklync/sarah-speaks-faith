@@ -11,7 +11,7 @@ export default async function handler(req, res) {
   const { mode, topic, description, niche, format, analyticsData, chatHistory, brandName, brandType, brandDesc, preferredModel,
           bookTitle, bookSubtitle, bookTopic, bookAudience, bookType: bookTypeParam, chapterTitle, chapterContent,
           frames, mediaType, platform,
-          fileUri, fileMimeType } = req.body || {};
+          fileUri, fileMimeType, previousAnalysis } = req.body || {};
 
   // ── FULL VIDEO ANALYSIS via Gemini File API (watches the actual video) ──
   if (mode === 'video-analyze-full') {
@@ -23,7 +23,23 @@ export default async function handler(req, res) {
     const brandCtx = brandName ? `for ${brandName}` : 'for a creator';
     const platCtx = platform ? `targeting ${platform}` : 'for social media';
 
+    const prevCtx = previousAnalysis ? `
+IMPORTANT — PREVIOUS ANALYSIS CONTEXT:
+This creator has uploaded an updated version of their video. Here is what the last analysis found:
+- Previous score: ${previousAnalysis.score}
+- Previous top fix: ${previousAnalysis.topFix}
+- Previous summary: ${previousAnalysis.summary}
+- Previous timestamp issues: ${JSON.stringify(previousAnalysis.timestamps)}
+
+Your job NOW is to:
+1. Watch the video carefully and check if those previous issues were actually fixed
+2. Only flag issues you can ACTUALLY SEE OR HEAR in this video — do not repeat old flags if they are gone
+3. In your response, include a "improvements" field listing what was fixed since last time
+4. Give credit where it is due — if they improved, say so specifically
+` : '';
+
     const prompt = `You are a professional video editor, colorist, and content strategist. Watch this full video ${brandCtx} ${platCtx}. You can SEE every frame, HEAR the audio, voice, and music.
+${prevCtx}
 
 Respond ONLY in this exact JSON (no markdown, no code fences):
 {
@@ -67,6 +83,7 @@ Respond ONLY in this exact JSON (no markdown, no code fences):
     "retentionFix": "exactly what to add or cut to keep them watching",
     "loopTip": "how to make the ending lead back into a loop watch"
   },
+  "improvements": ["What was fixed since last version (leave empty array [] if this is the first analysis)"],
   "topFix": "The single most important edit to make RIGHT NOW — be specific and direct"
 }`;
 

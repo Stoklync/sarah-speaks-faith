@@ -113,7 +113,10 @@ export function VideoTab({ businesses = [], activeBusinessId, setActiveTab, init
   // Storage keys per business
   const bizKey = activeBusinessId || 'default';
   const STORE_ANALYSIS = `ssf_video_analysis_${bizKey}`;
+  const STORE_HISTORY = `ssf_video_history_${bizKey}`;
   const STORE_BLUEPRINT = `ssf_video_blueprint_${bizKey}`;
+
+  const [analysisHistory, setAnalysisHistory] = useState([]); // previous analyses for continuity
 
   // Load saved data on mount / business switch
   useEffect(() => {
@@ -140,6 +143,12 @@ export function VideoTab({ businesses = [], activeBusinessId, setActiveTab, init
       setAnalyzeResult(null);
       setSavedAnalysisMeta(null);
     }
+
+    try {
+      const hist = localStorage.getItem(STORE_HISTORY);
+      if (hist) setAnalysisHistory(JSON.parse(hist));
+      else setAnalysisHistory([]);
+    } catch { setAnalysisHistory([]); }
 
     const bpKeys = activeBusinessId
       ? [`ssf_video_blueprint_${activeBusinessId}`, 'ssf_video_blueprint_default']
@@ -236,6 +245,15 @@ export function VideoTab({ businesses = [], activeBusinessId, setActiveTab, init
         if (state !== 'ACTIVE') throw new Error('Gemini timed out processing the video. Try a shorter clip.');
 
         setAnalyzeStatus('Gemini is watching your full video...');
+        // Load previous analysis for continuity
+        let prevAnalysis = null;
+        try {
+          const hist = localStorage.getItem(STORE_HISTORY);
+          if (hist) {
+            const arr = JSON.parse(hist);
+            if (arr.length) prevAnalysis = arr[arr.length - 1];
+          }
+        } catch {}
         const res = await fetch('/api/ai/generate', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -246,6 +264,12 @@ export function VideoTab({ businesses = [], activeBusinessId, setActiveTab, init
             platform: analyzePlatform,
             brandName,
             brandType,
+            previousAnalysis: prevAnalysis ? {
+              score: prevAnalysis.result?.overallScore,
+              topFix: prevAnalysis.result?.topFix,
+              timestamps: prevAnalysis.result?.timestamps,
+              summary: prevAnalysis.result?.summary,
+            } : null,
           }),
         });
         data = await res.json();
@@ -278,10 +302,14 @@ export function VideoTab({ businesses = [], activeBusinessId, setActiveTab, init
       setAnalyzeResult(data);
       const meta = { fileName: analyzeFiles[0]?.name || 'file', savedAt: new Date().toISOString() };
       setSavedAnalysisMeta(meta);
+      // Save current + update history (keep last 5)
       try {
-        localStorage.setItem(STORE_ANALYSIS, JSON.stringify({
-          result: data, platform: analyzePlatform, ...meta,
-        }));
+        const entry = { result: data, platform: analyzePlatform, ...meta };
+        localStorage.setItem(STORE_ANALYSIS, JSON.stringify(entry));
+        const prevHist = (() => { try { return JSON.parse(localStorage.getItem(STORE_HISTORY) || '[]'); } catch { return []; } })();
+        const newHist = [...prevHist, entry].slice(-5);
+        localStorage.setItem(STORE_HISTORY, JSON.stringify(newHist));
+        setAnalysisHistory(newHist);
       } catch {}
     } catch (e) {
       setAnalyzeError(e.message);
@@ -568,7 +596,7 @@ Return ONLY valid JSON — no markdown, no explanation:
               {savedAnalysisMeta && (
                 <div className="flex items-center justify-between bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-700/50 rounded-xl px-4 py-2.5">
                   <div className="text-xs text-emerald-700 dark:text-emerald-400">
-                    <span className="font-bold">Saved analysis</span>{savedAnalysisMeta.fileName ? ` — ${savedAnalysisMeta.fileName}` : ''}{savedAnalysisMeta.savedAt ? ` · ${new Date(savedAnalysisMeta.savedAt).toLocaleDateString()}` : ''}
+                    <span className="font-bold">Version {analysisHistory.length || 1}</span>{savedAnalysisMeta.fileName ? ` — ${savedAnalysisMeta.fileName}` : ''}{savedAnalysisMeta.savedAt ? ` · ${new Date(savedAnalysisMeta.savedAt).toLocaleDateString()}` : ''}
                   </div>
                   <button onClick={() => {
                     setAnalyzeResult(null); setAnalyzeFiles([]); setSavedAnalysisMeta(null);
@@ -1042,6 +1070,21 @@ function AnalysisResults({ result, onReset }) {
           <p className="text-sm text-stone-700 dark:text-stone-300 leading-relaxed">{result.summary}</p>
         </div>
       </div>
+
+      {/* Improvements since last version */}
+      {result.improvements?.length > 0 && (
+        <div className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-700/50 rounded-2xl p-4">
+          <p className="text-xs font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider mb-2">What you improved since last upload</p>
+          <div className="space-y-1">
+            {result.improvements.map((item, i) => (
+              <div key={i} className="flex items-start gap-2">
+                <CheckCircle size={14} className="text-emerald-500 shrink-0 mt-0.5" />
+                <p className="text-sm text-emerald-800 dark:text-emerald-300">{item}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Top fix — most important */}
       {result.topFix && (
