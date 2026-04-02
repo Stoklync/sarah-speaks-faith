@@ -110,6 +110,39 @@ export function VideoTab({ businesses = [], activeBusinessId, setActiveTab, init
   const [analyzeError, setAnalyzeError] = useState('');
   const fileInputRef = useRef(null);
 
+  // Storage keys per business
+  const bizKey = activeBusinessId || 'default';
+  const STORE_ANALYSIS = `ssf_video_analysis_${bizKey}`;
+  const STORE_BLUEPRINT = `ssf_video_blueprint_${bizKey}`;
+
+  // Load saved data on mount / business switch
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(STORE_ANALYSIS);
+      if (saved) {
+        const { result, platform: plat, fileName, savedAt } = JSON.parse(saved);
+        setAnalyzeResult(result);
+        if (plat) setAnalyzePlatform(plat);
+        setSavedAnalysisMeta({ fileName, savedAt });
+      } else {
+        setAnalyzeResult(null);
+        setSavedAnalysisMeta(null);
+      }
+    } catch {}
+    try {
+      const saved = localStorage.getItem(STORE_BLUEPRINT);
+      if (saved) {
+        const { script: s, concept: c, platform: p } = JSON.parse(saved);
+        if (s) { setScript(s); setStep(1); }
+        if (c) setConcept(c);
+        if (p) { const found = PLATFORMS.find(pl => pl.id === p); if (found) setPlatform(found); }
+      }
+    } catch {}
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeBusinessId]);
+
+  const [savedAnalysisMeta, setSavedAnalysisMeta] = useState(null);
+
   // Edit coaching state
   const [coachMessages, setCoachMessages] = useState([]);
   const [coachInput, setCoachInput] = useState('');
@@ -166,6 +199,13 @@ export function VideoTab({ businesses = [], activeBusinessId, setActiveTab, init
       const data = await res.json();
       if (!res.ok || data.error) throw new Error(data.error || 'Analysis failed');
       setAnalyzeResult(data);
+      const meta = { fileName: analyzeFiles[0]?.name || 'file', savedAt: new Date().toISOString() };
+      setSavedAnalysisMeta(meta);
+      try {
+        localStorage.setItem(STORE_ANALYSIS, JSON.stringify({
+          result: data, platform: analyzePlatform, ...meta,
+        }));
+      } catch {}
     } catch (e) {
       setAnalyzeError(e.message);
     } finally {
@@ -213,16 +253,20 @@ Return ONLY valid JSON in exactly this shape:
       const raw = data.result || data.text || '';
       const match = raw.match(/\{[\s\S]*\}/);
       if (match) {
-        setScript(JSON.parse(match[0]));
+        const parsed = JSON.parse(match[0]);
+        setScript(parsed);
         setStep(1);
+        try { localStorage.setItem(STORE_BLUEPRINT, JSON.stringify({ script: parsed, concept, platform: platform.id })); } catch {}
         setCoachMessages([{
           role: 'assistant',
           text: `Blueprint locked in. I know your concept — "${concept}" for ${platform.label}.\n\nDescribe your rough cut below (what footage you have, what feels off) and I'll tell you exactly how to make it better. Or use one of the quick prompts.`,
         }]);
       } else {
         // Fallback: treat raw text as script text
-        setScript({ hook: '', outline: [], broll: [], cta: '', caption: raw, thumbnail: '', retentionTip: '' });
+        const fallback = { hook: '', outline: [], broll: [], cta: '', caption: raw, thumbnail: '', retentionTip: '' };
+        setScript(fallback);
         setStep(1);
+        try { localStorage.setItem(STORE_BLUEPRINT, JSON.stringify({ script: fallback, concept, platform: platform.id })); } catch {}
       }
     } catch {
       alert('Failed to generate. Check your connection and try again.');
@@ -442,7 +486,25 @@ Return ONLY valid JSON — no markdown, no explanation:
           )}
 
           {/* ── Results ─────────────────────────────────────────────── */}
-          {analyzeResult && <AnalysisResults result={analyzeResult} onReset={() => { setAnalyzeResult(null); setAnalyzeFiles([]); }} />}
+          {analyzeResult && (
+            <div className="space-y-3">
+              {savedAnalysisMeta && (
+                <div className="flex items-center justify-between bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-700/50 rounded-xl px-4 py-2.5">
+                  <div className="text-xs text-emerald-700 dark:text-emerald-400">
+                    <span className="font-bold">Saved analysis</span>{savedAnalysisMeta.fileName ? ` — ${savedAnalysisMeta.fileName}` : ''}{savedAnalysisMeta.savedAt ? ` · ${new Date(savedAnalysisMeta.savedAt).toLocaleDateString()}` : ''}
+                  </div>
+                  <button onClick={() => {
+                    setAnalyzeResult(null); setAnalyzeFiles([]); setSavedAnalysisMeta(null);
+                    try { localStorage.removeItem(STORE_ANALYSIS); } catch {}
+                  }} className="text-[11px] text-emerald-600 dark:text-emerald-400 hover:text-rose-500 font-semibold ml-3 transition-colors">Clear</button>
+                </div>
+              )}
+              <AnalysisResults result={analyzeResult} onReset={() => {
+                setAnalyzeResult(null); setAnalyzeFiles([]); setSavedAnalysisMeta(null);
+                try { localStorage.removeItem(STORE_ANALYSIS); } catch {}
+              }} />
+            </div>
+          )}
 
           {/* What you get */}
           {!analyzeResult && !analyzeFiles.length && (
@@ -568,7 +630,13 @@ Return ONLY valid JSON — no markdown, no explanation:
               <h2 className="text-2xl font-black text-stone-800 dark:text-stone-100">Blueprint + Edit Coach</h2>
               <p className="text-stone-500 dark:text-stone-400 mt-1 text-sm">Your script is below. Edit in DaVinci or CapCut — ask the AI coach anything while you work.</p>
             </div>
-            <button onClick={() => setStep(0)} className="shrink-0 text-xs text-stone-400 hover:text-violet-500 transition-colors mt-1">← Redo plan</button>
+            <div className="flex flex-col items-end gap-1">
+              <button onClick={() => setStep(0)} className="shrink-0 text-xs text-stone-400 hover:text-violet-500 transition-colors">← Redo plan</button>
+              <button onClick={() => {
+                setScript(null); setStep(0); setConcept('');
+                try { localStorage.removeItem(STORE_BLUEPRINT); } catch {}
+              }} className="shrink-0 text-[11px] text-stone-300 dark:text-stone-600 hover:text-rose-500 dark:hover:text-rose-400 transition-colors">Clear saved</button>
+            </div>
           </div>
 
           {/* Blueprint cards */}
