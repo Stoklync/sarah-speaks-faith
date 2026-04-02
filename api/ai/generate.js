@@ -93,29 +93,41 @@ Respond ONLY in this exact JSON (no markdown, no explanation):
       } catch (e) { console.error('Claude vision failed:', e.message); }
     }
 
-    // Fallback: Gemini Vision
+    // Fallback: Gemini Vision — try multiple models
     const geminiKey = process.env.GEMINI_API_KEY?.trim();
     if (geminiKey) {
-      try {
-        const parts = [];
-        frames.forEach((f, i) => {
-          parts.push({ text: `${isPhoto ? `Photo ${i + 1}` : `Frame ${i + 1} (at ${f.time}s)`}:` });
-          parts.push({ inline_data: { mime_type: 'image/jpeg', data: f.data } });
-        });
-        parts.push({ text: analysisPrompt });
-        const gRes = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiKey}`,
-          { method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ contents: [{ parts }], generationConfig: { maxOutputTokens: 2000 } }) }
-        );
-        const gData = await gRes.json();
-        const text = gData.candidates?.[0]?.content?.parts?.[0]?.text || '';
-        const match = text.match(/\{[\s\S]*\}/);
-        if (match) return res.status(200).json({ ...JSON.parse(match[0]), poweredBy: 'gemini' });
-      } catch (e) { console.error('Gemini vision failed:', e.message); }
+      const geminiVisionModels = [
+        'gemini-2.0-flash',
+        'gemini-2.0-flash-exp',
+        'gemini-1.5-flash-latest',
+        'gemini-1.5-pro-latest',
+      ];
+      let lastGeminiErr = '';
+      for (const gModel of geminiVisionModels) {
+        try {
+          const parts = [];
+          frames.forEach((f, i) => {
+            parts.push({ text: `${isPhoto ? `Photo ${i + 1}` : `Frame ${i + 1} (at ${f.time}s)`}:` });
+            parts.push({ inline_data: { mime_type: 'image/jpeg', data: f.data } });
+          });
+          parts.push({ text: analysisPrompt });
+          const gRes = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/${gModel}:generateContent?key=${geminiKey}`,
+            { method: 'POST', headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ contents: [{ parts }], generationConfig: { maxOutputTokens: 2000 } }) }
+          );
+          const gData = await gRes.json();
+          if (gData.error) { lastGeminiErr = `${gModel}: ${gData.error.message}`; continue; }
+          const text = gData.candidates?.[0]?.content?.parts?.[0]?.text || '';
+          const match = text.match(/\{[\s\S]*\}/);
+          if (match) return res.status(200).json({ ...JSON.parse(match[0]), poweredBy: 'gemini' });
+          lastGeminiErr = `${gModel}: empty response`;
+        } catch (e) { lastGeminiErr = `${gModel}: ${e.message}`; }
+      }
+      return res.status(500).json({ error: `Vision analysis failed: ${lastGeminiErr}. Try adding ANTHROPIC_API_KEY to Vercel for Claude Vision.` });
     }
 
-    return res.status(500).json({ error: 'Vision AI not available. Add ANTHROPIC_API_KEY or GEMINI_API_KEY to Vercel.' });
+    return res.status(500).json({ error: 'No vision AI key found. Add GEMINI_API_KEY or ANTHROPIC_API_KEY to Vercel environment variables.' });
   }
 
   const skipTopicCheck = mode === 'chat' || mode === 'outline' || mode === 'analyze';
