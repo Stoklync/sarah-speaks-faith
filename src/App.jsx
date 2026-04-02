@@ -19,6 +19,7 @@ import { CreatorInsights } from './components/CreatorInsights';
 import { CompetitorIntel } from './components/CompetitorIntel';
 import { ImageStudio } from './components/ImageStudio';
 import { VideoStudio } from './components/VideoStudio';
+import { VideoTab } from './components/VideoPlanner';
 import { DesignStudio } from './components/DesignStudio';
 import { BookCreator } from './components/BookCreator';
 import { BrandKit } from './components/BrandKit';
@@ -955,7 +956,7 @@ const App = () => {
             {activeTab === 'start' && <StartHere setActiveTab={setActiveTab} />}
             {activeTab === 'brandkit' && <BrandKit />}
             {activeTab === 'images' && <ImageStudio />}
-            {activeTab === 'video' && <VideoStudio />}
+            {activeTab === 'video' && <VideoTabPage businesses={businesses} activeBusinessId={activeBusinessId} setActiveTab={setActiveTab} />}
             {activeTab === 'design' && <DesignStudio />}
             {activeTab === 'book' && <BookCreator />}
             {activeTab === 'pro' && <ProContentToolkit />}
@@ -986,6 +987,33 @@ const App = () => {
     </StudioContext.Provider>
   );
 };
+
+// --- Video Tab Page (Analyze + Plan + AI Generate) ---
+function VideoTabPage({ businesses, activeBusinessId, setActiveTab }) {
+  const [videoMode, setVideoMode] = React.useState('analyze');
+  return (
+    <div className="max-w-7xl mx-auto w-full">
+      <div className="flex gap-2 mb-6 bg-stone-100 dark:bg-stone-800 p-1 rounded-2xl max-w-lg">
+        <button onClick={() => setVideoMode('analyze')}
+          className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all ${videoMode === 'analyze' ? 'bg-white dark:bg-stone-700 text-violet-600 dark:text-violet-400 shadow-sm' : 'text-stone-500 dark:text-stone-400 hover:text-stone-700'}`}>
+          Analyze
+        </button>
+        <button onClick={() => setVideoMode('plan')}
+          className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all ${videoMode === 'plan' ? 'bg-white dark:bg-stone-700 text-violet-600 dark:text-violet-400 shadow-sm' : 'text-stone-500 dark:text-stone-400 hover:text-stone-700'}`}>
+          Plan & Script
+        </button>
+        <button onClick={() => setVideoMode('generate')}
+          className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all ${videoMode === 'generate' ? 'bg-white dark:bg-stone-700 text-violet-600 dark:text-violet-400 shadow-sm' : 'text-stone-500 dark:text-stone-400 hover:text-stone-700'}`}>
+          AI Generate
+        </button>
+      </div>
+      {videoMode !== 'generate'
+        ? <VideoTab businesses={businesses} activeBusinessId={activeBusinessId} setActiveTab={setActiveTab} initialMode={videoMode} />
+        : <VideoStudio />
+      }
+    </div>
+  );
+}
 
 // --- Start Here ---
 const StartHere = ({ setActiveTab }) => {

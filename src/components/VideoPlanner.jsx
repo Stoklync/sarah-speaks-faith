@@ -92,8 +92,8 @@ async function imageFileToFrame(file) {
   });
 }
 
-export function VideoTab({ businesses = [], activeBusinessId, setActiveTab }) {
-  const [mainMode, setMainMode] = useState('analyze'); // 'analyze' | 'plan'
+export function VideoTab({ businesses = [], activeBusinessId, setActiveTab, initialMode }) {
+  const [mainMode, setMainMode] = useState(initialMode || 'analyze'); // 'analyze' | 'plan'
   const [step, setStep] = useState(0); // 0=plan, 1=coach, 2=finish
   const [platform, setPlatform] = useState(PLATFORMS[0]);
   const [concept, setConcept] = useState('');
@@ -346,8 +346,8 @@ Return ONLY valid JSON — no markdown, no explanation:
   return (
     <div className="max-w-3xl mx-auto">
 
-      {/* Top mode switcher */}
-      <div className="flex gap-2 mb-6 bg-stone-100 dark:bg-stone-800 p-1 rounded-2xl">
+      {/* Top mode switcher — hidden when parent controls the mode */}
+      <div className={`flex gap-2 mb-6 bg-stone-100 dark:bg-stone-800 p-1 rounded-2xl ${initialMode ? 'hidden' : ''}`}>
         <button onClick={() => setMainMode('analyze')}
           className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold transition-all ${mainMode === 'analyze' ? 'bg-white dark:bg-stone-700 text-violet-600 dark:text-violet-400 shadow-sm' : 'text-stone-500 dark:text-stone-400 hover:text-stone-700'}`}>
           <Eye size={16} /> Analyze
