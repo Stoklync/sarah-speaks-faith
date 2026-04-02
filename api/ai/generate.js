@@ -97,13 +97,12 @@ Respond ONLY in this exact JSON (no markdown, no explanation):
     const geminiKey = process.env.GEMINI_API_KEY?.trim();
     if (geminiKey) {
       const geminiVisionModels = [
-        'gemini-2.5-flash-preview-05-20',
-        'gemini-2.0-flash',
-        'gemini-1.5-flash',
-        'gemini-1.5-pro',
+        { version: 'v1beta', model: 'gemini-2.0-flash' },
+        { version: 'v1beta', model: 'gemini-1.5-flash' },
+        { version: 'v1beta', model: 'gemini-2.0-flash-lite' },
       ];
-      let lastGeminiErr = '';
-      for (const gModel of geminiVisionModels) {
+      const geminiErrors = [];
+      for (const { version, model } of geminiVisionModels) {
         try {
           const parts = [];
           frames.forEach((f, i) => {
@@ -112,19 +111,19 @@ Respond ONLY in this exact JSON (no markdown, no explanation):
           });
           parts.push({ text: analysisPrompt });
           const gRes = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models/${gModel}:generateContent?key=${geminiKey}`,
+            `https://generativelanguage.googleapis.com/${version}/models/${model}:generateContent?key=${geminiKey}`,
             { method: 'POST', headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ contents: [{ parts }], generationConfig: { maxOutputTokens: 2000 } }) }
+              body: JSON.stringify({ contents: [{ role: 'user', parts }], generationConfig: { maxOutputTokens: 2000 } }) }
           );
           const gData = await gRes.json();
-          if (gData.error) { lastGeminiErr = `${gModel}: ${gData.error.message}`; continue; }
+          if (gData.error) { geminiErrors.push(`${model}: ${gData.error.message?.slice(0, 120)}`); continue; }
           const text = gData.candidates?.[0]?.content?.parts?.[0]?.text || '';
           const match = text.match(/\{[\s\S]*\}/);
           if (match) return res.status(200).json({ ...JSON.parse(match[0]), poweredBy: 'gemini' });
-          lastGeminiErr = `${gModel}: empty response`;
-        } catch (e) { lastGeminiErr = `${gModel}: ${e.message}`; }
+          geminiErrors.push(`${model}: empty response`);
+        } catch (e) { geminiErrors.push(`${model}: ${e.message}`); }
       }
-      return res.status(500).json({ error: `Vision analysis failed: ${lastGeminiErr}. Try adding ANTHROPIC_API_KEY to Vercel for Claude Vision.` });
+      return res.status(500).json({ error: `Vision errors — ${geminiErrors.join(' | ')}` });
     }
 
     return res.status(500).json({ error: 'No vision AI key found. Add GEMINI_API_KEY or ANTHROPIC_API_KEY to Vercel environment variables.' });
