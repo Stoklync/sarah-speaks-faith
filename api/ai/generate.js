@@ -9,7 +9,114 @@ export default async function handler(req, res) {
   }
 
   const { mode, topic, description, niche, format, analyticsData, chatHistory, brandName, brandType, brandDesc, preferredModel,
-          bookTitle, bookSubtitle, bookTopic, bookAudience, bookType: bookTypeParam, chapterTitle, chapterContent } = req.body || {};
+          bookTitle, bookSubtitle, bookTopic, bookAudience, bookType: bookTypeParam, chapterTitle, chapterContent,
+          frames, mediaType, platform } = req.body || {};
+
+  // ── VIDEO / PHOTO ANALYSIS (vision AI) ─────────────────────────────
+  if (mode === 'video-analyze') {
+    if (!frames || !frames.length) {
+      return res.status(400).json({ error: 'No frames provided' });
+    }
+
+    const isPhoto = mediaType === 'photo';
+    const brandCtx = brandName ? `for ${brandName}` : 'for a creator';
+    const platCtx = platform ? `targeting ${platform}` : 'for social media';
+
+    const analysisPrompt = `You are a professional video editor, colorist, and content strategist analyzing ${isPhoto ? 'photos' : 'a video'} ${brandCtx} ${platCtx}.
+
+${isPhoto ? 'Analyze each photo for visual quality, tone, mood, and content strategy.' : 'These frames are taken at equal intervals through the video — analyze pacing, cuts, visual quality, and audience retention.'}
+
+Respond ONLY in this exact JSON (no markdown, no explanation):
+{
+  "overallScore": "A/B/C/D",
+  "summary": "2-sentence honest assessment of what's working and what needs the most attention",
+  "pacing": {
+    "rating": "${isPhoto ? 'Strong/Moderate/Weak' : 'Fast/Medium/Slow/Uneven'}",
+    "feedback": "specific observation",
+    "fix": "exact step to take in DaVinci or CapCut"
+  },
+  ${isPhoto ? '"photoFeedback": [{"frame": 1, "issue": "specific issue", "fix": "exact improvement"}],' : '"timestamps": [{"time": "0:00", "issue": "specific issue", "fix": "exact edit to make"}],'}
+  "transitions": {
+    "current": "${isPhoto ? 'how the photos flow together' : 'what transition type you see'}",
+    "suggestion": "specific transition to use and why",
+    "where": "exactly where to apply it"
+  },
+  "music": {
+    "mood": "the emotional energy these visuals call for",
+    "genre": "specific genre (e.g. cinematic trap, soft gospel piano, upbeat R&B)",
+    "tempo": "BPM range (e.g. 85-95 BPM) or descriptor (slow build / high energy)",
+    "trackStyle": "describe the sound in detail (e.g. warm bass + vocal chops + soft hi-hats)"
+  },
+  "hooks": [
+    "Exact opening text overlay (first 3 seconds)",
+    "Key moment text overlay (middle of ${isPhoto ? 'sequence' : 'video'})",
+    "Closing hook or CTA text"
+  ],
+  "textOverlays": [
+    {"when": "${isPhoto ? 'Photo 1' : '0:01'}", "text": "exact words to put on screen", "placement": "top/center/bottom", "style": "e.g. bold white, italic gold"},
+    {"when": "${isPhoto ? 'Photo 2' : '0:05'}", "text": "exact words", "placement": "center", "style": "description"}
+  ],
+  "toneAndMood": {
+    "current": "what mood the ${isPhoto ? 'photos' : 'video'} currently projects",
+    "target": "what mood it should have to stop the scroll on ${platform || 'social media'}",
+    "colorGrade": "specific grade to apply (e.g. 'warm skin tones, teal shadows, +15 lift' or 'desaturate 10%, add film grain, boost contrast')",
+    "lightingNote": "what to fix next time you shoot"
+  },
+  "audienceRetention": {
+    "dropOffRisk": "${isPhoto ? 'where viewers stop engaging' : 'the timestamp where viewers are most likely to leave'}",
+    "retentionFix": "exactly what to add or cut to keep them watching",
+    "loopTip": "${isPhoto ? 'how to make a carousel that makes people swipe again' : 'how to make the ending lead back into a loop watch'}"
+  },
+  "topFix": "The single most important edit to make RIGHT NOW — be specific and direct"
+}`;
+
+    // Try Claude Vision first (best for this task)
+    const anthropicKey = process.env.ANTHROPIC_API_KEY;
+    if (anthropicKey) {
+      try {
+        const { default: Anthropic } = await import('@anthropic-ai/sdk');
+        const client = new Anthropic({ apiKey: anthropicKey });
+        const content = [];
+        frames.forEach((f, i) => {
+          content.push({ type: 'text', text: `${isPhoto ? `Photo ${i + 1}` : `Frame ${i + 1} (at ${f.time}s into the video)`}:` });
+          content.push({ type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: f.data } });
+        });
+        content.push({ type: 'text', text: analysisPrompt });
+        const msg = await client.messages.create({
+          model: 'claude-sonnet-4-6',
+          max_tokens: 2000,
+          messages: [{ role: 'user', content }],
+        });
+        const text = msg.content[0]?.text || '';
+        const match = text.match(/\{[\s\S]*\}/);
+        if (match) return res.status(200).json({ ...JSON.parse(match[0]), poweredBy: 'claude' });
+      } catch (e) { console.error('Claude vision failed:', e.message); }
+    }
+
+    // Fallback: Gemini Vision
+    const geminiKey = process.env.GEMINI_API_KEY?.trim();
+    if (geminiKey) {
+      try {
+        const parts = [];
+        frames.forEach((f, i) => {
+          parts.push({ text: `${isPhoto ? `Photo ${i + 1}` : `Frame ${i + 1} (at ${f.time}s)`}:` });
+          parts.push({ inline_data: { mime_type: 'image/jpeg', data: f.data } });
+        });
+        parts.push({ text: analysisPrompt });
+        const gRes = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiKey}`,
+          { method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ contents: [{ parts }], generationConfig: { maxOutputTokens: 2000 } }) }
+        );
+        const gData = await gRes.json();
+        const text = gData.candidates?.[0]?.content?.parts?.[0]?.text || '';
+        const match = text.match(/\{[\s\S]*\}/);
+        if (match) return res.status(200).json({ ...JSON.parse(match[0]), poweredBy: 'gemini' });
+      } catch (e) { console.error('Gemini vision failed:', e.message); }
+    }
+
+    return res.status(500).json({ error: 'Vision AI not available. Add ANTHROPIC_API_KEY or GEMINI_API_KEY to Vercel.' });
+  }
 
   const skipTopicCheck = mode === 'chat' || mode === 'outline' || mode === 'analyze';
   if (!skipTopicCheck && !topic && !analyticsData) {
