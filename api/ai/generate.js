@@ -72,7 +72,7 @@ Respond ONLY in this exact JSON (no markdown, no code fences):
 
     try {
       const gRes = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${geminiKey}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-04-17:generateContent?key=${geminiKey}`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -161,10 +161,9 @@ Respond ONLY in this exact JSON (no markdown, no explanation):
     const geminiKey = process.env.GEMINI_API_KEY?.trim();
     if (geminiKey) {
       const geminiVisionModels = [
-        { version: 'v1beta', model: 'gemini-2.0-flash' },
-        { version: 'v1',     model: 'gemini-1.5-flash' },
-        { version: 'v1beta', model: 'gemini-1.5-flash-002' },
-        { version: 'v1beta', model: 'gemini-2.0-flash-lite' },
+        { version: 'v1beta', model: 'gemini-2.5-flash-preview-04-17' },
+        { version: 'v1beta', model: 'gemini-1.5-flash-latest' },
+        { version: 'v1beta', model: 'gemini-1.5-pro-latest' },
       ];
       const geminiErrors = [];
       for (const { version, model } of geminiVisionModels) {
