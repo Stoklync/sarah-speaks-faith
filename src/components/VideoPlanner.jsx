@@ -3,7 +3,8 @@ import {
   Sparkles, Film, Share2, Copy, CheckCircle, Loader2,
   ExternalLink, ChevronRight, ArrowRight, Mic, MicOff,
   Lightbulb, Clapperboard, Layers, BarChart2, RefreshCw,
-  ChevronDown, ChevronUp, Wand2, MessageSquare
+  ChevronDown, ChevronUp, Wand2, MessageSquare,
+  Upload, Play, Image, Music, Type, Eye, Zap, Star
 } from 'lucide-react';
 
 const PLATFORMS = [
@@ -32,13 +33,82 @@ const COACH_PROMPTS = [
   'How do I make this video stop the scroll?',
 ];
 
+// ── Frame extraction helper ─────────────────────────────────────────
+function extractVideoFrames(file, count = 6) {
+  return new Promise((resolve, reject) => {
+    const video = document.createElement('video');
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    const url = URL.createObjectURL(file);
+    video.preload = 'auto';
+    video.muted = true;
+    video.crossOrigin = 'anonymous';
+    video.src = url;
+    video.onloadedmetadata = async () => {
+      const W = 480;
+      const H = Math.round(W * (video.videoHeight / video.videoWidth)) || 270;
+      canvas.width = W;
+      canvas.height = H;
+      const duration = video.duration;
+      const frames = [];
+      for (let i = 0; i < count; i++) {
+        const t = count === 1 ? 0 : (i / (count - 1)) * duration;
+        await new Promise(r => {
+          video.onseeked = () => {
+            ctx.drawImage(video, 0, 0, W, H);
+            const data = canvas.toDataURL('image/jpeg', 0.6).split(',')[1];
+            frames.push({ time: Math.round(t), data });
+            r();
+          };
+          video.currentTime = t;
+        });
+      }
+      URL.revokeObjectURL(url);
+      resolve(frames);
+    };
+    video.onerror = reject;
+    video.load();
+  });
+}
+
+async function imageFileToFrame(file) {
+  return new Promise((resolve, reject) => {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    const img = new window.Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      const W = 480;
+      const H = Math.round(W * img.naturalHeight / img.naturalWidth) || 270;
+      canvas.width = W;
+      canvas.height = H;
+      ctx.drawImage(img, 0, 0, W, H);
+      const data = canvas.toDataURL('image/jpeg', 0.7).split(',')[1];
+      URL.revokeObjectURL(url);
+      resolve({ time: 0, data });
+    };
+    img.onerror = reject;
+    img.src = url;
+  });
+}
+
 export function VideoTab({ businesses = [], activeBusinessId, setActiveTab }) {
+  const [mainMode, setMainMode] = useState('analyze'); // 'analyze' | 'plan'
   const [step, setStep] = useState(0); // 0=plan, 1=coach, 2=finish
   const [platform, setPlatform] = useState(PLATFORMS[0]);
   const [concept, setConcept] = useState('');
   const [script, setScript] = useState(null); // { hook, outline, broll, cta, caption }
   const [generating, setGenerating] = useState(false);
   const [copied, setCopied] = useState('');
+
+  // Analyze mode state
+  const [analyzeFiles, setAnalyzeFiles] = useState([]);
+  const [analyzePlatform, setAnalyzePlatform] = useState('Instagram Reels');
+  const [analyzing, setAnalyzing] = useState(false);
+  const [analyzeStatus, setAnalyzeStatus] = useState('');
+  const [analyzeResult, setAnalyzeResult] = useState(null);
+  const [analyzeError, setAnalyzeError] = useState('');
+  const fileInputRef = useRef(null);
 
   // Edit coaching state
   const [coachMessages, setCoachMessages] = useState([]);
@@ -52,6 +122,54 @@ export function VideoTab({ businesses = [], activeBusinessId, setActiveTab }) {
   const brandName = activeBiz?.name || 'Your brand';
   const brandType = activeBiz?.type || 'faith';
   const brandDesc = activeBiz?.description || '';
+
+  const handleAnalyzeFiles = (files) => {
+    const arr = Array.from(files).filter(f =>
+      f.type.startsWith('video/') || f.type.startsWith('image/')
+    );
+    if (arr.length) setAnalyzeFiles(arr);
+  };
+
+  const runAnalysis = async () => {
+    if (!analyzeFiles.length) return;
+    setAnalyzing(true);
+    setAnalyzeError('');
+    setAnalyzeResult(null);
+    const isVideo = analyzeFiles[0].type.startsWith('video/');
+    try {
+      let frames = [];
+      if (isVideo) {
+        setAnalyzeStatus('Extracting frames from video...');
+        frames = await extractVideoFrames(analyzeFiles[0], 6);
+      } else {
+        setAnalyzeStatus('Processing images...');
+        for (const f of analyzeFiles.slice(0, 8)) {
+          frames.push(await imageFileToFrame(f));
+        }
+      }
+      setAnalyzeStatus('AI analyzing your content...');
+      const res = await fetch('/api/ai/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          mode: 'video-analyze',
+          frames,
+          mediaType: isVideo ? 'video' : 'photo',
+          platform: analyzePlatform,
+          brandName,
+          brandType,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || data.error) throw new Error(data.error || 'Analysis failed');
+      setAnalyzeResult(data);
+    } catch (e) {
+      setAnalyzeError(e.message);
+    } finally {
+      setAnalyzing(false);
+      setAnalyzeStatus('');
+    }
+  };
 
   useEffect(() => {
     coachBottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -162,6 +280,128 @@ Return ONLY valid JSON in exactly this shape:
   return (
     <div className="max-w-3xl mx-auto">
 
+      {/* Top mode switcher */}
+      <div className="flex gap-2 mb-6 bg-stone-100 dark:bg-stone-800 p-1 rounded-2xl">
+        <button onClick={() => setMainMode('analyze')}
+          className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold transition-all ${mainMode === 'analyze' ? 'bg-white dark:bg-stone-700 text-violet-600 dark:text-violet-400 shadow-sm' : 'text-stone-500 dark:text-stone-400 hover:text-stone-700'}`}>
+          <Eye size={16} /> Analyze
+        </button>
+        <button onClick={() => setMainMode('plan')}
+          className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold transition-all ${mainMode === 'plan' ? 'bg-white dark:bg-stone-700 text-violet-600 dark:text-violet-400 shadow-sm' : 'text-stone-500 dark:text-stone-400 hover:text-stone-700'}`}>
+          <Clapperboard size={16} /> Plan & Script
+        </button>
+      </div>
+
+      {/* ── ANALYZE MODE ─────────────────────────────────────────────── */}
+      {mainMode === 'analyze' && (
+        <div className="space-y-6">
+          <div>
+            <h2 className="text-2xl font-black text-stone-800 dark:text-stone-100">AI Video & Photo Analyzer</h2>
+            <p className="text-stone-500 dark:text-stone-400 mt-1 text-sm">Upload your video or photos. AI gives you a pro-level breakdown — timestamps, transitions, music, text overlays, tone, hooks. Everything to make it better.</p>
+          </div>
+
+          {/* Upload area */}
+          <div
+            onClick={() => !analyzing && fileInputRef.current?.click()}
+            onDragOver={e => e.preventDefault()}
+            onDrop={e => { e.preventDefault(); handleAnalyzeFiles(e.dataTransfer.files); }}
+            className={`relative border-2 border-dashed rounded-2xl p-8 text-center transition-colors cursor-pointer ${
+              analyzeFiles.length
+                ? 'border-violet-400 bg-violet-50 dark:bg-violet-900/20'
+                : 'border-stone-300 dark:border-stone-600 hover:border-violet-400 dark:hover:border-violet-600 bg-stone-50 dark:bg-stone-800/40'
+            } ${analyzing ? 'cursor-not-allowed opacity-60' : ''}`}>
+            <input ref={fileInputRef} type="file" multiple accept="video/*,image/*" className="hidden"
+              onChange={e => handleAnalyzeFiles(e.target.files)} />
+            {analyzeFiles.length === 0 ? (
+              <div className="space-y-3">
+                <div className="flex justify-center gap-3">
+                  <div className="w-12 h-12 rounded-xl bg-violet-100 dark:bg-violet-900/40 flex items-center justify-center">
+                    <Play className="text-violet-500" size={22} />
+                  </div>
+                  <div className="w-12 h-12 rounded-xl bg-rose-100 dark:bg-rose-900/40 flex items-center justify-center">
+                    <Image className="text-rose-500" size={22} />
+                  </div>
+                </div>
+                <p className="font-bold text-stone-700 dark:text-stone-300">Drop your video or photos here</p>
+                <p className="text-sm text-stone-400">Video (MP4, MOV) or Photos (JPG, PNG) — up to 8 photos at once</p>
+                <p className="text-xs text-stone-400">Click to browse files</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <CheckCircle size={28} className="text-violet-500 mx-auto" />
+                <p className="font-bold text-violet-700 dark:text-violet-400">
+                  {analyzeFiles.length === 1
+                    ? analyzeFiles[0].name
+                    : `${analyzeFiles.length} photos selected`}
+                </p>
+                <p className="text-sm text-stone-400">
+                  {analyzeFiles[0].type.startsWith('video/') ? 'Video — 6 frames will be extracted' : `${analyzeFiles.length} photo(s) will be analyzed`}
+                </p>
+                {!analyzing && (
+                  <button onClick={e => { e.stopPropagation(); setAnalyzeFiles([]); setAnalyzeResult(null); }}
+                    className="text-xs text-stone-400 hover:text-rose-500 transition-colors">Remove</button>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Platform */}
+          <div>
+            <label className="block text-xs font-bold text-stone-500 dark:text-stone-400 uppercase tracking-wider mb-2">Which platform is this for?</label>
+            <div className="flex flex-wrap gap-2">
+              {['Instagram Reels', 'YouTube Shorts', 'TikTok', 'YouTube', 'Facebook', 'LinkedIn', 'Podcast Promo'].map(p => (
+                <button key={p} onClick={() => setAnalyzePlatform(p)}
+                  className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
+                    analyzePlatform === p
+                      ? 'bg-violet-500 border-violet-500 text-white'
+                      : 'border-stone-200 dark:border-stone-600 text-stone-600 dark:text-stone-400 hover:border-violet-300'
+                  }`}>{p}</button>
+              ))}
+            </div>
+          </div>
+
+          {/* Analyze button */}
+          {analyzeFiles.length > 0 && !analyzeResult && (
+            <button onClick={runAnalysis} disabled={analyzing}
+              className="w-full flex items-center justify-center gap-2 py-4 rounded-2xl bg-gradient-to-r from-violet-600 to-indigo-600 text-white font-bold hover:from-violet-500 hover:to-indigo-500 disabled:opacity-60 disabled:cursor-not-allowed transition-all shadow-lg">
+              {analyzing
+                ? <><Loader2 size={20} className="animate-spin" /> {analyzeStatus || 'Analyzing...'}</>
+                : <><Sparkles size={20} /> Analyze My {analyzeFiles[0]?.type.startsWith('video/') ? 'Video' : 'Photos'} — Pro Level</>
+              }
+            </button>
+          )}
+
+          {analyzeError && (
+            <div className="bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-700 rounded-2xl p-4 text-sm text-rose-600 dark:text-rose-400">{analyzeError}</div>
+          )}
+
+          {/* ── Results ─────────────────────────────────────────────── */}
+          {analyzeResult && <AnalysisResults result={analyzeResult} onReset={() => { setAnalyzeResult(null); setAnalyzeFiles([]); }} />}
+
+          {/* What you get */}
+          {!analyzeResult && !analyzeFiles.length && (
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              {[
+                { icon: <Zap size={18} className="text-amber-500" />, label: 'Timestamp fixes', desc: 'Exactly where to cut or keep' },
+                { icon: <Film size={18} className="text-violet-500" />, label: 'Transitions', desc: 'What to use and where' },
+                { icon: <Music size={18} className="text-emerald-500" />, label: 'Music & mood', desc: 'Genre, BPM, exact sound style' },
+                { icon: <Type size={18} className="text-rose-500" />, label: 'Text overlays', desc: 'Hooks, CTAs, what to write' },
+                { icon: <Eye size={18} className="text-blue-500" />, label: 'Tone & color grade', desc: 'Exact grade to apply' },
+                { icon: <Star size={18} className="text-orange-500" />, label: 'Retention hooks', desc: 'Keep them watching longer' },
+              ].map(({ icon, label, desc }) => (
+                <div key={label} className="flex flex-col gap-1.5 p-4 bg-stone-50 dark:bg-stone-800/60 rounded-2xl border border-stone-100 dark:border-stone-700/50">
+                  <div className="flex items-center gap-2">{icon}<p className="text-xs font-bold text-stone-700 dark:text-stone-300">{label}</p></div>
+                  <p className="text-[10px] text-stone-400">{desc}</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── PLAN MODE ───────────────────────────────────────────────── */}
+      {mainMode === 'plan' && (
+      <div>
       {/* Stepper */}
       <div className="flex items-center gap-0 mb-8">
         {STEPS.map((label, i) => (
@@ -448,6 +688,197 @@ Return ONLY valid JSON in exactly this shape:
           </button>
         </div>
       )}
+      </div>
+      )}
+    </div>
+  );
+}
+
+// ── Analysis Results component ──────────────────────────────────────
+function AnalysisResults({ result, onReset }) {
+  const [copiedKey, setCopiedKey] = useState('');
+  const copyText = (text, key) => {
+    navigator.clipboard.writeText(text);
+    setCopiedKey(key);
+    setTimeout(() => setCopiedKey(''), 2000);
+  };
+
+  const scoreColor = {
+    A: 'text-emerald-600 bg-emerald-50 dark:bg-emerald-900/30 border-emerald-200',
+    B: 'text-blue-600 bg-blue-50 dark:bg-blue-900/30 border-blue-200',
+    C: 'text-amber-600 bg-amber-50 dark:bg-amber-900/30 border-amber-200',
+    D: 'text-rose-600 bg-rose-50 dark:bg-rose-900/30 border-rose-200',
+  }[result.overallScore] || 'text-stone-600 bg-stone-50 border-stone-200';
+
+  return (
+    <div className="space-y-4">
+      {/* Header */}
+      <div className="flex items-start gap-4 p-5 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-2xl">
+        <div className={`w-16 h-16 rounded-2xl border-2 flex items-center justify-center shrink-0 ${scoreColor}`}>
+          <span className="text-3xl font-black">{result.overallScore}</span>
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-xs font-bold text-stone-400 uppercase tracking-wider mb-1">AI Analysis</p>
+          <p className="text-sm text-stone-700 dark:text-stone-300 leading-relaxed">{result.summary}</p>
+        </div>
+      </div>
+
+      {/* Top fix — most important */}
+      {result.topFix && (
+        <div className="flex items-start gap-3 p-4 bg-violet-50 dark:bg-violet-900/20 border border-violet-200 dark:border-violet-700/50 rounded-2xl">
+          <Zap size={18} className="text-violet-500 shrink-0 mt-0.5" />
+          <div>
+            <p className="text-xs font-bold text-violet-600 dark:text-violet-400 mb-1">Top Fix Right Now</p>
+            <p className="text-sm text-stone-700 dark:text-stone-300">{result.topFix}</p>
+          </div>
+        </div>
+      )}
+
+      {/* Pacing */}
+      {result.pacing && (
+        <AnalysisCard icon={<Film size={16} className="text-violet-500" />} label="Pacing & Edit" badge={result.pacing.rating}>
+          <p className="text-sm text-stone-600 dark:text-stone-400">{result.pacing.feedback}</p>
+          {result.pacing.fix && <p className="text-sm font-semibold text-stone-800 dark:text-stone-200 mt-1">Fix: {result.pacing.fix}</p>}
+        </AnalysisCard>
+      )}
+
+      {/* Timestamps */}
+      {result.timestamps?.length > 0 && (
+        <AnalysisCard icon={<Layers size={16} className="text-amber-500" />} label="Timestamp Issues">
+          <div className="space-y-2">
+            {result.timestamps.map((t, i) => (
+              <div key={i} className="flex gap-3 items-start">
+                <span className="text-xs font-mono font-bold text-amber-600 bg-amber-50 dark:bg-amber-900/30 px-2 py-0.5 rounded-lg shrink-0 mt-0.5">{t.time}</span>
+                <div>
+                  <p className="text-sm text-stone-600 dark:text-stone-400">{t.issue}</p>
+                  {t.fix && <p className="text-xs font-semibold text-stone-700 dark:text-stone-300 mt-0.5">→ {t.fix}</p>}
+                </div>
+              </div>
+            ))}
+          </div>
+        </AnalysisCard>
+      )}
+
+      {/* Photo feedback */}
+      {result.photoFeedback?.length > 0 && (
+        <AnalysisCard icon={<Image size={16} className="text-rose-500" />} label="Photo Feedback">
+          <div className="space-y-2">
+            {result.photoFeedback.map((p, i) => (
+              <div key={i} className="flex gap-3 items-start">
+                <span className="text-xs font-bold text-rose-600 bg-rose-50 dark:bg-rose-900/30 px-2 py-0.5 rounded-lg shrink-0 mt-0.5">#{p.frame}</span>
+                <div>
+                  <p className="text-sm text-stone-600 dark:text-stone-400">{p.issue}</p>
+                  {p.fix && <p className="text-xs font-semibold text-stone-700 dark:text-stone-300 mt-0.5">→ {p.fix}</p>}
+                </div>
+              </div>
+            ))}
+          </div>
+        </AnalysisCard>
+      )}
+
+      {/* Transitions */}
+      {result.transitions && (
+        <AnalysisCard icon={<RefreshCw size={16} className="text-blue-500" />} label="Transitions">
+          {result.transitions.current && <p className="text-sm text-stone-500 dark:text-stone-400 mb-1">Current: {result.transitions.current}</p>}
+          <p className="text-sm font-semibold text-stone-700 dark:text-stone-300">{result.transitions.suggestion}</p>
+          {result.transitions.where && <p className="text-xs text-stone-400 mt-1">Where: {result.transitions.where}</p>}
+        </AnalysisCard>
+      )}
+
+      {/* Music */}
+      {result.music && (
+        <AnalysisCard icon={<Music size={16} className="text-emerald-500" />} label="Music & Mood">
+          <div className="space-y-1">
+            <p className="text-sm font-semibold text-stone-700 dark:text-stone-300">{result.music.genre} · {result.music.tempo}</p>
+            {result.music.mood && <p className="text-sm text-stone-500 dark:text-stone-400">{result.music.mood}</p>}
+            {result.music.trackStyle && <p className="text-sm text-stone-600 dark:text-stone-400 italic">"{result.music.trackStyle}"</p>}
+          </div>
+        </AnalysisCard>
+      )}
+
+      {/* Hooks / Text overlays */}
+      {(result.hooks?.length > 0 || result.textOverlays?.length > 0) && (
+        <AnalysisCard icon={<Type size={16} className="text-rose-500" />} label="Text Overlays & Hooks"
+          headerRight={
+            result.hooks?.length > 0 && (
+              <button onClick={() => copyText(result.hooks.join('\n'), 'hooks')}
+                className={`text-xs flex items-center gap-1 transition-colors ${copiedKey === 'hooks' ? 'text-emerald-500' : 'text-stone-400 hover:text-violet-500'}`}>
+                {copiedKey === 'hooks' ? <><CheckCircle size={11} /> Copied</> : <><Copy size={11} /> Copy hooks</>}
+              </button>
+            )
+          }>
+          {result.hooks?.length > 0 && (
+            <div className="space-y-1.5 mb-3">
+              {result.hooks.map((h, i) => (
+                <div key={i} className="flex items-start gap-2">
+                  <span className="text-xs text-violet-500 font-bold shrink-0 mt-0.5">{['Open', 'Mid', 'CTA'][i] || `${i + 1}`}</span>
+                  <p className="text-sm text-stone-700 dark:text-stone-300">{h}</p>
+                </div>
+              ))}
+            </div>
+          )}
+          {result.textOverlays?.length > 0 && (
+            <div className="space-y-1.5 border-t border-stone-100 dark:border-stone-700 pt-3">
+              <p className="text-xs font-bold text-stone-400 uppercase tracking-wider mb-2">Suggested overlays</p>
+              {result.textOverlays.map((t, i) => (
+                <div key={i} className="flex items-start gap-2">
+                  <span className="text-xs font-mono text-amber-600 bg-amber-50 dark:bg-amber-900/20 px-1.5 py-0.5 rounded shrink-0">{t.when}</span>
+                  <div>
+                    <p className="text-sm font-semibold text-stone-700 dark:text-stone-300">"{t.text}"</p>
+                    {t.placement && <p className="text-xs text-stone-400">{t.placement} · {t.style}</p>}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </AnalysisCard>
+      )}
+
+      {/* Tone & Color Grade */}
+      {result.toneAndMood && (
+        <AnalysisCard icon={<Eye size={16} className="text-indigo-500" />} label="Tone & Color Grade">
+          {result.toneAndMood.current && <p className="text-sm text-stone-500 dark:text-stone-400 mb-1">Current: {result.toneAndMood.current}</p>}
+          {result.toneAndMood.target && <p className="text-sm font-semibold text-stone-700 dark:text-stone-300 mb-1">Target: {result.toneAndMood.target}</p>}
+          {result.toneAndMood.colorGrade && (
+            <p className="text-sm text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/20 px-3 py-2 rounded-xl mt-1">{result.toneAndMood.colorGrade}</p>
+          )}
+          {result.toneAndMood.lightingNote && <p className="text-xs text-stone-400 mt-2">Next shoot: {result.toneAndMood.lightingNote}</p>}
+        </AnalysisCard>
+      )}
+
+      {/* Audience Retention */}
+      {result.audienceRetention && (
+        <AnalysisCard icon={<Star size={16} className="text-orange-500" />} label="Audience Retention">
+          {result.audienceRetention.dropOffRisk && (
+            <p className="text-sm text-rose-600 dark:text-rose-400 mb-1">Drop-off risk: {result.audienceRetention.dropOffRisk}</p>
+          )}
+          {result.audienceRetention.retentionFix && (
+            <p className="text-sm font-semibold text-stone-700 dark:text-stone-300 mb-1">{result.audienceRetention.retentionFix}</p>
+          )}
+          {result.audienceRetention.loopTip && (
+            <p className="text-xs text-stone-500 dark:text-stone-400">Loop tip: {result.audienceRetention.loopTip}</p>
+          )}
+        </AnalysisCard>
+      )}
+
+      <button onClick={onReset}
+        className="w-full py-3 rounded-2xl border border-stone-200 dark:border-stone-700 text-stone-500 dark:text-stone-400 text-sm font-semibold hover:border-violet-300 transition-colors">
+        Analyze another video or photo
+      </button>
+    </div>
+  );
+}
+
+function AnalysisCard({ icon, label, badge, headerRight, children }) {
+  return (
+    <div className="bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-2xl overflow-hidden">
+      <div className="flex items-center gap-2 px-4 py-3 bg-stone-50 dark:bg-stone-800/80 border-b border-stone-100 dark:border-stone-700">
+        {icon}
+        <p className="text-xs font-bold text-stone-700 dark:text-stone-300 uppercase tracking-wider">{label}</p>
+        {badge && <span className="ml-1 text-xs font-bold px-2 py-0.5 bg-violet-100 dark:bg-violet-900/40 text-violet-600 dark:text-violet-400 rounded-full">{badge}</span>}
+        {headerRight && <div className="ml-auto">{headerRight}</div>}
+      </div>
+      <div className="px-4 py-3">{children}</div>
     </div>
   );
 }
