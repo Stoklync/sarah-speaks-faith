@@ -522,7 +522,7 @@ Return ONLY valid JSON — no markdown, no explanation:
                     : `${analyzeFiles.length} photos selected`}
                 </p>
                 <p className="text-sm text-stone-400">
-                  {analyzeFiles[0].type.startsWith('video/') ? 'Video — 6 frames will be extracted' : `${analyzeFiles.length} photo(s) will be analyzed`}
+                  {analyzeFiles[0].type.startsWith('video/') ? 'Full video upload — Gemini watches every frame + audio' : `${analyzeFiles.length} photo(s) will be analyzed by Gemini`}
                 </p>
                 {!analyzing && (
                   <button onClick={e => { e.stopPropagation(); setAnalyzeFiles([]); setAnalyzeResult(null); }}
