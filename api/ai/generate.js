@@ -1,6 +1,7 @@
 /**
  * AI content generation & analytics — uses Groq (fast) with Anthropic as fallback.
- * Requires: GROQ_API_KEY (and optionally ANTHROPIC_API_KEY)
+ * Requires: GROQ_API_KEY (and optionally ANTHROPIC_API_KEY, GEMINI_API_KEY)
+ * Vision: gemini-1.5-pro (photo + full video analysis)
  */
 
 export default async function handler(req, res) {
