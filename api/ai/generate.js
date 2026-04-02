@@ -98,7 +98,8 @@ Respond ONLY in this exact JSON (no markdown, no explanation):
     if (geminiKey) {
       const geminiVisionModels = [
         { version: 'v1beta', model: 'gemini-2.0-flash' },
-        { version: 'v1beta', model: 'gemini-1.5-flash' },
+        { version: 'v1',     model: 'gemini-1.5-flash' },
+        { version: 'v1beta', model: 'gemini-1.5-flash-002' },
         { version: 'v1beta', model: 'gemini-2.0-flash-lite' },
       ];
       const geminiErrors = [];
@@ -122,6 +123,10 @@ Respond ONLY in this exact JSON (no markdown, no explanation):
           if (match) return res.status(200).json({ ...JSON.parse(match[0]), poweredBy: 'gemini' });
           geminiErrors.push(`${model}: empty response`);
         } catch (e) { geminiErrors.push(`${model}: ${e.message}`); }
+      }
+      const quotaHit = geminiErrors.some(e => e.includes('quota') || e.includes('RESOURCE_EXHAUSTED'));
+      if (quotaHit) {
+        return res.status(429).json({ error: 'Your Gemini API free quota is used up for today. It resets at midnight Pacific. To analyze now, add an ANTHROPIC_API_KEY to Vercel — Claude Vision is pay-per-use (~$0.05/analysis, no daily limit).' });
       }
       return res.status(500).json({ error: `Vision errors — ${geminiErrors.join(' | ')}` });
     }
