@@ -97,10 +97,10 @@ Respond ONLY in this exact JSON (no markdown, no explanation):
     const geminiKey = process.env.GEMINI_API_KEY?.trim();
     if (geminiKey) {
       const geminiVisionModels = [
+        'gemini-2.5-flash-preview-05-20',
         'gemini-2.0-flash',
-        'gemini-2.0-flash-exp',
-        'gemini-1.5-flash-latest',
-        'gemini-1.5-pro-latest',
+        'gemini-1.5-flash',
+        'gemini-1.5-pro',
       ];
       let lastGeminiErr = '';
       for (const gModel of geminiVisionModels) {
