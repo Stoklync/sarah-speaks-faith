@@ -41,6 +41,14 @@ Your job NOW is to:
     const prompt = `You are a professional video editor, colorist, and content strategist. Watch this full video ${brandCtx} ${platCtx}. You can SEE every frame, HEAR the audio, voice, and music.
 ${prevCtx}
 
+CRITICAL RULES — follow these exactly or your analysis is worthless:
+- ONLY report issues you can ACTUALLY SEE OR HEAR in this specific video. Do NOT assume common problems exist.
+- If the video starts with footage immediately (no black), do NOT mention a black frame or black intro. Ever.
+- If you cannot clearly see an issue, leave it out — a shorter accurate list beats a long list with guesses.
+- Do NOT repeat issues from a previous analysis unless you can confirm they still exist in THIS video.
+- Every timestamp you mention must correspond to something you actually observed at that time.
+- If something looks good, say it looks good. Do not invent problems.
+
 Respond ONLY in this exact JSON (no markdown, no code fences):
 {
   "overallScore": "A/B/C/D",
