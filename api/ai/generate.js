@@ -9,9 +9,9 @@ export default async function handler(req, res) {
   }
 
   const { mode, topic, description, niche, format, analyticsData, chatHistory, brandName, brandType, brandDesc, preferredModel,
-          bookTitle, bookSubtitle, bookTopic, bookAudience, bookType: bookTypeParam } = req.body || {};
+          bookTitle, bookSubtitle, bookTopic, bookAudience, bookType: bookTypeParam, chapterTitle, chapterContent } = req.body || {};
 
-  const skipTopicCheck = mode === 'chat' || mode === 'outline';
+  const skipTopicCheck = mode === 'chat' || mode === 'outline' || mode === 'analyze';
   if (!skipTopicCheck && !topic && !analyticsData) {
     return res.status(400).json({ error: 'topic or analyticsData is required' });
   }
@@ -421,6 +421,35 @@ RULES:
   {"title": "Day/Chapter title", "subtitle": "One sentence tease of the transformation", "keyPoints": ["concrete point 1", "concrete point 2", "concrete point 3"]},
   {"title": "Day/Chapter title", "subtitle": "One sentence tease", "keyPoints": ["point 1", "point 2", "point 3"]}
 ]`;
+
+  } else if (mode === 'analyze') {
+    // Book chapter analysis — returns JSON with specific improvement suggestions
+    const typeLabel = {
+      devotional: 'Devotional', ebook: 'eBook', workbook: 'Workbook',
+      journal: 'Guided Journal', course: 'Course Guide', brand: 'Brand Playbook',
+    }[bookTypeParam] || 'Book';
+
+    const faithTip = (brandType === 'faith' || brandType === 'stewardship')
+      ? `For this ${typeLabel}, evaluate: Does it include scripture naturally (not forced)? Is the tone warm and real — not preachy? Does it speak authentically to Christian women? Is it personal and vulnerable enough?`
+      : `For this ${typeLabel}, evaluate: Is the value clear and specific? Does it give actionable takeaways? Is the expertise and authority coming through? Is it engaging from the first sentence?`;
+
+    prompt = `You are an expert editor and book writing coach. Analyze this chapter and give specific, honest, actionable improvement suggestions.
+
+Book: "${bookTitle || 'Untitled'}" — ${typeLabel}
+Chapter: "${chapterTitle || 'Unknown'}"
+Audience: ${bookAudience || 'general readers'}
+
+CHAPTER CONTENT:
+${chapterContent || '(empty)'}
+
+EDITORIAL LENS: ${faithTip}
+
+Return ONLY a raw JSON object — no markdown fences, no explanation, no text before { or after }:
+{
+  "strengths": ["one specific thing that genuinely works in this chapter", "another real strength"],
+  "improvements": ["specific actionable improvement 1", "specific actionable improvement 2", "specific actionable improvement 3", "specific actionable improvement 4"],
+  "tip": "One powerful, specific tip tailored to this exact book type and audience that will make the biggest single impact"
+}`;
 
   } else {
     // Content generation mode — brand-type aware

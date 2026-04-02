@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Sparkles, Download, Loader2, Plus, Trash2, ChevronDown, ChevronRight, BookOpen, FileText, Edit3, Check, X, Wand2, AlignLeft, Eye, Upload, Code } from 'lucide-react';
+import { Sparkles, Download, Loader2, Plus, Trash2, ChevronDown, ChevronRight, BookOpen, FileText, Edit3, Check, X, Wand2, AlignLeft, Eye, Upload, Code, Lightbulb } from 'lucide-react';
 import { useStudio } from '../App';
 
 const BOOK_TYPES = [
@@ -51,6 +51,8 @@ export function BookCreator() {
   const [exporting, setExporting] = useState(false);
   const [grammarLoading, setGrammarLoading] = useState(false);
   const [paraphraseLoading, setParaphraseLoading] = useState(false);
+  const [suggestionsLoading, setSuggestionsLoading] = useState(false);
+  const [suggestions, setSuggestions] = useState(null); // {strengths, improvements, tip}
   const [authorName, setAuthorName] = useState(saved?.authorName || bizName);
   const [coverStyle, setCoverStyle] = useState(saved?.coverStyle || 'bold');
   const [showPreview, setShowPreview] = useState(false);
@@ -216,6 +218,34 @@ ${ch.content}
       }
     } catch (e) { console.error(e); }
     setParaphraseLoading(false);
+  };
+
+  const analyzeChapter = async () => {
+    const ch = chapters[activeChapter];
+    if (!ch?.content?.trim()) return;
+    setSuggestionsLoading(true);
+    setSuggestions(null);
+    try {
+      const r = await fetch('/api/ai/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          mode: 'analyze',
+          chapterTitle: ch.title,
+          chapterContent: ch.content,
+          bookTitle: title,
+          bookType: bookType,
+          bookAudience: audience,
+          brandName: bizName,
+          brandType: bizType,
+        }),
+      });
+      const d = await r.json();
+      const raw = (d.reply || '').replace(/^```(?:json)?\n?/i, '').replace(/\n?```$/, '').trim();
+      const match = raw.match(/\{[\s\S]*\}/);
+      if (match) setSuggestions(JSON.parse(match[0]));
+    } catch (e) { console.error(e); }
+    setSuggestionsLoading(false);
   };
 
   const deleteChapter = (index) => {
@@ -801,13 +831,58 @@ ${ch.content}
                     </button>
                     <button
                       onClick={paraphraseChapter}
-                      disabled={grammarLoading || paraphraseLoading || writingChapter !== null}
+                      disabled={grammarLoading || paraphraseLoading || suggestionsLoading || writingChapter !== null}
                       className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-stone-100 dark:bg-stone-700 text-stone-600 dark:text-stone-300 text-xs font-semibold hover:bg-emerald-50 dark:hover:bg-emerald-900/20 hover:text-emerald-600 dark:hover:text-emerald-300 disabled:opacity-40 transition-colors">
                       {paraphraseLoading ? <Loader2 size={11} className="animate-spin" /> : <AlignLeft size={11} />}
                       Improve Writing
                     </button>
+                    <button
+                      onClick={analyzeChapter}
+                      disabled={grammarLoading || paraphraseLoading || suggestionsLoading || writingChapter !== null}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-stone-100 dark:bg-stone-700 text-stone-600 dark:text-stone-300 text-xs font-semibold hover:bg-amber-50 dark:hover:bg-amber-900/20 hover:text-amber-600 dark:hover:text-amber-300 disabled:opacity-40 transition-colors">
+                      {suggestionsLoading ? <Loader2 size={11} className="animate-spin" /> : <Lightbulb size={11} />}
+                      Analyze & Suggest
+                    </button>
                     <p className="text-[10px] text-stone-300 dark:text-stone-600 self-center ml-auto">You can edit freely — AI suggestions replace your current text</p>
                   </div>
+                </div>
+              )}
+
+              {/* AI Suggestions Panel */}
+              {suggestions && (
+                <div className="border-t border-amber-100 dark:border-amber-800/30 px-5 py-4 bg-amber-50/60 dark:bg-amber-900/10">
+                  <div className="flex items-center justify-between mb-3">
+                    <p className="text-xs font-bold text-amber-600 dark:text-amber-400 uppercase tracking-widest flex items-center gap-1.5">
+                      <Lightbulb size={12} /> AI Suggestions for this chapter
+                    </p>
+                    <button onClick={() => setSuggestions(null)} className="text-xs text-stone-400 hover:text-stone-600">Dismiss</button>
+                  </div>
+                  {suggestions.strengths?.length > 0 && (
+                    <div className="mb-3">
+                      <p className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wide mb-1.5">✅ What's working</p>
+                      {suggestions.strengths.map((s, i) => (
+                        <p key={i} className="text-xs text-stone-600 dark:text-stone-300 mb-1 flex gap-1.5 leading-relaxed">
+                          <span className="text-emerald-400 shrink-0 mt-0.5">•</span>{s}
+                        </p>
+                      ))}
+                    </div>
+                  )}
+                  {suggestions.improvements?.length > 0 && (
+                    <div className="mb-3">
+                      <p className="text-[10px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wide mb-1.5">💡 Suggested improvements</p>
+                      {suggestions.improvements.map((s, i) => (
+                        <p key={i} className="text-xs text-stone-600 dark:text-stone-300 mb-1.5 flex gap-1.5 leading-relaxed">
+                          <span className="text-amber-400 shrink-0 mt-0.5">•</span>{s}
+                        </p>
+                      ))}
+                    </div>
+                  )}
+                  {suggestions.tip && (
+                    <div className="bg-violet-50 dark:bg-violet-900/20 border border-violet-200 dark:border-violet-800 rounded-xl px-3 py-2.5">
+                      <p className="text-[10px] font-bold text-violet-600 dark:text-violet-400 uppercase tracking-wide mb-1">🎯 Pro Tip</p>
+                      <p className="text-xs text-stone-700 dark:text-stone-200 leading-relaxed">{suggestions.tip}</p>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

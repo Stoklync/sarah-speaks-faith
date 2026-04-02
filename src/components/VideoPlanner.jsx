@@ -46,6 +46,9 @@ export function VideoTab({ businesses = [], activeBusinessId, setActiveTab }) {
   const [coachLoading, setCoachLoading] = useState(false);
   const [editDescription, setEditDescription] = useState('');
   const [editDescSaved, setEditDescSaved] = useState(false);
+  const [capCutTips, setCapCutTips] = useState(null);
+  const [capCutLoading, setCapCutLoading] = useState(false);
+  const [showCapCutPanel, setShowCapCutPanel] = useState(false);
   const coachBottomRef = useRef(null);
 
   const activeBiz = businesses.find(b => b?.id === activeBusinessId);
@@ -148,6 +151,69 @@ Return ONLY valid JSON in exactly this shape:
     } finally {
       setCoachLoading(false);
     }
+  };
+
+  const getCapCutTips = async () => {
+    if (!concept.trim() || capCutLoading) return;
+    setCapCutLoading(true);
+    setCapCutTips(null);
+    setShowCapCutPanel(true);
+    try {
+      const outlineContext = script?.outline?.length
+        ? `\n\nVIDEO OUTLINE (use these beats to estimate timestamps):\n${script.outline.map((b, i) => `Beat ${i + 1}: ${b}`).join('\n')}\nHook: ${script.hook || ''}`
+        : '';
+      const durationHint = platform.duration.includes('90') ? '~45-90 seconds' : platform.duration.includes('60') ? '~30-60 seconds' : platform.duration.includes('3min') ? '~60-180 seconds' : platform.duration;
+
+      const prompt = `You are a professional CapCut video editor. Give highly specific, timestamp-based CapCut editing tips for this video.
+
+Concept: "${concept}"
+Platform: ${platform.label} (${durationHint})${outlineContext}
+
+Return ONLY valid JSON — no markdown, no explanation:
+{
+  "transitions": [
+    {"timestamp": "0:00–0:03", "transition": "exact CapCut transition name", "reason": "why here and what it achieves"},
+    {"timestamp": "0:08–0:10", "transition": "exact CapCut transition name", "reason": "why here"},
+    {"timestamp": "mid-video", "transition": "exact CapCut transition name", "reason": "why here"},
+    {"timestamp": "final beat", "transition": "exact CapCut transition name", "reason": "closing impact"}
+  ],
+  "effects": [
+    {"name": "exact CapCut effect name", "when": "specific timestamp or moment", "purpose": "what it does for this video"},
+    {"name": "effect 2", "when": "timestamp", "purpose": "purpose"},
+    {"name": "effect 3", "when": "timestamp", "purpose": "purpose"}
+  ],
+  "pacing": "Specific cut timing — e.g. 'Hold hook shot for 3s, then cut every 2-3s during explanation, slow to 4-5s cuts in the emotional moment at 0:40'",
+  "textOverlays": [
+    {"timestamp": "0:00", "text": "exact overlay text idea", "style": "CapCut text style + placement"},
+    {"timestamp": "0:10", "text": "overlay text 2", "style": "style + placement"},
+    {"timestamp": "end", "text": "CTA overlay", "style": "style + placement"}
+  ],
+  "music": {"mood": "specific mood", "genre": "genre in CapCut library", "beatSync": "exactly when to sync cuts to beats for this video"},
+  "colorGrade": "Specific CapCut filter name + settings for the visual tone that fits this content",
+  "photoTips": [
+    {"timestamp": "timestamp or moment", "tip": "specific CapCut tip for photos/images — Ken Burns, zoom, pan, slideshow pacing, etc."},
+    {"timestamp": "timestamp or moment", "tip": "photo tip 2"}
+  ],
+  "proTip": "One advanced CapCut trick (specific feature name) that will make this exact video stand out"
+}`;
+
+      const res = await fetch('/api/ai/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          mode: 'chat',
+          topic: prompt,
+          brandName,
+          brandType,
+          chatHistory: [],
+        }),
+      });
+      const data = await res.json();
+      const raw = data.result || data.text || '';
+      const match = raw.match(/\{[\s\S]*\}/);
+      if (match) setCapCutTips(JSON.parse(match[0]));
+    } catch {}
+    setCapCutLoading(false);
   };
 
   const copy = (text, key) => {
@@ -283,6 +349,115 @@ Return ONLY valid JSON in exactly this shape:
                 </a>
               ))}
             </div>
+          </div>
+
+          {/* CapCut Tips */}
+          <div className="border border-stone-200 dark:border-stone-700 rounded-2xl overflow-hidden">
+            <button
+              onClick={() => { setShowCapCutPanel(v => !v); if (!capCutTips && !capCutLoading) getCapCutTips(); }}
+              className="w-full flex items-center justify-between px-4 py-3 bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-400 hover:to-rose-400 transition-all">
+              <div className="flex items-center gap-2">
+                <span className="text-lg">✂️</span>
+                <div className="text-left">
+                  <p className="text-sm font-bold text-white">CapCut Editor Tips</p>
+                  <p className="text-xs text-pink-100">AI-powered transitions, effects & pacing for your video</p>
+                </div>
+              </div>
+              {capCutLoading
+                ? <Loader2 size={16} className="text-white animate-spin" />
+                : <ChevronDown size={16} className={`text-white transition-transform ${showCapCutPanel ? 'rotate-180' : ''}`} />
+              }
+            </button>
+
+            {showCapCutPanel && (
+              <div className="p-4 space-y-4 bg-pink-50/40 dark:bg-rose-900/10">
+                {capCutLoading && (
+                  <div className="flex items-center gap-2 py-4 justify-center text-stone-400 text-sm">
+                    <Loader2 size={16} className="animate-spin text-pink-500" /> Generating CapCut tips for your video…
+                  </div>
+                )}
+                {capCutTips && (
+                  <>
+                    {capCutTips.transitions?.length > 0 && (
+                      <div>
+                        <p className="text-[10px] font-bold text-pink-600 dark:text-pink-400 uppercase tracking-wider mb-2">🔀 Transitions (with timestamps)</p>
+                        {capCutTips.transitions.map((t, i) => (
+                          <div key={i} className="mb-2 bg-white dark:bg-stone-800 border border-pink-100 dark:border-pink-900/40 rounded-xl px-3 py-2">
+                            <div className="flex items-center gap-2 mb-0.5">
+                              <span className="text-[10px] font-bold text-pink-500 bg-pink-50 dark:bg-pink-900/30 px-1.5 py-0.5 rounded-md">{t.timestamp || `Cut ${i+1}`}</span>
+                              <span className="text-xs font-semibold text-stone-700 dark:text-stone-200">{t.transition || t}</span>
+                            </div>
+                            {t.reason && <p className="text-[11px] text-stone-400 leading-relaxed">{t.reason}</p>}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {capCutTips.effects?.length > 0 && (
+                      <div>
+                        <p className="text-[10px] font-bold text-rose-600 dark:text-rose-400 uppercase tracking-wider mb-2">✨ Effects</p>
+                        {capCutTips.effects.map((e, i) => (
+                          <div key={i} className="mb-2 bg-white dark:bg-stone-800 border border-rose-100 dark:border-rose-900/40 rounded-xl px-3 py-2">
+                            <div className="flex items-center gap-2 mb-0.5">
+                              {(e.when || e.timestamp) && <span className="text-[10px] font-bold text-rose-500 bg-rose-50 dark:bg-rose-900/30 px-1.5 py-0.5 rounded-md">{e.when || e.timestamp}</span>}
+                              <span className="text-xs font-semibold text-stone-700 dark:text-stone-200">{e.name || e}</span>
+                            </div>
+                            {e.purpose && <p className="text-[11px] text-stone-400 leading-relaxed">{e.purpose}</p>}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {capCutTips.pacing && (
+                      <div className="bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-xl px-3 py-2.5">
+                        <p className="text-[10px] font-bold text-orange-600 dark:text-orange-400 uppercase tracking-wider mb-1">⏱ Pacing & Cut Timing</p>
+                        <p className="text-xs text-stone-700 dark:text-stone-200 leading-relaxed">{capCutTips.pacing}</p>
+                      </div>
+                    )}
+                    {capCutTips.textOverlays?.length > 0 && (
+                      <div>
+                        <p className="text-[10px] font-bold text-violet-600 dark:text-violet-400 uppercase tracking-wider mb-2">💬 Text Overlays</p>
+                        {capCutTips.textOverlays.map((t, i) => (
+                          <div key={i} className="mb-2 bg-white dark:bg-stone-800 border border-violet-100 dark:border-violet-900/40 rounded-xl px-3 py-2">
+                            <div className="flex items-center gap-2 mb-0.5">
+                              {(t.timestamp || t.when) && <span className="text-[10px] font-bold text-violet-500 bg-violet-50 dark:bg-violet-900/30 px-1.5 py-0.5 rounded-md">{t.timestamp || t.when}</span>}
+                              <span className="text-xs font-semibold text-stone-700 dark:text-stone-200">"{t.text || t}"</span>
+                            </div>
+                            {t.style && <p className="text-[11px] text-stone-400 leading-relaxed">{t.style}</p>}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {(capCutTips.music || capCutTips.musicMood) && (
+                      <div className="bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-xl px-3 py-2.5">
+                        <p className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider mb-1">🎵 Music & Beat Sync</p>
+                        {capCutTips.music ? (
+                          <>
+                            <p className="text-xs text-stone-700 dark:text-stone-200 font-semibold">{capCutTips.music.mood} · {capCutTips.music.genre}</p>
+                            {capCutTips.music.beatSync && <p className="text-[11px] text-stone-400 mt-0.5 leading-relaxed">{capCutTips.music.beatSync}</p>}
+                          </>
+                        ) : (
+                          <p className="text-xs text-stone-700 dark:text-stone-200 leading-relaxed">{capCutTips.musicMood}</p>
+                        )}
+                      </div>
+                    )}
+                    {capCutTips.colorGrade && (
+                      <div className="bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-xl px-3 py-2.5">
+                        <p className="text-[10px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider mb-1">🎨 Visual Tone & Color Grade</p>
+                        <p className="text-xs text-stone-700 dark:text-stone-200 leading-relaxed">{capCutTips.colorGrade}</p>
+                      </div>
+                    )}
+                    {capCutTips.proTip && (
+                      <div className="bg-gradient-to-r from-pink-50 to-rose-50 dark:from-pink-900/20 dark:to-rose-900/20 border border-pink-200 dark:border-pink-800 rounded-xl px-3 py-2.5">
+                        <p className="text-[10px] font-bold text-pink-600 dark:text-pink-400 uppercase tracking-wider mb-1">🚀 Pro Tip</p>
+                        <p className="text-xs text-stone-700 dark:text-stone-200 leading-relaxed">{capCutTips.proTip}</p>
+                      </div>
+                    )}
+                    <button onClick={getCapCutTips} className="text-xs text-pink-500 hover:text-pink-600 font-semibold flex items-center gap-1">
+                      <RefreshCw size={11} /> Regenerate tips
+                    </button>
+                  </>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Edit description (optional context for coach) */}
