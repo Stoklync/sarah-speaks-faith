@@ -2073,6 +2073,24 @@ const ProContentToolkit = () => {
   const [aiMode, setAiMode] = useState('roadmap');
   const [topic, setTopic] = useState('');
   const [chatInput, setChatInput] = useState('');
+  const [isListeningChat, setIsListeningChat] = useState(false);
+  const [chatModel, setChatModel] = useState('auto'); // 'auto' | 'gemini' | 'openai' | 'claude'
+
+  const startVoiceChat = () => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) { alert('Voice input not supported in this browser. Try Chrome.'); return; }
+    const rec = new SpeechRecognition();
+    rec.lang = 'en-US';
+    rec.interimResults = false;
+    rec.onstart = () => setIsListeningChat(true);
+    rec.onend = () => setIsListeningChat(false);
+    rec.onerror = () => setIsListeningChat(false);
+    rec.onresult = (e) => {
+      const transcript = e.results[0][0].transcript;
+      setChatInput(prev => prev ? prev + ' ' + transcript : transcript);
+    };
+    rec.start();
+  };
 
   // Clear stale results when switching brands
   useEffect(() => {
@@ -2196,6 +2214,7 @@ const ProContentToolkit = () => {
           brandName: bizName,
           brandType: bizType,
           brandDesc: bizDesc,
+          preferredModel: chatModel === 'auto' ? undefined : chatModel,
         })
       });
       const data = await r.json();
@@ -2425,7 +2444,25 @@ const ProContentToolkit = () => {
           </div>
           <div className="flex gap-2">
             <input value={chatInput} onChange={e => setChatInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && !e.shiftKey && sendChat()} placeholder="Ask your AI coach anything…" className="flex-1 bg-stone-50 dark:bg-stone-700 border border-stone-200 dark:border-stone-600 rounded-xl px-4 py-2 text-sm" />
+            <button onClick={startVoiceChat} title="Voice input"
+              className={`px-3 py-2 rounded-xl border text-sm font-bold transition-all ${isListeningChat ? 'bg-rose-500 border-rose-500 text-white animate-pulse' : 'border-stone-200 dark:border-stone-600 text-stone-400 hover:border-violet-400 hover:text-violet-500'}`}>
+              <Mic size={16} />
+            </button>
             <button onClick={sendChat} disabled={aiLoading || !chatInput.trim()} className="px-4 py-2 bg-violet-500 text-white rounded-xl font-bold text-sm disabled:opacity-50 hover:bg-violet-600">Send</button>
+          </div>
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="text-[10px] font-bold text-stone-400 uppercase tracking-wider">AI:</span>
+            {[
+              { id: 'auto', label: 'Auto' },
+              { id: 'gemini', label: 'Gemini' },
+              { id: 'openai', label: 'GPT-4o' },
+              { id: 'claude', label: 'Claude' },
+            ].map(m => (
+              <button key={m.id} onClick={() => setChatModel(m.id)}
+                className={`text-[11px] px-2.5 py-1 rounded-full font-semibold border transition-colors ${chatModel === m.id ? 'bg-violet-500 border-violet-500 text-white' : 'border-stone-200 dark:border-stone-600 text-stone-500 hover:border-violet-300'}`}>
+                {m.label}
+              </button>
+            ))}
           </div>
           <div className="flex flex-wrap gap-2">
             {['What should I post this week?','Give me 5 faith Reel ideas','Write a hook about overcoming fear','How do I get more saves?','Give me a 30-day content plan'].map(q => (

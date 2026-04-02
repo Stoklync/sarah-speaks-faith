@@ -205,44 +205,69 @@ export function VideoTab({ businesses = [], activeBusinessId, setActiveTab, init
       if (isVideo) {
         // ── Full video upload to Gemini (watches the actual video) ──
         const file = analyzeFiles[0];
+        const sizeMB = (file.size / 1024 / 1024).toFixed(1);
+        let fileUri, fileName, state;
 
-        setAnalyzeStatus('Starting upload to Gemini...');
-        const initRes = await fetch('/api/ai/gemini-upload', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ fileName: file.name, mimeType: file.type, fileSize: file.size }),
-        });
-        const initData = await initRes.json();
-        if (!initRes.ok || initData.error) throw new Error(initData.error || 'Upload init failed');
+        // Try direct browser → Google upload first
+        let directOk = false;
+        try {
+          setAnalyzeStatus('Connecting to Gemini...');
+          const initRes = await fetch('/api/ai/gemini-upload', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ fileName: file.name, mimeType: file.type, fileSize: file.size }),
+          });
+          const initData = await initRes.json();
+          if (!initRes.ok || initData.error) throw new Error(initData.error);
 
-        setAnalyzeStatus(`Uploading video (${(file.size / 1024 / 1024).toFixed(1)} MB)...`);
-        const uploadRes = await fetch(initData.uploadUrl, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': file.type,
-            'X-Goog-Upload-Command': 'upload, finalize',
-            'X-Goog-Upload-Offset': '0',
-          },
-          body: file,
-        });
-        if (!uploadRes.ok) throw new Error('Video upload to Gemini failed');
-        const uploadData = await uploadRes.json();
-        const fileUri = uploadData.file?.uri;
-        const fileName = uploadData.file?.name;
-        if (!fileUri) throw new Error('No file URI returned from Gemini');
+          setAnalyzeStatus(`Uploading ${sizeMB} MB to Gemini...`);
+          const uploadRes = await fetch(initData.uploadUrl, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': file.type,
+              'X-Goog-Upload-Command': 'upload, finalize',
+              'X-Goog-Upload-Offset': '0',
+            },
+            body: file,
+          });
+          if (!uploadRes.ok) throw new Error(`Upload failed (${uploadRes.status})`);
+          const uploadData = await uploadRes.json().catch(() => null);
+          fileUri = uploadData?.file?.uri;
+          fileName = uploadData?.file?.name;
+          state = uploadData?.file?.state;
+          if (!fileUri) throw new Error('No file URI from Gemini');
+          directOk = true;
+        } catch (directErr) {
+          // Fallback: route through backend (works for files up to ~4MB)
+          console.warn('Direct upload failed, trying backend proxy:', directErr.message);
+          setAnalyzeStatus(`Uploading via backend (${sizeMB} MB)...`);
+          const proxyRes = await fetch('/api/ai/gemini-upload', {
+            method: 'POST',
+            headers: { 'Content-Type': file.type },
+            body: file,
+          });
+          const proxyData = await proxyRes.json();
+          if (!proxyRes.ok || proxyData.error) throw new Error(proxyData.error || 'Upload failed — try a shorter video clip');
+          fileUri = proxyData.fileUri;
+          fileName = proxyData.fileName;
+          state = proxyData.state;
+        }
 
         // Poll until Gemini has processed the video
-        setAnalyzeStatus('Gemini is processing your video...');
-        let state = uploadData.file?.state;
-        let attempts = 0;
-        while (state === 'PROCESSING' && attempts < 20) {
-          await new Promise(r => setTimeout(r, 3000));
-          const stateRes = await fetch(`/api/ai/gemini-file-state?name=${encodeURIComponent(fileName)}`);
-          const stateData = await stateRes.json();
-          state = stateData.state;
-          attempts++;
+        if (state === 'PROCESSING' || !state) {
+          setAnalyzeStatus('Gemini is processing your video...');
+          let attempts = 0;
+          while (state !== 'ACTIVE' && attempts < 20) {
+            await new Promise(r => setTimeout(r, 3000));
+            if (fileName) {
+              const stateRes = await fetch(`/api/ai/gemini-file-state?name=${encodeURIComponent(fileName)}`);
+              const stateData = await stateRes.json();
+              state = stateData.state;
+            }
+            attempts++;
+          }
         }
-        if (state !== 'ACTIVE') throw new Error('Gemini timed out processing the video. Try a shorter clip.');
+        if (state !== 'ACTIVE') throw new Error('Gemini timed out processing the video. Try a shorter clip (under 60s).');
 
         setAnalyzeStatus('Gemini is watching your full video...');
         // Load previous analysis for continuity
@@ -511,7 +536,18 @@ Return ONLY valid JSON — no markdown, no explanation:
       {mainMode === 'analyze' && (
         <div className="space-y-6">
           <div>
-            <h2 className="text-2xl font-black text-stone-800 dark:text-stone-100">AI Video & Photo Analyzer</h2>
+            <div className="flex items-center justify-between gap-4">
+              <h2 className="text-2xl font-black text-stone-800 dark:text-stone-100">AI Video & Photo Analyzer</h2>
+              {(analyzeResult || analyzeFiles.length > 0) && (
+                <button onClick={() => {
+                  setAnalyzeResult(null); setAnalyzeFiles([]); setSavedAnalysisMeta(null); setAnalyzeError('');
+                  try { localStorage.removeItem(STORE_ANALYSIS); localStorage.removeItem(STORE_HISTORY); } catch {}
+                  setAnalysisHistory([]);
+                }} className="shrink-0 text-xs px-3 py-1.5 rounded-xl border border-stone-200 dark:border-stone-700 text-stone-500 hover:border-violet-400 hover:text-violet-600 transition-colors font-semibold">
+                  + New Project
+                </button>
+              )}
+            </div>
             <p className="text-stone-500 dark:text-stone-400 mt-1 text-sm">Upload your video or photos. AI gives you a pro-level breakdown — timestamps, transitions, music, text overlays, tone, hooks. Everything to make it better.</p>
           </div>
 
@@ -1238,7 +1274,7 @@ function AnalysisResults({ result, onReset }) {
 
       <button onClick={onReset}
         className="w-full py-3 rounded-2xl border border-stone-200 dark:border-stone-700 text-stone-500 dark:text-stone-400 text-sm font-semibold hover:border-violet-300 transition-colors">
-        Analyze another video or photo
+        New Analysis — Upload Different Video
       </button>
     </div>
   );
