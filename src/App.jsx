@@ -8445,6 +8445,19 @@ const PostAnalytics = ({ onOpenSettings }) => {
   const [adCreating, setAdCreating] = useState(false);
   const [adMsg, setAdMsg] = useState('');
 
+  // Analytics dashboard state
+  const [platformTab, setPlatformTab] = useState('overview');
+  const [dateRange, setDateRange] = useState('30d');
+  const [tiktokData, setTiktokData] = useState(() => { try { return JSON.parse(localStorage.getItem(`kreativelync-tiktok-${brandKey}`) || 'null'); } catch { return null; } });
+  const [tiktokForm, setTiktokForm] = useState({ followers: '', avgViews: '', engRate: '', totalVideos: '' });
+  const [showTiktokEntry, setShowTiktokEntry] = useState(false);
+  const saveTiktok = () => {
+    const data = { followers: Number(tiktokForm.followers)||0, avgViews: Number(tiktokForm.avgViews)||0, engRate: Number(tiktokForm.engRate)||0, totalVideos: Number(tiktokForm.totalVideos)||0, updatedAt: new Date().toISOString().slice(0,10) };
+    setTiktokData(data);
+    localStorage.setItem(`kreativelync-tiktok-${brandKey}`, JSON.stringify(data));
+    setShowTiktokEntry(false);
+  };
+
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const state = params.get('state');
@@ -8548,139 +8561,699 @@ const PostAnalytics = ({ onOpenSettings }) => {
   };
 
   const bizPosts = posts.filter(p => p.businessId === activeBusinessId);
-  const totalViews = bizPosts.reduce((s, p) => s + p.views, 0);
-  const totalEngagement = bizPosts.reduce((s, p) => s + p.likes + p.comments + p.shares + p.saves, 0);
-  const avgViews = bizPosts.length ? Math.round(totalViews / bizPosts.length) : 0;
-  const bestPost = bizPosts.length ? bizPosts.reduce((a, b) => (b.views > a.views ? b : a), bizPosts[0]) : null;
-  const byPlatform = bizPosts.reduce((acc, p) => { acc[p.platform] = (acc[p.platform] || 0) + p.views; return acc; }, {});
-
-  const platformLabels = { instagram: 'Instagram', youtube: 'YouTube', tiktok: 'TikTok', facebook: 'Facebook' };
-
-  // Progress tracking
   const now = new Date();
+  const rangeMs = dateRange === '7d' ? 7 : dateRange === '30d' ? 30 : 90;
+  const rangeStart = new Date(now); rangeStart.setDate(now.getDate() - rangeMs);
+  const filteredPosts = bizPosts.filter(p => !p.postedAt || new Date(p.postedAt) >= rangeStart);
+  const totalViews = filteredPosts.reduce((s, p) => s + (p.views || 0), 0);
+  const totalEngagement = filteredPosts.reduce((s, p) => s + (p.likes||0) + (p.comments||0) + (p.shares||0) + (p.saves||0), 0);
+  const avgViews = filteredPosts.length ? Math.round(totalViews / filteredPosts.length) : 0;
+  const byPlatform = filteredPosts.reduce((acc, p) => { acc[p.platform] = (acc[p.platform] || 0) + (p.views||0); return acc; }, {});
+  const platformLabels = { instagram: 'Instagram', youtube: 'YouTube', tiktok: 'TikTok', facebook: 'Facebook' };
   const thisWeekStart = new Date(now); thisWeekStart.setDate(now.getDate() - now.getDay());
   const lastWeekStart = new Date(thisWeekStart); lastWeekStart.setDate(lastWeekStart.getDate() - 7);
-  const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
   const postsThisWeek = bizPosts.filter(p => new Date(p.postedAt) >= thisWeekStart);
   const postsLastWeek = bizPosts.filter(p => { const d = new Date(p.postedAt); return d >= lastWeekStart && d < thisWeekStart; });
-  const postsThisMonth = bizPosts.filter(p => new Date(p.postedAt) >= thisMonthStart);
-  const viewsThisWeek = postsThisWeek.reduce((s, p) => s + p.views, 0);
-  const viewsLastWeek = postsLastWeek.reduce((s, p) => s + p.views, 0);
+  const viewsThisWeek = postsThisWeek.reduce((s, p) => s + (p.views||0), 0);
+  const viewsLastWeek = postsLastWeek.reduce((s, p) => s + (p.views||0), 0);
   const trend = viewsLastWeek > 0 ? Math.round(((viewsThisWeek - viewsLastWeek) / viewsLastWeek) * 100) : null;
+  const engRate = totalViews > 0 ? ((totalEngagement / totalViews) * 100).toFixed(1) : '0.0';
+  const businessName = (businesses || []).find(b => b?.id === activeBusinessId)?.name || 'This account';
+  const maxPlatformViews = Math.max(...Object.values(byPlatform), 1);
 
   return (
-    <div className="max-w-6xl mx-auto space-y-8">
+    <div className="max-w-6xl mx-auto space-y-6">
 
-      {/* Tab bar: Analytics | Ads Manager */}
-      <div className="flex gap-2">
-        <button onClick={() => setAdsTab(false)} className={`px-5 py-2 rounded-xl font-bold text-sm transition-colors ${!adsTab ? 'bg-violet-500 text-white' : 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-300 hover:bg-violet-50 dark:hover:bg-stone-700'}`}>Post Analytics</button>
-        <button onClick={() => { setAdsTab(true); if (!adAccounts.length) loadAdAccounts(); }} className={`px-5 py-2 rounded-xl font-bold text-sm transition-colors ${adsTab ? 'bg-violet-500 text-white' : 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-300 hover:bg-violet-50 dark:hover:bg-stone-700'}`}>Ads Manager</button>
-      </div>
-
-      {/* Connected Accounts */}
-      <div className="bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-3xl p-6 shadow-sm">
-        <h3 className="font-bold text-stone-800 dark:text-stone-100 mb-4 flex items-center gap-2"><Zap size={16} className="text-violet-400" /> Connected Accounts</h3>
-        <div className="flex flex-wrap gap-3 mb-4">
-          <button onClick={connectInstagram} className={`flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-sm border-2 transition-all ${igConnected ? 'border-pink-400 bg-pink-50 dark:bg-pink-900/20 text-pink-700 dark:text-pink-300' : 'border-stone-300 dark:border-stone-600 text-stone-600 dark:text-stone-300 hover:border-pink-400 hover:text-pink-600'}`}>
-            <Instagram size={16} /> {igConnected ? 'Instagram Connected' : 'Connect Instagram'}
-          </button>
-          <button onClick={connectYouTube} className={`flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-sm border-2 transition-all ${ytConnected ? 'border-red-400 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300' : 'border-stone-300 dark:border-stone-600 text-stone-600 dark:text-stone-300 hover:border-red-400 hover:text-red-600'}`}>
-            <Youtube size={16} /> {ytConnected ? 'YouTube Connected' : 'Connect YouTube'}
-          </button>
+      {/* Dashboard Header */}
+      <div className="flex items-start justify-between flex-wrap gap-4">
+        <div>
+          <h2 className="text-2xl font-bold text-stone-800 dark:text-stone-100 flex items-center gap-2">
+            <BarChart2 size={22} className="text-violet-500" /> Analytics
+          </h2>
+          <p className="text-sm text-stone-400 mt-0.5">{businessName}</p>
+        </div>
+        <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex gap-0.5 bg-stone-100 dark:bg-stone-800 rounded-xl p-1">
+            {[['7d','7 days'],['30d','30 days'],['90d','90 days']].map(([val, label]) => (
+              <button key={val} onClick={() => setDateRange(val)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${dateRange === val ? 'bg-white dark:bg-stone-700 text-violet-600 dark:text-violet-400 shadow-sm' : 'text-stone-400 hover:text-stone-600 dark:hover:text-stone-300'}`}>
+                {label}
+              </button>
+            ))}
+          </div>
           {(igConnected || ytConnected) && (
-            <button onClick={syncAll} disabled={syncing} className="flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-sm bg-emerald-500 text-white hover:bg-emerald-600 disabled:opacity-50">
-              {syncing ? <><Loader2 size={14} className="animate-spin" /> Syncing…</> : <><Zap size={14} /> Sync Posts</>}
+            <button onClick={syncAll} disabled={syncing}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-500 text-white font-bold text-sm hover:bg-emerald-600 disabled:opacity-50 transition-colors">
+              {syncing ? <><Loader2 size={14} className="animate-spin" />Syncing…</> : <><Zap size={14} />Sync Now</>}
             </button>
           )}
         </div>
-        {syncMsg && <p className={`text-sm font-medium ${syncMsg.includes('ailed') || syncMsg.includes('Error') ? 'text-red-500' : 'text-emerald-600 dark:text-emerald-400'}`}>{syncMsg}</p>}
-        {!igConnected && !ytConnected && <p className="text-xs text-stone-400">Connect your accounts to auto-sync real post data — views, likes, reach, saves.</p>}
       </div>
 
-      {/* ADS MANAGER TAB */}
-      {adsTab && (
-        <div className="space-y-6">
-          <div className="bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-3xl p-6 shadow-sm">
-            <h3 className="font-bold text-stone-800 dark:text-stone-100 mb-1 flex items-center gap-2"><TrendingUp size={16} className="text-violet-400" /> Meta Ads Manager</h3>
-            <p className="text-xs text-stone-400 mb-4">Create and manage Facebook & Instagram ad campaigns directly. Requires your Instagram/Facebook to be connected with ads permissions.</p>
+      {syncMsg && <p className={`text-sm font-medium px-4 py-2 rounded-xl ${syncMsg.includes('ailed') || syncMsg.includes('Error') ? 'bg-red-50 dark:bg-red-900/20 text-red-600' : 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400'}`}>{syncMsg}</p>}
 
-            {/* Ad Account Selector */}
-            <div className="mb-4">
-              <label className="block text-xs font-bold text-stone-500 uppercase mb-1">Your Ad Accounts</label>
-              {adAccounts.length === 0 ? (
-                <button onClick={loadAdAccounts} disabled={adsLoading} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-stone-100 dark:bg-stone-700 text-sm font-bold text-stone-600 dark:text-stone-300 hover:bg-violet-50 dark:hover:bg-violet-900/20">
-                  {adsLoading ? <><Loader2 size={14} className="animate-spin" /> Loading…</> : 'Load Ad Accounts'}
-                </button>
-              ) : (
-                <div className="flex flex-wrap gap-2">
-                  {adAccounts.map(a => (
-                    <button key={a.id} onClick={() => { setAdAccountId(a.id); localStorage.setItem('kreativelync-ad-account', a.id); loadCampaigns(a.id); }}
-                      className={`px-3 py-1.5 rounded-lg text-sm font-bold border-2 ${adAccountId === a.id ? 'border-violet-400 bg-violet-50 dark:bg-rose-900/20 text-rose-700 dark:text-violet-300' : 'border-stone-200 dark:border-stone-600 text-stone-600 dark:text-stone-300'}`}>
-                      {a.name} ({a.currency}) — Balance: {a.balance}
+      {/* KPI Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {[
+          { label: 'Total Views', value: totalViews.toLocaleString(), sub: `${filteredPosts.length} posts · ${dateRange}`, color: 'violet', icon: <TrendingUp size={16}/> },
+          { label: 'Engagement Rate', value: `${engRate}%`, sub: `${totalEngagement.toLocaleString()} total actions`, color: 'pink', icon: <Flame size={16}/> },
+          { label: 'Avg Views / Post', value: avgViews.toLocaleString(), sub: 'across all platforms', color: 'amber', icon: <BarChart2 size={16}/> },
+          { label: 'Week-over-Week', value: trend != null ? `${trend >= 0 ? '+' : ''}${trend}%` : '—', sub: trend != null ? (trend >= 0 ? 'views up vs last week' : 'views down vs last week') : 'not enough data yet', color: trend != null ? (trend >= 0 ? 'emerald' : 'red') : 'stone', icon: <Target size={16}/> },
+        ].map(({ label, value, sub, color, icon }) => (
+          <div key={label} className="bg-white dark:bg-stone-800 border border-stone-100 dark:border-stone-700 rounded-2xl p-5 shadow-sm">
+            <div className={`flex items-center gap-1.5 mb-3 text-${color}-500`}>{icon}<span className="text-[10px] font-bold uppercase tracking-wide text-stone-400">{label}</span></div>
+            <p className={`text-2xl font-bold text-${color}-600 dark:text-${color}-400`}>{value}</p>
+            <p className="text-xs text-stone-400 mt-1">{sub}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Platform Nav Tabs */}
+      <div className="flex gap-1 bg-stone-100 dark:bg-stone-800/80 rounded-2xl p-1.5 overflow-x-auto">
+        {[
+          ['overview', 'Overview'],
+          ['instagram', igConnected ? 'Instagram ●' : 'Instagram'],
+          ['youtube', ytConnected ? 'YouTube ●' : 'YouTube'],
+          ['tiktok', tiktokData ? 'TikTok ●' : 'TikTok'],
+          ['ads', 'Ads Manager'],
+        ].map(([tab, label]) => (
+          <button key={tab}
+            onClick={() => { setPlatformTab(tab); if (tab === 'ads') { setAdsTab(true); if (!adAccounts.length) loadAdAccounts(); } else setAdsTab(false); }}
+            className={`flex-shrink-0 px-4 py-2 rounded-xl text-sm font-bold transition-colors whitespace-nowrap ${platformTab === tab ? 'bg-white dark:bg-stone-700 text-violet-600 dark:text-violet-400 shadow-sm' : 'text-stone-500 dark:text-stone-400 hover:text-stone-700 dark:hover:text-stone-200'}`}>
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {/* ── OVERVIEW TAB ── */}
+      {platformTab === 'overview' && (
+        <div className="space-y-5">
+
+          {/* Platform breakdown bar chart */}
+          {Object.keys(byPlatform).length > 0 && (
+            <div className="bg-white dark:bg-stone-800 border border-stone-100 dark:border-stone-700 rounded-2xl p-6 shadow-sm">
+              <h3 className="font-bold text-stone-800 dark:text-stone-100 mb-5 flex items-center gap-2"><BarChart2 size={16} className="text-violet-400" />Platform Breakdown</h3>
+              <div className="space-y-4">
+                {Object.entries(byPlatform).sort((a,b) => b[1]-a[1]).map(([platform, views]) => {
+                  const pct = Math.round((views / maxPlatformViews) * 100);
+                  const colors = { instagram: 'bg-pink-400', youtube: 'bg-red-400', tiktok: 'bg-stone-800 dark:bg-stone-200', facebook: 'bg-blue-400' };
+                  return (
+                    <div key={platform}>
+                      <div className="flex justify-between text-sm mb-1.5">
+                        <span className="font-semibold text-stone-700 dark:text-stone-200">{platformLabels[platform] || platform}</span>
+                        <span className="font-mono text-stone-400">{views.toLocaleString()} views</span>
+                      </div>
+                      <div className="h-2.5 bg-stone-100 dark:bg-stone-700 rounded-full overflow-hidden">
+                        <div className={`h-full rounded-full transition-all ${colors[platform] || 'bg-violet-400'}`} style={{ width: `${pct}%` }} />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Top posts */}
+          {filteredPosts.length > 0 && (
+            <div className="bg-white dark:bg-stone-800 border border-stone-100 dark:border-stone-700 rounded-2xl p-6 shadow-sm">
+              <h3 className="font-bold text-stone-800 dark:text-stone-100 mb-4 flex items-center gap-2"><Sparkles size={16} className="text-amber-400" />Top Performing Posts</h3>
+              <div className="space-y-2">
+                {[...filteredPosts].sort((a,b) => (b.views||0)-(a.views||0)).slice(0,5).map((p, i) => (
+                  <div key={p.id} className="flex items-center gap-3 p-3 rounded-xl bg-stone-50 dark:bg-stone-700/50 hover:bg-violet-50 dark:hover:bg-stone-700 transition-colors">
+                    <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-black flex-shrink-0 ${i === 0 ? 'bg-amber-400 text-white' : i === 1 ? 'bg-stone-300 dark:bg-stone-500 text-white' : i === 2 ? 'bg-orange-300 text-white' : 'bg-stone-100 dark:bg-stone-600 text-stone-500'}`}>#{i+1}</div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-stone-800 dark:text-stone-100 text-sm truncate">{p.title || 'Untitled'}</p>
+                      <p className="text-xs text-stone-400">{platformLabels[p.platform] || p.platform} · {p.postedAt || '—'}</p>
+                    </div>
+                    <div className="text-right flex-shrink-0">
+                      <p className="font-mono font-bold text-sm text-violet-600 dark:text-violet-400">{(p.views||0).toLocaleString()}</p>
+                      <p className="text-xs text-stone-400">{((p.likes||0)+(p.comments||0)+(p.saves||0)).toLocaleString()} eng</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* All accounts summary (multi-brand) */}
+          {(businesses || []).length > 1 && (
+            <div className="bg-white dark:bg-stone-800 border border-stone-100 dark:border-stone-700 rounded-2xl p-6 shadow-sm">
+              <h3 className="font-bold text-stone-800 dark:text-stone-100 mb-4 flex items-center gap-2"><Users size={16} className="text-violet-400" />All Accounts</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {(businesses || []).filter(Boolean).map((b) => {
+                  const bp = posts.filter(p => p.businessId === b.id);
+                  const tv = bp.reduce((s, p) => s + (p.views||0), 0);
+                  const isActive = activeBusinessId === b.id;
+                  return (
+                    <button key={b.id} onClick={() => setActiveBusinessId(b.id)}
+                      className={`relative p-4 rounded-xl border-2 text-left transition-all ${isActive ? 'border-violet-400 bg-violet-50 dark:bg-violet-900/20' : 'border-stone-200 dark:border-stone-600 hover:border-violet-300'}`}>
+                      <p className="font-bold text-stone-800 dark:text-stone-100 text-sm">{b.name}</p>
+                      <p className="text-xs text-stone-400 mt-0.5">{bp.length} posts</p>
+                      <p className="text-lg font-bold text-violet-600 dark:text-violet-400 mt-1">{tv.toLocaleString()} <span className="text-xs font-normal text-stone-400">views</span></p>
+                      {isActive && <span className="absolute top-3 right-3 text-[10px] font-bold text-violet-500 bg-violet-100 dark:bg-violet-900/40 px-2 py-0.5 rounded-full">Active</span>}
                     </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* AI Insights */}
+          <div className="bg-white dark:bg-stone-800 border border-stone-100 dark:border-stone-700 rounded-2xl p-6 shadow-sm">
+            <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+              <h3 className="font-bold text-stone-800 dark:text-stone-100 flex items-center gap-2"><Brain size={16} className="text-violet-400" />AI Expert Analysis</h3>
+              <button onClick={async () => {
+                setAiLoading(true); setAiError(null);
+                try {
+                  const r = await fetch('/api/ai/generate', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ mode: 'analytics', topic: `Analytics for ${businessName}`, analyticsData: { brandName: businessName, posts: bizPosts, account: igProfile, growth: igGrowth, insights: igInsights, audience: igAudience } })
+                  });
+                  const data = await r.json();
+                  if (data.error) throw new Error(data.error);
+                  setAiInsights(data);
+                } catch (e) { setAiError(e?.message || 'AI analysis failed'); }
+                finally { setAiLoading(false); }
+              }} disabled={aiLoading || bizPosts.length === 0}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500/20 to-violet-500/20 text-amber-700 dark:text-amber-400 font-bold text-sm hover:from-amber-500/30 hover:to-violet-500/30 disabled:opacity-50 border border-amber-200 dark:border-amber-800 transition-all">
+                {aiLoading ? <><Loader2 size={14} className="animate-spin" />Analyzing…</> : <><Sparkles size={14} />Get AI Insights</>}
+              </button>
+            </div>
+            {bizPosts.length === 0 && !aiInsights && <p className="text-sm text-stone-400">Log posts first, then get AI analysis of your performance.</p>}
+            {aiError && <p className="text-sm text-red-500">{aiError}</p>}
+            {aiInsights && typeof aiInsights === 'object' && (
+              <div className="space-y-3">
+                {aiInsights.verdict && (
+                  <div className="p-4 rounded-xl bg-gradient-to-br from-amber-50 to-violet-50 dark:from-amber-900/20 dark:to-violet-900/20 border border-amber-200 dark:border-amber-800">
+                    <p className="font-bold text-amber-800 dark:text-amber-300 mb-1 text-sm">Expert Verdict</p>
+                    <p className="text-stone-700 dark:text-stone-300 text-sm">{aiInsights.verdict}</p>
+                  </div>
+                )}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {aiInsights.whatIsWorking?.length > 0 && (
+                    <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800">
+                      <p className="font-bold text-emerald-700 dark:text-emerald-400 mb-2 text-sm">What's working</p>
+                      <ul className="space-y-1">{aiInsights.whatIsWorking.map((w,i) => <li key={i} className="text-stone-600 dark:text-stone-300 text-xs">• {w}</li>)}</ul>
+                    </div>
+                  )}
+                  {aiInsights.whatIsNotWorking?.length > 0 && (
+                    <div className="p-3 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
+                      <p className="font-bold text-red-700 dark:text-red-400 mb-2 text-sm">Fix these</p>
+                      <ul className="space-y-1">{aiInsights.whatIsNotWorking.map((w,i) => <li key={i} className="text-stone-600 dark:text-stone-300 text-xs">• {w}</li>)}</ul>
+                    </div>
+                  )}
+                </div>
+                {aiInsights.contentStrategy && (
+                  <div className="p-3 rounded-xl bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
+                    <p className="font-bold text-blue-700 dark:text-blue-400 mb-1 text-sm">Content Strategy</p>
+                    <p className="text-stone-600 dark:text-stone-300 text-xs">{aiInsights.contentStrategy}</p>
+                  </div>
+                )}
+                {aiInsights.growthHack && (
+                  <div className="p-3 rounded-xl bg-violet-50 dark:bg-violet-900/20 border border-violet-200 dark:border-violet-800">
+                    <p className="font-bold text-violet-700 dark:text-violet-400 mb-1 text-sm">Growth Hack</p>
+                    <p className="text-stone-600 dark:text-stone-300 text-xs">{aiInsights.growthHack}</p>
+                  </div>
+                )}
+                {aiInsights.contentIdeas?.length > 0 && (
+                  <div className="p-3 rounded-xl bg-stone-50 dark:bg-stone-700/40 border border-stone-200 dark:border-stone-600">
+                    <p className="font-bold text-stone-700 dark:text-stone-200 mb-2 text-sm">Content Ideas</p>
+                    <div className="space-y-2">
+                      {aiInsights.contentIdeas.map((idea, i) => (
+                        <div key={i} className="bg-white dark:bg-stone-700 rounded-lg p-2">
+                          <p className="font-semibold text-stone-700 dark:text-stone-200 text-xs">{i+1}. {idea.title}</p>
+                          {idea.hook && <p className="text-violet-600 dark:text-violet-400 text-xs mt-0.5">Hook: "{idea.hook}"</p>}
+                          {idea.why && <p className="text-stone-500 dark:text-stone-400 text-xs mt-0.5">{idea.why}</p>}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* All posts log */}
+          {bizPosts.length > 0 ? (
+            <div className="space-y-2">
+              <h3 className="font-bold text-stone-500 dark:text-stone-400 text-xs uppercase tracking-wide">All Posts ({bizPosts.length})</h3>
+              {[...bizPosts].reverse().map(p => (
+                <div key={p.id} className="bg-white dark:bg-stone-800 border border-stone-100 dark:border-stone-700 rounded-xl p-4 shadow-sm">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="font-bold text-stone-800 dark:text-stone-100 truncate text-sm">{p.title}</p>
+                      <p className="text-xs text-stone-400 mt-0.5">{platformLabels[p.platform] || p.platform} · {p.postedAt}{(p.source === 'instagram_api' || p.source === 'youtube_api') ? ' · synced' : ''}</p>
+                    </div>
+                    <div className="flex gap-1 shrink-0">
+                      <select onChange={e => { if (e.target.value) { updatePost(p.id, { businessId: e.target.value }); e.target.value = ''; } }} defaultValue="" className="px-2 py-1 rounded-lg text-xs bg-stone-100 dark:bg-stone-700 text-stone-500 border-0 cursor-pointer">
+                        <option value="" disabled>Move…</option>
+                        {(businesses || []).filter(Boolean).map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+                      </select>
+                      <button onClick={() => editingId === p.id ? saveEdit(p.id) : startEdit(p)} className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${editingId === p.id ? 'bg-violet-500 text-white' : 'bg-stone-100 dark:bg-stone-700 text-stone-600 dark:text-stone-300 hover:bg-violet-50'}`}>{editingId === p.id ? 'Save' : 'Edit'}</button>
+                      <button onClick={() => removePost(p.id)} className="p-1.5 rounded-lg text-stone-300 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20"><Trash2 size={13} /></button>
+                    </div>
+                  </div>
+                  {editingId === p.id ? (
+                    <div className="grid grid-cols-4 gap-2 mt-3">
+                      {['views','likes','comments','saves'].map(f => (
+                        <div key={f}>
+                          <label className="block text-[10px] text-stone-500 uppercase font-bold mb-1">{f}</label>
+                          <input type="number" value={editBuf[f]} onChange={e => setEditBuf(b => ({...b,[f]:e.target.value}))} placeholder="0" className="w-full bg-stone-100 dark:bg-stone-700 border border-stone-200 dark:border-stone-600 rounded-lg px-2 py-1.5 text-sm font-mono" />
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="flex flex-wrap gap-3 mt-2 text-xs text-stone-400">
+                      <span><strong className="text-stone-700 dark:text-stone-200 font-mono">{p.views != null ? Number(p.views).toLocaleString() : '—'}</strong> views</span>
+                      <span><strong className="text-stone-700 dark:text-stone-200 font-mono">{(p.likes||0).toLocaleString()}</strong> likes</span>
+                      <span><strong className="text-stone-700 dark:text-stone-200 font-mono">{(p.comments||0).toLocaleString()}</strong> comments</span>
+                      <span><strong className="text-stone-700 dark:text-stone-200 font-mono">{(p.saves||0).toLocaleString()}</strong> saves</span>
+                      {p.totalPlays > 0 && <span><strong className="text-stone-700 dark:text-stone-200 font-mono">{p.totalPlays.toLocaleString()}</strong> plays</span>}
+                      {p.avgWatchTimeMs > 0 && <span><strong className="text-violet-600 dark:text-violet-400 font-mono">{(p.avgWatchTimeMs/1000).toFixed(1)}s</strong> avg watch</span>}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12 bg-stone-50 dark:bg-stone-800/50 rounded-2xl border border-dashed border-stone-200 dark:border-stone-700">
+              <BarChart2 size={40} className="text-stone-300 dark:text-stone-600 mx-auto mb-3" />
+              <p className="font-bold text-stone-500 dark:text-stone-400">No posts yet</p>
+              <p className="text-xs text-stone-400 mt-1">Export or publish a video to start tracking performance.</p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── INSTAGRAM TAB ── */}
+      {platformTab === 'instagram' && (
+        <div className="space-y-5">
+          <div className="bg-white dark:bg-stone-800 border border-stone-100 dark:border-stone-700 rounded-2xl p-6 shadow-sm">
+            <div className="flex items-center justify-between flex-wrap gap-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-pink-400 to-violet-500 flex items-center justify-center"><Instagram size={20} className="text-white" /></div>
+                <div>
+                  <h3 className="font-bold text-stone-800 dark:text-stone-100">Instagram</h3>
+                  <p className="text-xs text-stone-400">{igConnected ? `Connected${igProfile ? ` · @${igProfile.username}` : ''}` : 'Not connected'}</p>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <button onClick={connectInstagram} className={`flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-sm border-2 transition-all ${igConnected ? 'border-pink-400 bg-pink-50 dark:bg-pink-900/20 text-pink-700 dark:text-pink-300' : 'border-stone-300 dark:border-stone-600 text-stone-600 dark:text-stone-300 hover:border-pink-400 hover:text-pink-600'}`}>
+                  <Instagram size={14} />{igConnected ? 'Reconnect' : 'Connect'}
+                </button>
+                {igConnected && <button onClick={syncAll} disabled={syncing} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-500 text-white font-bold text-sm hover:bg-emerald-600 disabled:opacity-50">
+                  {syncing ? <Loader2 size={14} className="animate-spin" /> : <Zap size={14} />}Sync
+                </button>}
+              </div>
+            </div>
+          </div>
+
+          {igProfile ? (
+            <>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                {[
+                  { label: 'Followers', value: (igProfile.followers||0).toLocaleString(), color: 'pink' },
+                  { label: 'New (30d)', value: igGrowth?.newFollowers30d != null ? `${igGrowth.newFollowers30d >= 0 ? '+' : ''}${igGrowth.newFollowers30d}` : '—', color: 'violet' },
+                  { label: 'Reach (30d)', value: (igGrowth?.reach30d||0).toLocaleString(), color: 'amber' },
+                  { label: 'Profile Views', value: (igGrowth?.profileViews30d||0).toLocaleString(), color: 'emerald' },
+                ].map(({ label, value, color }) => (
+                  <div key={label} className={`bg-${color}-50 dark:bg-${color}-900/20 rounded-2xl p-4 text-center`}>
+                    <p className={`text-2xl font-bold text-${color}-600 dark:text-${color}-400`}>{value}</p>
+                    <p className="text-xs text-stone-500 mt-1">{label}</p>
+                  </div>
+                ))}
+              </div>
+
+              {igInsights && (
+                <div className="bg-white dark:bg-stone-800 border border-stone-100 dark:border-stone-700 rounded-2xl p-5 shadow-sm">
+                  <h4 className="font-bold text-stone-800 dark:text-stone-100 mb-4 flex items-center gap-2"><Flame size={14} className="text-violet-400" />What works for you</h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {igInsights.avgReelEngagement > igInsights.avgImageEngagement ? (
+                      <div className="p-3 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl">
+                        <p className="text-emerald-700 dark:text-emerald-400 text-xs">Reels get <strong>{igInsights.avgReelEngagement}</strong> avg engagement vs <strong>{igInsights.avgImageEngagement}</strong> for images — post more Reels</p>
+                      </div>
+                    ) : igInsights.avgImageEngagement > 0 ? (
+                      <div className="p-3 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl">
+                        <p className="text-emerald-700 dark:text-emerald-400 text-xs">Images get <strong>{igInsights.avgImageEngagement}</strong> avg engagement — strong photo content</p>
+                      </div>
+                    ) : null}
+                    {igInsights.bestPostingHour && (
+                      <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl">
+                        <p className="text-blue-700 dark:text-blue-400 text-xs">Best time to post: <strong>{igInsights.bestPostingHour}</strong></p>
+                      </div>
+                    )}
+                    {igInsights.topPost && (
+                      <div className="p-3 bg-amber-50 dark:bg-amber-900/20 rounded-xl sm:col-span-2">
+                        <p className="text-amber-800 dark:text-amber-300 text-xs">Top post: "<strong>{igInsights.topPost.title?.slice(0,60)}</strong>" — {igInsights.topPost.engagement} engagement
+                          {igInsights.topPost.permalink && <a href={igInsights.topPost.permalink} target="_blank" rel="noopener noreferrer" className="ml-2 text-violet-500 underline">View</a>}
+                        </p>
+                      </div>
+                    )}
+                    {igProfile.followers > 0 && igGrowth?.newFollowers30d != null && (
+                      <div className="p-3 bg-stone-50 dark:bg-stone-700/40 rounded-xl sm:col-span-2">
+                        <p className="text-stone-600 dark:text-stone-400 text-xs">Growth rate: <strong>{((igGrowth.newFollowers30d / igProfile.followers) * 100).toFixed(1)}%</strong> this month
+                          {igGrowth.newFollowers30d < 0 ? ' — lost followers. Post more consistently.' : igGrowth.newFollowers30d === 0 ? ' — flat. Try a new format.' : ' — keep it up!'}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {igAudience && (igAudience.topCountries?.length > 0 || Object.keys(igAudience.genderAge || {}).length > 0) && (
+                <div className="bg-white dark:bg-stone-800 border border-stone-100 dark:border-stone-700 rounded-2xl p-5 shadow-sm">
+                  <h4 className="font-bold text-stone-800 dark:text-stone-100 mb-4 flex items-center gap-2"><Users size={14} className="text-violet-400" />Audience</h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                    {igAudience.topCountries?.length > 0 && (
+                      <div>
+                        <p className="text-xs font-bold text-stone-400 uppercase mb-2">Top Countries</p>
+                        <div className="space-y-2">
+                          {igAudience.topCountries.map(({ name, count }) => {
+                            const total = igAudience.topCountries.reduce((s,c) => s+c.count, 0);
+                            const pct = total ? Math.round((count/total)*100) : 0;
+                            return (
+                              <div key={name}>
+                                <div className="flex justify-between text-xs mb-0.5"><span className="text-stone-700 dark:text-stone-200">{name}</span><span className="text-stone-400">{pct}%</span></div>
+                                <div className="h-1.5 bg-stone-100 dark:bg-stone-700 rounded-full"><div className="h-full bg-violet-400 rounded-full" style={{ width: `${pct}%` }} /></div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                    {igAudience.topCities?.length > 0 && (
+                      <div>
+                        <p className="text-xs font-bold text-stone-400 uppercase mb-2">Top Cities</p>
+                        <div className="space-y-2">
+                          {igAudience.topCities.map(({ name, count }) => {
+                            const total = igAudience.topCities.reduce((s,c) => s+c.count, 0);
+                            const pct = total ? Math.round((count/total)*100) : 0;
+                            return (
+                              <div key={name}>
+                                <div className="flex justify-between text-xs mb-0.5"><span className="text-stone-700 dark:text-stone-200">{name}</span><span className="text-stone-400">{pct}%</span></div>
+                                <div className="h-1.5 bg-stone-100 dark:bg-stone-700 rounded-full"><div className="h-full bg-amber-400 rounded-full" style={{ width: `${pct}%` }} /></div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                    {Object.keys(igAudience.genderAge || {}).length > 0 && (
+                      <div className="sm:col-span-2">
+                        <p className="text-xs font-bold text-stone-400 uppercase mb-2">Age & Gender</p>
+                        <div className="flex flex-wrap gap-2">
+                          {Object.entries(igAudience.genderAge).sort((a,b) => b[1]-a[1]).slice(0,8).map(([key, count]) => (
+                            <span key={key} className="px-2.5 py-1 bg-stone-50 dark:bg-stone-700 border border-stone-200 dark:border-stone-600 rounded-lg text-xs">
+                              <span className={key.startsWith('F') ? 'text-pink-500' : 'text-blue-500'}>{key.startsWith('F') ? '♀' : '♂'}</span> {key.replace('F.','').replace('M.','')} · {count}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {bizPosts.filter(p => p.platform === 'instagram').length > 0 && (
+                <div className="space-y-2">
+                  <h4 className="font-bold text-stone-400 text-xs uppercase tracking-wide">Instagram Posts</h4>
+                  {[...bizPosts.filter(p => p.platform === 'instagram')].reverse().map(p => (
+                    <div key={p.id} className="bg-white dark:bg-stone-800 border border-stone-100 dark:border-stone-700 rounded-xl p-4 shadow-sm">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0"><p className="font-bold text-stone-800 dark:text-stone-100 truncate text-sm">{p.title}</p><p className="text-xs text-stone-400">{p.postedAt}</p></div>
+                        <div className="flex gap-1 shrink-0">
+                          <button onClick={() => editingId === p.id ? saveEdit(p.id) : startEdit(p)} className={`px-3 py-1.5 rounded-lg text-xs font-bold ${editingId === p.id ? 'bg-violet-500 text-white' : 'bg-stone-100 dark:bg-stone-700 text-stone-600 dark:text-stone-300'}`}>{editingId === p.id ? 'Save' : 'Edit'}</button>
+                          <button onClick={() => removePost(p.id)} className="p-1.5 rounded-lg text-stone-300 hover:text-red-500"><Trash2 size={13} /></button>
+                        </div>
+                      </div>
+                      {editingId === p.id ? (
+                        <div className="grid grid-cols-4 gap-2 mt-3">{['views','likes','comments','saves'].map(f => (<div key={f}><label className="block text-[10px] text-stone-500 uppercase font-bold mb-1">{f}</label><input type="number" value={editBuf[f]} onChange={e => setEditBuf(b => ({...b,[f]:e.target.value}))} placeholder="0" className="w-full bg-stone-100 dark:bg-stone-700 border border-stone-200 dark:border-stone-600 rounded-lg px-2 py-1.5 text-sm font-mono" /></div>))}</div>
+                      ) : (
+                        <div className="flex flex-wrap gap-3 mt-2 text-xs text-stone-400">
+                          <span><strong className="text-stone-700 dark:text-stone-200 font-mono">{(p.views||0).toLocaleString()}</strong> views</span>
+                          <span><strong className="text-stone-700 dark:text-stone-200 font-mono">{(p.likes||0).toLocaleString()}</strong> likes</span>
+                          <span><strong className="text-stone-700 dark:text-stone-200 font-mono">{(p.comments||0).toLocaleString()}</strong> comments</span>
+                          <span><strong className="text-stone-700 dark:text-stone-200 font-mono">{(p.saves||0).toLocaleString()}</strong> saves</span>
+                        </div>
+                      )}
+                    </div>
                   ))}
                 </div>
               )}
-              {adsError && <p className="text-sm text-red-500 mt-2">{adsError}</p>}
+            </>
+          ) : (
+            <div className="text-center py-12 bg-stone-50 dark:bg-stone-800/50 rounded-2xl border border-dashed border-stone-200 dark:border-stone-700">
+              <Instagram size={36} className="text-pink-300 mx-auto mb-3" />
+              <p className="font-bold text-stone-600 dark:text-stone-300">Connect Instagram to see your analytics</p>
+              <p className="text-xs text-stone-400 mt-1 mb-4">Followers, reach, profile views, demographics & more</p>
+              <button onClick={connectInstagram} className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-pink-500 to-violet-500 text-white font-bold text-sm hover:opacity-90">Connect Instagram</button>
             </div>
+          )}
+        </div>
+      )}
 
-            {/* Active Campaigns */}
+      {/* ── YOUTUBE TAB ── */}
+      {platformTab === 'youtube' && (
+        <div className="space-y-5">
+          <div className="bg-white dark:bg-stone-800 border border-stone-100 dark:border-stone-700 rounded-2xl p-6 shadow-sm">
+            <div className="flex items-center justify-between flex-wrap gap-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-red-500 flex items-center justify-center"><Youtube size={20} className="text-white" /></div>
+                <div><h3 className="font-bold text-stone-800 dark:text-stone-100">YouTube</h3><p className="text-xs text-stone-400">{ytConnected ? 'Connected' : 'Not connected'}</p></div>
+              </div>
+              <div className="flex gap-2">
+                <button onClick={connectYouTube} className={`flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-sm border-2 transition-all ${ytConnected ? 'border-red-400 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300' : 'border-stone-300 dark:border-stone-600 text-stone-600 dark:text-stone-300 hover:border-red-400 hover:text-red-600'}`}>
+                  <Youtube size={14} />{ytConnected ? 'Reconnect' : 'Connect'}
+                </button>
+                {ytConnected && <button onClick={syncAll} disabled={syncing} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-500 text-white font-bold text-sm hover:bg-emerald-600 disabled:opacity-50">
+                  {syncing ? <Loader2 size={14} className="animate-spin" /> : <Zap size={14} />}Sync
+                </button>}
+              </div>
+            </div>
+          </div>
+          {!ytConnected && (
+            <div className="text-center py-12 bg-stone-50 dark:bg-stone-800/50 rounded-2xl border border-dashed border-stone-200 dark:border-stone-700">
+              <Youtube size={36} className="text-red-300 mx-auto mb-3" />
+              <p className="font-bold text-stone-600 dark:text-stone-300">Connect YouTube to see your video analytics</p>
+              <p className="text-xs text-stone-400 mt-1 mb-4">Views, likes, comments, watch time & more</p>
+              <button onClick={connectYouTube} className="px-5 py-2.5 rounded-xl bg-red-500 text-white font-bold text-sm hover:bg-red-600">Connect YouTube</button>
+            </div>
+          )}
+          {bizPosts.filter(p => p.platform === 'youtube').length > 0 && (
+            <div className="space-y-2">
+              <h4 className="font-bold text-stone-400 text-xs uppercase tracking-wide">YouTube Videos</h4>
+              {[...bizPosts.filter(p => p.platform === 'youtube')].reverse().map(p => (
+                <div key={p.id} className="bg-white dark:bg-stone-800 border border-stone-100 dark:border-stone-700 rounded-xl p-4 shadow-sm">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0"><p className="font-bold text-stone-800 dark:text-stone-100 truncate text-sm">{p.title}</p><p className="text-xs text-stone-400">{p.postedAt}</p></div>
+                    <div className="flex gap-1 shrink-0">
+                      <button onClick={() => editingId === p.id ? saveEdit(p.id) : startEdit(p)} className={`px-3 py-1.5 rounded-lg text-xs font-bold ${editingId === p.id ? 'bg-violet-500 text-white' : 'bg-stone-100 dark:bg-stone-700 text-stone-600 dark:text-stone-300'}`}>{editingId === p.id ? 'Save' : 'Edit'}</button>
+                      <button onClick={() => removePost(p.id)} className="p-1.5 rounded-lg text-stone-300 hover:text-red-500"><Trash2 size={13} /></button>
+                    </div>
+                  </div>
+                  {editingId === p.id ? (
+                    <div className="grid grid-cols-4 gap-2 mt-3">{['views','likes','comments','saves'].map(f => (<div key={f}><label className="block text-[10px] text-stone-500 uppercase font-bold mb-1">{f}</label><input type="number" value={editBuf[f]} onChange={e => setEditBuf(b => ({...b,[f]:e.target.value}))} placeholder="0" className="w-full bg-stone-100 dark:bg-stone-700 border border-stone-200 dark:border-stone-600 rounded-lg px-2 py-1.5 text-sm font-mono" /></div>))}</div>
+                  ) : (
+                    <div className="flex flex-wrap gap-3 mt-2 text-xs text-stone-400">
+                      <span><strong className="text-stone-700 dark:text-stone-200 font-mono">{(p.views||0).toLocaleString()}</strong> views</span>
+                      <span><strong className="text-stone-700 dark:text-stone-200 font-mono">{(p.likes||0).toLocaleString()}</strong> likes</span>
+                      <span><strong className="text-stone-700 dark:text-stone-200 font-mono">{(p.comments||0).toLocaleString()}</strong> comments</span>
+                      {p.avgWatchTimeMs > 0 && <span><strong className="text-violet-600 dark:text-violet-400 font-mono">{(p.avgWatchTimeMs/1000).toFixed(1)}s</strong> avg watch</span>}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── TIKTOK TAB ── */}
+      {platformTab === 'tiktok' && (
+        <div className="space-y-5">
+          <div className="bg-white dark:bg-stone-800 border border-stone-100 dark:border-stone-700 rounded-2xl p-6 shadow-sm">
+            <div className="flex items-center justify-between flex-wrap gap-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-stone-900 dark:bg-stone-100 flex items-center justify-center">
+                  <span className="font-black text-white dark:text-stone-900 text-sm">TT</span>
+                </div>
+                <div>
+                  <h3 className="font-bold text-stone-800 dark:text-stone-100">TikTok</h3>
+                  <p className="text-xs text-stone-400">{tiktokData ? `Last updated ${tiktokData.updatedAt}` : 'Manual entry — paste your stats from TikTok Studio'}</p>
+                </div>
+              </div>
+              <button onClick={() => setShowTiktokEntry(v => !v)}
+                className="px-4 py-2 rounded-xl bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 font-bold text-sm hover:opacity-90 transition-opacity">
+                {showTiktokEntry ? 'Cancel' : tiktokData ? 'Update Stats' : 'Enter Stats'}
+              </button>
+            </div>
+            <div className="mt-4 p-3 bg-amber-50 dark:bg-amber-900/20 rounded-xl border border-amber-200 dark:border-amber-700">
+              <p className="text-xs text-amber-700 dark:text-amber-400"><strong>TikTok API:</strong> TikTok requires a developer app approved by TikTok — takes weeks. Until then, copy your stats from TikTok Studio (tiktok.com/creator-center → Analytics) and enter them here to track over time.</p>
+            </div>
+          </div>
+
+          {showTiktokEntry && (
+            <div className="bg-white dark:bg-stone-800 border border-stone-100 dark:border-stone-700 rounded-2xl p-6 shadow-sm">
+              <h4 className="font-bold text-stone-800 dark:text-stone-100 mb-1">Enter Your TikTok Stats</h4>
+              <p className="text-xs text-stone-400 mb-4">TikTok app → Profile → Creator Tools → Analytics</p>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-5">
+                {[
+                  { key: 'followers', label: 'Followers', placeholder: '1000' },
+                  { key: 'avgViews', label: 'Avg Views/Video', placeholder: '500' },
+                  { key: 'engRate', label: 'Eng. Rate (%)', placeholder: '3.5' },
+                  { key: 'totalVideos', label: 'Total Videos', placeholder: '24' },
+                ].map(({ key, label, placeholder }) => (
+                  <div key={key}>
+                    <label className="block text-xs font-bold text-stone-500 uppercase mb-1">{label}</label>
+                    <input type="number" value={tiktokForm[key]} onChange={e => setTiktokForm(f => ({...f,[key]:e.target.value}))} placeholder={placeholder}
+                      className="w-full bg-stone-50 dark:bg-stone-700 border border-stone-200 dark:border-stone-600 rounded-xl px-3 py-2 text-sm font-mono" />
+                  </div>
+                ))}
+              </div>
+              <button onClick={saveTiktok} className="px-5 py-2.5 rounded-xl bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 font-bold text-sm hover:opacity-90">Save Stats</button>
+            </div>
+          )}
+
+          {tiktokData && !showTiktokEntry ? (
+            <>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                {[
+                  { label: 'Followers', value: (tiktokData.followers||0).toLocaleString(), color: 'stone' },
+                  { label: 'Avg Views/Video', value: (tiktokData.avgViews||0).toLocaleString(), color: 'violet' },
+                  { label: 'Eng. Rate', value: `${tiktokData.engRate||0}%`, color: 'pink' },
+                  { label: 'Total Videos', value: (tiktokData.totalVideos||0).toLocaleString(), color: 'amber' },
+                ].map(({ label, value, color }) => (
+                  <div key={label} className="bg-white dark:bg-stone-800 border border-stone-100 dark:border-stone-700 rounded-2xl p-5 text-center shadow-sm">
+                    <p className={`text-2xl font-bold text-${color}-600 dark:text-${color}-400`}>{value}</p>
+                    <p className="text-xs text-stone-400 mt-1">{label}</p>
+                  </div>
+                ))}
+              </div>
+              {bizPosts.filter(p => p.platform === 'tiktok').length > 0 && (
+                <div className="space-y-2">
+                  <h4 className="font-bold text-stone-400 text-xs uppercase tracking-wide">TikTok Posts</h4>
+                  {[...bizPosts.filter(p => p.platform === 'tiktok')].reverse().map(p => (
+                    <div key={p.id} className="bg-white dark:bg-stone-800 border border-stone-100 dark:border-stone-700 rounded-xl p-4 shadow-sm">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0"><p className="font-bold text-stone-800 dark:text-stone-100 truncate text-sm">{p.title}</p><p className="text-xs text-stone-400">{p.postedAt}</p></div>
+                        <div className="flex gap-1 shrink-0">
+                          <button onClick={() => editingId === p.id ? saveEdit(p.id) : startEdit(p)} className={`px-3 py-1.5 rounded-lg text-xs font-bold ${editingId === p.id ? 'bg-violet-500 text-white' : 'bg-stone-100 dark:bg-stone-700 text-stone-600 dark:text-stone-300'}`}>{editingId === p.id ? 'Save' : 'Edit'}</button>
+                          <button onClick={() => removePost(p.id)} className="p-1.5 rounded-lg text-stone-300 hover:text-red-500"><Trash2 size={13} /></button>
+                        </div>
+                      </div>
+                      {editingId === p.id ? (
+                        <div className="grid grid-cols-4 gap-2 mt-3">{['views','likes','comments','saves'].map(f => (<div key={f}><label className="block text-[10px] text-stone-500 uppercase font-bold mb-1">{f}</label><input type="number" value={editBuf[f]} onChange={e => setEditBuf(b => ({...b,[f]:e.target.value}))} placeholder="0" className="w-full bg-stone-100 dark:bg-stone-700 border border-stone-200 dark:border-stone-600 rounded-lg px-2 py-1.5 text-sm font-mono" /></div>))}</div>
+                      ) : (
+                        <div className="flex flex-wrap gap-3 mt-2 text-xs text-stone-400">
+                          <span><strong className="text-stone-700 dark:text-stone-200 font-mono">{(p.views||0).toLocaleString()}</strong> views</span>
+                          <span><strong className="text-stone-700 dark:text-stone-200 font-mono">{(p.likes||0).toLocaleString()}</strong> likes</span>
+                          <span><strong className="text-stone-700 dark:text-stone-200 font-mono">{(p.comments||0).toLocaleString()}</strong> comments</span>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>
+          ) : !showTiktokEntry && (
+            <div className="text-center py-12 bg-stone-50 dark:bg-stone-800/50 rounded-2xl border border-dashed border-stone-200 dark:border-stone-700">
+              <div className="w-12 h-12 rounded-2xl bg-stone-900 dark:bg-stone-100 flex items-center justify-center mx-auto mb-3">
+                <span className="font-black text-white dark:text-stone-900">TT</span>
+              </div>
+              <p className="font-bold text-stone-600 dark:text-stone-300">No TikTok stats yet</p>
+              <p className="text-xs text-stone-400 mt-1 mb-4">Enter your numbers from TikTok Studio to track them here</p>
+              <button onClick={() => setShowTiktokEntry(true)} className="px-5 py-2.5 rounded-xl bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 font-bold text-sm hover:opacity-90">Add TikTok Stats</button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── ADS TAB ── */}
+      {platformTab === 'ads' && (
+        <div className="space-y-5">
+          <div className="bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-2xl p-6 shadow-sm">
+            <h3 className="font-bold text-stone-800 dark:text-stone-100 mb-1 flex items-center gap-2"><TrendingUp size={16} className="text-violet-400" />Meta Ads Manager</h3>
+            <p className="text-xs text-stone-400 mb-4">Create and manage Facebook & Instagram ad campaigns. Requires Instagram/Facebook connected with ads permissions.</p>
+            {!igConnected && (
+              <div className="p-4 bg-amber-50 dark:bg-amber-900/20 rounded-xl border border-amber-200 dark:border-amber-700 mb-4">
+                <p className="text-sm text-amber-700 dark:text-amber-400 font-medium">Connect Instagram/Facebook first to access ad accounts.</p>
+                <button onClick={connectInstagram} className="mt-2 px-4 py-2 rounded-xl bg-pink-500 text-white font-bold text-sm hover:bg-pink-600">Connect Instagram</button>
+              </div>
+            )}
+            {igConnected && (
+              <div className="mb-4">
+                <label className="block text-xs font-bold text-stone-500 uppercase mb-2">Your Ad Accounts</label>
+                {adAccounts.length === 0 ? (
+                  <button onClick={loadAdAccounts} disabled={adsLoading} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-stone-100 dark:bg-stone-700 text-sm font-bold text-stone-600 dark:text-stone-300 hover:bg-violet-50 dark:hover:bg-violet-900/20">
+                    {adsLoading ? <><Loader2 size={14} className="animate-spin" />Loading…</> : 'Load Ad Accounts'}
+                  </button>
+                ) : (
+                  <div className="flex flex-wrap gap-2">
+                    {adAccounts.map(a => (
+                      <button key={a.id} onClick={() => { setAdAccountId(a.id); localStorage.setItem('kreativelync-ad-account', a.id); loadCampaigns(a.id); }}
+                        className={`px-3 py-1.5 rounded-lg text-sm font-bold border-2 ${adAccountId === a.id ? 'border-violet-400 bg-violet-50 dark:bg-violet-900/20 text-violet-700 dark:text-violet-300' : 'border-stone-200 dark:border-stone-600 text-stone-600 dark:text-stone-300'}`}>
+                        {a.name} ({a.currency}) — Balance: {a.balance}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {adsError && <p className="text-sm text-red-500 mt-2">{adsError}</p>}
+              </div>
+            )}
             {campaigns.length > 0 && (
               <div className="mb-6">
                 <h4 className="text-xs font-bold text-stone-500 uppercase mb-2">Active Campaigns</h4>
                 <div className="space-y-2">
                   {campaigns.map(c => (
-                    <div key={c.id} className="flex items-center justify-between bg-stone-50 dark:bg-stone-700/50 rounded-xl px-4 py-2">
+                    <div key={c.id} className="flex items-center justify-between bg-stone-50 dark:bg-stone-700/50 rounded-xl px-4 py-3">
                       <div>
                         <p className="font-bold text-sm text-stone-800 dark:text-stone-100">{c.name}</p>
                         <p className="text-xs text-stone-400">{c.objective} · {c.status}</p>
                       </div>
                       <div className="text-right">
-                        <p className="font-mono font-bold text-sm text-violet-600 dark:text-violet-400">${(Number(c.spend || 0) / 100).toFixed(2)} spent</p>
-                        <p className="text-xs text-stone-400">{c.impressions || 0} impressions · {c.clicks || 0} clicks</p>
+                        <p className="font-mono font-bold text-sm text-violet-600 dark:text-violet-400">${(Number(c.spend||0)/100).toFixed(2)} spent</p>
+                        <p className="text-xs text-stone-400">{c.impressions||0} impressions · {c.clicks||0} clicks</p>
                       </div>
                     </div>
                   ))}
                 </div>
               </div>
             )}
-
-            {/* Create Campaign */}
             {adAccountId && (
               <div className="border-t border-stone-200 dark:border-stone-700 pt-5">
                 <h4 className="text-xs font-bold text-stone-500 uppercase mb-3">Create New Campaign</h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
                   <div>
                     <label className="block text-xs text-stone-500 mb-1">Campaign Name</label>
-                    <input value={adForm.name} onChange={e => setAdForm(f => ({ ...f, name: e.target.value }))} placeholder="e.g. Spring Promo 2026" className="w-full bg-stone-50 dark:bg-stone-700 border border-stone-200 dark:border-stone-600 rounded-xl px-3 py-2 text-sm" />
+                    <input value={adForm.name} onChange={e => setAdForm(f=>({...f,name:e.target.value}))} placeholder="e.g. Spring Promo 2026" className="w-full bg-stone-50 dark:bg-stone-700 border border-stone-200 dark:border-stone-600 rounded-xl px-3 py-2 text-sm" />
                   </div>
                   <div>
                     <label className="block text-xs text-stone-500 mb-1">Objective</label>
-                    <select value={adForm.objective} onChange={e => setAdForm(f => ({ ...f, objective: e.target.value }))} className="w-full bg-stone-50 dark:bg-stone-700 border border-stone-200 dark:border-stone-600 rounded-xl px-3 py-2 text-sm">
-                      <option value="OUTCOME_ENGAGEMENT">Engagement (likes, comments)</option>
-                      <option value="OUTCOME_TRAFFIC">Traffic (clicks to website)</option>
-                      <option value="OUTCOME_LEADS">Leads (capture info)</option>
+                    <select value={adForm.objective} onChange={e => setAdForm(f=>({...f,objective:e.target.value}))} className="w-full bg-stone-50 dark:bg-stone-700 border border-stone-200 dark:border-stone-600 rounded-xl px-3 py-2 text-sm">
+                      <option value="OUTCOME_ENGAGEMENT">Engagement</option>
+                      <option value="OUTCOME_TRAFFIC">Traffic</option>
+                      <option value="OUTCOME_LEADS">Leads</option>
                       <option value="OUTCOME_AWARENESS">Brand Awareness</option>
                     </select>
                   </div>
                   <div>
                     <label className="block text-xs text-stone-500 mb-1">Daily Budget (USD)</label>
-                    <input type="number" min="1" value={adForm.budget} onChange={e => setAdForm(f => ({ ...f, budget: e.target.value }))} placeholder="10" className="w-full bg-stone-50 dark:bg-stone-700 border border-stone-200 dark:border-stone-600 rounded-xl px-3 py-2 text-sm" />
+                    <input type="number" min="1" value={adForm.budget} onChange={e => setAdForm(f=>({...f,budget:e.target.value}))} placeholder="10" className="w-full bg-stone-50 dark:bg-stone-700 border border-stone-200 dark:border-stone-600 rounded-xl px-3 py-2 text-sm" />
                   </div>
                   <div>
                     <label className="block text-xs text-stone-500 mb-1">Duration (days)</label>
-                    <input type="number" min="1" max="90" value={adForm.days} onChange={e => setAdForm(f => ({ ...f, days: e.target.value }))} placeholder="7" className="w-full bg-stone-50 dark:bg-stone-700 border border-stone-200 dark:border-stone-600 rounded-xl px-3 py-2 text-sm" />
+                    <input type="number" min="1" max="90" value={adForm.days} onChange={e => setAdForm(f=>({...f,days:e.target.value}))} placeholder="7" className="w-full bg-stone-50 dark:bg-stone-700 border border-stone-200 dark:border-stone-600 rounded-xl px-3 py-2 text-sm" />
                   </div>
                   <div className="sm:col-span-2">
                     <label className="block text-xs text-stone-500 mb-1">Destination URL</label>
-                    <input value={adForm.url} onChange={e => setAdForm(f => ({ ...f, url: e.target.value }))} placeholder="https://yourwebsite.com" className="w-full bg-stone-50 dark:bg-stone-700 border border-stone-200 dark:border-stone-600 rounded-xl px-3 py-2 text-sm" />
+                    <input value={adForm.url} onChange={e => setAdForm(f=>({...f,url:e.target.value}))} placeholder="https://yourwebsite.com" className="w-full bg-stone-50 dark:bg-stone-700 border border-stone-200 dark:border-stone-600 rounded-xl px-3 py-2 text-sm" />
                   </div>
                 </div>
-                <p className="text-xs text-stone-400 mb-3">Total budget: <strong>${(Number(adForm.budget || 0) * Number(adForm.days || 0)).toFixed(2)}</strong> over {adForm.days} days</p>
+                <p className="text-xs text-stone-400 mb-3">Total budget: <strong>${(Number(adForm.budget||0)*Number(adForm.days||0)).toFixed(2)}</strong> over {adForm.days} days</p>
                 <button onClick={createAd} disabled={adCreating} className="flex items-center gap-2 px-5 py-2 rounded-xl bg-violet-500 text-white font-bold text-sm hover:bg-violet-600 disabled:opacity-50">
-                  {adCreating ? <><Loader2 size={14} className="animate-spin" /> Creating…</> : <><Zap size={14} /> Launch Campaign</>}
+                  {adCreating ? <><Loader2 size={14} className="animate-spin" />Creating…</> : <><Zap size={14} />Launch Campaign</>}
                 </button>
-                {adMsg && <p className={`text-sm mt-2 font-medium ${adMsg.includes('Error') || adMsg.includes('Failed') ? 'text-red-500' : 'text-emerald-600 dark:text-emerald-400'}`}>{adMsg}</p>}
+                {adMsg && <p className={`text-sm mt-2 font-medium ${adMsg.includes('Error')||adMsg.includes('Failed') ? 'text-red-500' : 'text-emerald-600 dark:text-emerald-400'}`}>{adMsg}</p>}
                 <p className="text-xs text-stone-400 mt-3">Note: Ads require <strong>ads_management</strong> permission approved by Meta. In development mode, only your own account can run ads.</p>
               </div>
             )}
@@ -8688,377 +9261,6 @@ const PostAnalytics = ({ onOpenSettings }) => {
         </div>
       )}
 
-      {/* ANALYTICS TAB — hidden when Ads tab active */}
-      {!adsTab && <>
-
-      {/* Instagram Growth Dashboard */}
-      {igProfile && (
-        <div className="bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-3xl p-6 shadow-sm space-y-5">
-          {/* Profile header */}
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-violet-400 to-pink-500 flex items-center justify-center text-white font-bold text-lg">
-              {igProfile.username?.[0]?.toUpperCase() || 'I'}
-            </div>
-            <div>
-              <h3 className="font-bold text-stone-800 dark:text-stone-100 flex items-center gap-2">
-                <Instagram size={16} className="text-pink-500" /> @{igProfile.username}
-              </h3>
-              <p className="text-xs text-stone-400">{igProfile.bio?.slice(0, 80) || 'Instagram Business Account'}</p>
-            </div>
-          </div>
-
-          {/* Key numbers */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <div className="bg-pink-50 dark:bg-pink-900/20 rounded-2xl p-4 text-center">
-              <p className="text-2xl font-bold text-pink-600 dark:text-pink-400">{(igProfile.followers || 0).toLocaleString()}</p>
-              <p className="text-xs text-stone-500 mt-1">Followers</p>
-            </div>
-            <div className="bg-violet-50 dark:bg-rose-900/20 rounded-2xl p-4 text-center">
-              <p className="text-2xl font-bold text-violet-600 dark:text-violet-400">{igGrowth?.newFollowers30d != null ? (igGrowth.newFollowers30d >= 0 ? '+' : '') + igGrowth.newFollowers30d : '—'}</p>
-              <p className="text-xs text-stone-500 mt-1">New followers (30d)</p>
-            </div>
-            <div className="bg-amber-50 dark:bg-amber-900/20 rounded-2xl p-4 text-center">
-              <p className="text-2xl font-bold text-amber-600 dark:text-amber-400">{(igGrowth?.reach30d || 0).toLocaleString()}</p>
-              <p className="text-xs text-stone-500 mt-1">Reach (30d)</p>
-            </div>
-            <div className="bg-emerald-50 dark:bg-emerald-900/20 rounded-2xl p-4 text-center">
-              <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{(igGrowth?.profileViews30d || 0).toLocaleString()}</p>
-              <p className="text-xs text-stone-500 mt-1">Profile views (30d)</p>
-            </div>
-          </div>
-
-          {/* What works */}
-          {igInsights && (
-            <div className="bg-stone-50 dark:bg-stone-700/40 rounded-2xl p-4 space-y-2">
-              <h4 className="font-bold text-stone-700 dark:text-stone-200 flex items-center gap-2"><Flame size={14} className="text-violet-400" /> What works for you</h4>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
-                {igInsights.avgReelEngagement > igInsights.avgImageEngagement ? (
-                  <p className="text-emerald-700 dark:text-emerald-400">✓ <strong>Reels</strong> get {igInsights.avgReelEngagement} avg engagement vs {igInsights.avgImageEngagement} for images — post more Reels</p>
-                ) : igInsights.avgImageEngagement > 0 ? (
-                  <p className="text-emerald-700 dark:text-emerald-400">✓ <strong>Images</strong> get {igInsights.avgImageEngagement} avg engagement vs {igInsights.avgReelEngagement} for Reels</p>
-                ) : null}
-                {igInsights.bestPostingHour && (
-                  <p className="text-blue-700 dark:text-blue-400">✓ Best time to post: <strong>{igInsights.bestPostingHour}</strong> based on your top posts</p>
-                )}
-                {igInsights.topPost && (
-                  <p className="text-stone-600 dark:text-stone-300 sm:col-span-2">🏆 Top post: "<strong>{igInsights.topPost.title?.slice(0,60)}</strong>" — {igInsights.topPost.engagement} engagement
-                    {igInsights.topPost.permalink && <a href={igInsights.topPost.permalink} target="_blank" rel="noopener noreferrer" className="ml-2 text-violet-500 underline">View</a>}
-                  </p>
-                )}
-                {igProfile.followers > 0 && igGrowth?.newFollowers30d != null && (
-                  <p className="text-stone-500 dark:text-stone-400">
-                    Growth rate: <strong>{((igGrowth.newFollowers30d / igProfile.followers) * 100).toFixed(1)}%</strong> this month
-                    {igGrowth.newFollowers30d < 0 ? ' — you lost followers. Try posting more consistently.' : igGrowth.newFollowers30d === 0 ? ' — flat growth. Try a new content format.' : ' — keep it up!'}
-                  </p>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Audience Demographics */}
-          {igAudience && (igAudience.topCountries?.length > 0 || Object.keys(igAudience.genderAge || {}).length > 0) && (
-            <div className="bg-stone-50 dark:bg-stone-700/40 rounded-2xl p-4 space-y-3">
-              <h4 className="font-bold text-stone-700 dark:text-stone-200 flex items-center gap-2"><Users size={14} className="text-violet-400" /> Your audience</h4>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-                {igAudience.topCountries?.length > 0 && (
-                  <div>
-                    <p className="text-xs font-semibold text-stone-500 dark:text-stone-400 mb-2 uppercase tracking-wide">Top countries</p>
-                    <div className="space-y-1">
-                      {igAudience.topCountries.map(({ name, count }) => {
-                        const total = igAudience.topCountries.reduce((s, c) => s + c.count, 0);
-                        const pct = total ? Math.round((count / total) * 100) : 0;
-                        return (
-                          <div key={name}>
-                            <div className="flex justify-between text-xs mb-0.5"><span>{name}</span><span className="text-stone-500">{pct}%</span></div>
-                            <div className="h-1.5 bg-stone-200 dark:bg-stone-600 rounded-full"><div className="h-1.5 bg-violet-400 rounded-full" style={{ width: `${pct}%` }} /></div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-                {igAudience.topCities?.length > 0 && (
-                  <div>
-                    <p className="text-xs font-semibold text-stone-500 dark:text-stone-400 mb-2 uppercase tracking-wide">Top cities</p>
-                    <div className="space-y-1">
-                      {igAudience.topCities.map(({ name, count }) => {
-                        const total = igAudience.topCities.reduce((s, c) => s + c.count, 0);
-                        const pct = total ? Math.round((count / total) * 100) : 0;
-                        return (
-                          <div key={name}>
-                            <div className="flex justify-between text-xs mb-0.5"><span>{name}</span><span className="text-stone-500">{pct}%</span></div>
-                            <div className="h-1.5 bg-stone-200 dark:bg-stone-600 rounded-full"><div className="h-1.5 bg-amber-400 rounded-full" style={{ width: `${pct}%` }} /></div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-                {Object.keys(igAudience.genderAge || {}).length > 0 && (
-                  <div className="sm:col-span-2">
-                    <p className="text-xs font-semibold text-stone-500 dark:text-stone-400 mb-2 uppercase tracking-wide">Age & gender</p>
-                    <div className="flex flex-wrap gap-2">
-                      {Object.entries(igAudience.genderAge).sort((a,b) => b[1]-a[1]).slice(0,8).map(([key, count]) => (
-                        <span key={key} className="px-2 py-1 bg-white dark:bg-stone-600 border border-stone-200 dark:border-stone-500 rounded-lg text-xs">
-                          <span className={key.startsWith('F') ? 'text-pink-500' : 'text-blue-500'}>{key.startsWith('F') ? '♀' : '♂'}</span> {key.replace('F.','').replace('M.','')} — {count}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Auto-log notice */}
-      <div className="bg-gradient-to-br from-violet-50 to-amber-50 dark:from-stone-800 dark:to-stone-800 border-2 border-violet-200 dark:border-rose-800 rounded-3xl p-6 shadow-lg">
-        <h2 className="text-2xl font-bold text-stone-800 dark:text-stone-100 mb-1">Post Analytics</h2>
-        <p className="text-stone-500 dark:text-stone-400 text-sm">Posts are logged automatically every time you export a video or click Publish. After your post goes live, tap it below to add the numbers.</p>
-        {bizPosts.length === 0 && (
-          <p className="mt-4 text-sm text-violet-500 font-medium">No posts yet — export or publish a video to get started.</p>
-        )}
-      </div>
-
-      {/* All accounts overview */}
-      {(businesses || []).length > 0 && (
-        <div className="bg-white dark:bg-stone-800 border border-violet-100 dark:border-stone-700 rounded-3xl p-6 shadow-sm">
-          <h3 className="text-lg font-bold text-stone-800 dark:text-stone-100 mb-4 flex items-center gap-2"><BarChart2 size={20} className="text-violet-400" /> Each account — overall progress</h3>
-          <p className="text-xs text-stone-500 dark:text-stone-400 mb-4">Progress and AI analysis are separate per business. Select a business below to see details.</p>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {(businesses || []).filter(Boolean).map((b) => {
-              const bp = posts.filter(p => p.businessId === b.id);
-              const tv = bp.reduce((s, p) => s + (p.views || 0), 0);
-              const te = bp.reduce((s, p) => s + p.likes + p.comments + p.shares + p.saves, 0);
-              return (
-                <div key={b.id} className={`relative p-4 rounded-2xl border transition-all ${activeBusinessId === b.id ? 'border-violet-400 bg-violet-50 dark:bg-rose-900/20 dark:border-rose-600' : 'border-stone-200 dark:border-stone-600'}`}>
-                  <button onClick={() => setActiveBusinessId(b.id)} className="text-left w-full">
-                    <p className="font-bold text-stone-800 dark:text-stone-100">{b.name}</p>
-                    <p className="text-sm text-stone-500 dark:text-stone-400 mt-1">{bp.length} posts · {tv.toLocaleString()} views · {te.toLocaleString()} engagement</p>
-                  </button>
-                  {bp.length > 0 && (
-                    <button onClick={() => { if (confirm(`Remove all ${bp.length} posts from ${b.name}?`)) setPosts(prev => prev.filter(p => p.businessId !== b.id)); }} className="absolute top-3 right-3 p-1 rounded-lg text-stone-300 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20">
-                      <Trash2 size={13} />
-                    </button>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* Progress tracker (current business) */}
-      <div className="bg-white dark:bg-stone-800 border border-violet-100 dark:border-stone-700 rounded-3xl p-6 shadow-sm">
-        <h3 className="text-lg font-bold text-stone-800 dark:text-stone-100 mb-4 flex items-center gap-2"><BarChart2 size={20} className="text-violet-400" /> {(businesses || []).find(b => b?.id === activeBusinessId)?.name || 'This account'} — this week</h3>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div>
-            <span className="text-[10px] font-bold text-stone-400 uppercase">This week</span>
-            <p className="text-xl font-bold text-violet-600 dark:text-violet-400">{postsThisWeek.length} posts · {viewsThisWeek.toLocaleString()} views</p>
-          </div>
-          <div>
-            <span className="text-[10px] font-bold text-stone-400 uppercase">Last week</span>
-            <p className="text-xl font-bold text-stone-600 dark:text-stone-400">{postsLastWeek.length} posts · {viewsLastWeek.toLocaleString()} views</p>
-          </div>
-          <div>
-            <span className="text-[10px] font-bold text-stone-400 uppercase">This month</span>
-            <p className="text-xl font-bold text-violet-600 dark:text-violet-400">{postsThisMonth.length} posts</p>
-          </div>
-          <div>
-            <span className="text-[10px] font-bold text-stone-400 uppercase">Week-over-week</span>
-            <p className={`text-xl font-bold ${trend != null ? (trend >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400') : 'text-stone-500'}`}>
-              {trend != null ? (trend >= 0 ? `+${trend}%` : `${trend}%`) : '—'}
-            </p>
-          </div>
-        </div>
-        <p className="text-xs text-stone-500 dark:text-stone-400 mt-3">Log posts when you publish, then update views/likes each week to track growth. If numbers stop growing, try a new style, thumbnail, or intro.</p>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white dark:bg-stone-800 border border-violet-100 dark:border-stone-700 rounded-2xl p-5 shadow-sm">
-          <span className="text-[10px] font-bold text-stone-400 uppercase">Total views</span>
-          <p className="text-2xl font-bold text-violet-600 dark:text-violet-400 mt-1">{totalViews.toLocaleString()}</p>
-        </div>
-        <div className="bg-white dark:bg-stone-800 border border-violet-100 dark:border-stone-700 rounded-2xl p-5 shadow-sm">
-          <span className="text-[10px] font-bold text-stone-400 uppercase">Total engagement</span>
-          <p className="text-2xl font-bold text-violet-600 dark:text-violet-400 mt-1">{totalEngagement.toLocaleString()}</p>
-        </div>
-        <div className="bg-white dark:bg-stone-800 border border-violet-100 dark:border-stone-700 rounded-2xl p-5 shadow-sm">
-          <span className="text-[10px] font-bold text-stone-400 uppercase">Avg views/post</span>
-          <p className="text-2xl font-bold text-violet-600 dark:text-violet-400 mt-1">{avgViews.toLocaleString()}</p>
-        </div>
-        <div className="bg-white dark:bg-stone-800 border border-violet-100 dark:border-stone-700 rounded-2xl p-5 shadow-sm">
-          <span className="text-[10px] font-bold text-stone-400 uppercase">Posts logged</span>
-          <p className="text-2xl font-bold text-violet-600 dark:text-violet-400 mt-1">{bizPosts.length}</p>
-        </div>
-      </div>
-
-      {bizPosts.length > 0 && (
-        <div className="bg-white dark:bg-stone-800 border border-violet-100 dark:border-stone-700 rounded-3xl p-6 shadow-sm">
-          <h3 className="text-lg font-bold text-stone-800 dark:text-stone-100 mb-4 flex items-center gap-2"><TrendingUp size={20} className="text-violet-400" /> Insights & tips</h3>
-          <ul className="space-y-3 text-sm text-stone-600 dark:text-stone-300">
-            {bestPost && <li><strong>Top performer:</strong> &quot;{bestPost.title}&quot; — {bestPost.views != null ? bestPost.views.toLocaleString() : '—'} views. {bestPost.notes && `Notes: ${bestPost.notes}`}</li>}
-            {Object.keys(byPlatform).length > 0 && <li><strong>By platform:</strong> {Object.entries(byPlatform).map(([k, v]) => `${platformLabels[k] || k}: ${v.toLocaleString()} views`).join('; ')}</li>}
-            <li><strong>Improve:</strong> Log 3+ posts per platform to see patterns. Note your hook, time posted, and format.</li>
-            <li><strong>What works:</strong> Reels/Shorts at 9–11am or 7–9pm tend to get more reach. Saves and shares matter more than likes.</li>
-          </ul>
-          <div className="mt-4 pt-4 border-t border-stone-200 dark:border-stone-600">
-            <button onClick={async () => {
-              setAiLoading(true); setAiError(null);
-              try {
-                const businessName = businesses?.find(b => b.id === activeBusinessId)?.name || 'Your brand';
-                const r = await fetch('/api/ai/generate', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({
-                    mode: 'analytics',
-                    topic: `Analytics for ${businessName}`,
-                    analyticsData: {
-                      brandName: businessName,
-                      posts: bizPosts,
-                      account: igProfile,
-                      growth: igGrowth,
-                      insights: igInsights,
-                      audience: igAudience,
-                    }
-                  })
-                });
-                const data = await r.json();
-                if (data.error) throw new Error(data.error);
-                setAiInsights(data);
-              } catch (e) {
-                setAiError(e?.message || 'AI analysis failed');
-              } finally {
-                setAiLoading(false);
-              }
-            }} disabled={aiLoading} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500/20 to-violet-500/20 text-amber-700 dark:text-amber-400 font-bold text-sm hover:from-amber-500/30 hover:to-violet-500/30 disabled:opacity-50 border border-amber-200 dark:border-amber-800">
-              {aiLoading ? <><Loader2 size={14} className="animate-spin" /> Analyzing your data…</> : '✨ Get AI Expert Analysis'}
-            </button>
-            {aiError && <p className="text-sm text-red-600 dark:text-red-400 mt-2">{aiError}</p>}
-            {aiInsights && typeof aiInsights === 'object' && (
-              <div className="mt-4 space-y-4 text-sm">
-                {aiInsights.verdict && (
-                  <div className="p-4 rounded-xl bg-gradient-to-br from-amber-50 to-violet-50 dark:from-amber-900/20 dark:to-violet-900/20 border border-amber-200 dark:border-amber-800">
-                    <p className="font-bold text-amber-800 dark:text-amber-300 mb-1">📊 Expert Verdict</p>
-                    <p className="text-stone-700 dark:text-stone-300">{aiInsights.verdict}</p>
-                  </div>
-                )}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {aiInsights.whatIsWorking?.length > 0 && (
-                    <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800">
-                      <p className="font-bold text-emerald-700 dark:text-emerald-400 mb-2">✅ What's working</p>
-                      <ul className="space-y-1">{aiInsights.whatIsWorking.map((w,i) => <li key={i} className="text-stone-600 dark:text-stone-300 text-xs">• {w}</li>)}</ul>
-                    </div>
-                  )}
-                  {aiInsights.whatIsNotWorking?.length > 0 && (
-                    <div className="p-3 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
-                      <p className="font-bold text-red-700 dark:text-red-400 mb-2">⚠️ Fix these</p>
-                      <ul className="space-y-1">{aiInsights.whatIsNotWorking.map((w,i) => <li key={i} className="text-stone-600 dark:text-stone-300 text-xs">• {w}</li>)}</ul>
-                    </div>
-                  )}
-                </div>
-                {aiInsights.contentStrategy && (
-                  <div className="p-3 rounded-xl bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
-                    <p className="font-bold text-blue-700 dark:text-blue-400 mb-1">🎯 Content Strategy</p>
-                    <p className="text-stone-600 dark:text-stone-300 text-xs">{aiInsights.contentStrategy}</p>
-                  </div>
-                )}
-                {aiInsights.contentIdeas?.length > 0 && (
-                  <div className="p-3 rounded-xl bg-violet-50 dark:bg-violet-900/20 border border-violet-200 dark:border-violet-800">
-                    <p className="font-bold text-violet-700 dark:text-violet-400 mb-2">💡 Content Ideas</p>
-                    <div className="space-y-2">
-                      {aiInsights.contentIdeas.map((idea, i) => (
-                        <div key={i} className="bg-white dark:bg-stone-700 rounded-lg p-2">
-                          <p className="font-semibold text-stone-700 dark:text-stone-200 text-xs">{i+1}. {idea.title}</p>
-                          <p className="text-violet-600 dark:text-violet-400 text-xs mt-0.5">Hook: "{idea.hook}"</p>
-                          <p className="text-stone-500 dark:text-stone-400 text-xs mt-0.5">{idea.why}</p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {aiInsights.bestTimeToPost && (
-                    <div className="p-3 rounded-xl bg-stone-50 dark:bg-stone-700/40 border border-stone-200 dark:border-stone-600">
-                      <p className="font-bold text-stone-700 dark:text-stone-200 mb-1">🕐 Best time to post</p>
-                      <p className="text-stone-600 dark:text-stone-300 text-xs">{aiInsights.bestTimeToPost}</p>
-                    </div>
-                  )}
-                  {aiInsights.growthHack && (
-                    <div className="p-3 rounded-xl bg-violet-50 dark:bg-rose-900/20 border border-violet-200 dark:border-rose-800">
-                      <p className="font-bold text-rose-700 dark:text-violet-400 mb-1">🚀 Growth hack</p>
-                      <p className="text-stone-600 dark:text-stone-300 text-xs">{aiInsights.growthHack}</p>
-                    </div>
-                  )}
-                </div>
-                {aiInsights.warningSign && (
-                  <div className="p-3 rounded-xl bg-orange-50 dark:bg-orange-900/20 border border-orange-300 dark:border-orange-700">
-                    <p className="font-bold text-orange-700 dark:text-orange-400 mb-1">🚨 Critical warning</p>
-                    <p className="text-stone-600 dark:text-stone-300 text-xs">{aiInsights.warningSign}</p>
-                  </div>
-                )}
-                {aiInsights.weeklyPlan && (
-                  <div className="p-3 rounded-xl bg-stone-50 dark:bg-stone-700/40 border border-stone-200 dark:border-stone-600">
-                    <p className="font-bold text-stone-700 dark:text-stone-200 mb-2">📅 This week's posting plan</p>
-                    <div className="grid grid-cols-2 gap-1">
-                      {Object.entries(aiInsights.weeklyPlan).map(([day, plan]) => (
-                        <div key={day} className="text-xs"><span className="font-semibold capitalize text-violet-600 dark:text-violet-400">{day}:</span> <span className="text-stone-600 dark:text-stone-300">{plan}</span></div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Post cards */}
-      {bizPosts.length > 0 && (
-        <div className="space-y-3">
-          <h3 className="text-sm font-bold text-stone-500 dark:text-stone-400 uppercase">Your posts — tap to update numbers</h3>
-          {[...bizPosts].reverse().map(p => (
-            <div key={p.id} className="bg-white dark:bg-stone-800 border border-violet-100 dark:border-stone-700 rounded-2xl p-4 shadow-sm">
-              <div className="flex items-start justify-between gap-2">
-                <div className="min-w-0">
-                  <p className="font-bold text-stone-800 dark:text-stone-100 truncate">{p.title}</p>
-                  <p className="text-xs text-stone-400 mt-0.5">{platformLabels[p.platform] || p.platform} · {p.postedAt} {p.source === 'instagram_api' || p.source === 'youtube_api' ? '· synced' : ''}</p>
-                </div>
-                <div className="flex gap-1 shrink-0 flex-wrap justify-end">
-                  <button onClick={() => editingId === p.id ? saveEdit(p.id) : startEdit(p)} className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${editingId === p.id ? 'bg-violet-500 text-white' : 'bg-stone-100 dark:bg-stone-700 text-stone-600 dark:text-stone-300 hover:bg-violet-50 dark:hover:bg-violet-900/30 hover:text-violet-600'}`}>{editingId === p.id ? 'Save' : 'Update'}</button>
-                  <select onChange={e => { if (e.target.value) { updatePost(p.id, { businessId: e.target.value }); e.target.value = ''; } }} defaultValue="" className="px-2 py-1.5 rounded-lg text-xs bg-stone-100 dark:bg-stone-700 text-stone-600 dark:text-stone-300 border-0 cursor-pointer">
-                    <option value="" disabled>Move to…</option>
-                    {(businesses || []).filter(Boolean).map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-                  </select>
-                  <button onClick={() => removePost(p.id)} className="p-1.5 rounded-lg text-stone-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20"><Trash2 size={14} /></button>
-                </div>
-              </div>
-              {editingId === p.id ? (
-                <div className="grid grid-cols-4 gap-2 mt-3">
-                  {['views', 'likes', 'comments', 'saves'].map(f => (
-                    <div key={f}>
-                      <label className="block text-[10px] text-stone-500 uppercase font-bold mb-1">{f}</label>
-                      <input type="number" value={editBuf[f]} onChange={e => setEditBuf(b => ({ ...b, [f]: e.target.value }))} placeholder="0" className="w-full bg-stone-100 dark:bg-stone-700 border border-stone-200 dark:border-stone-600 rounded-lg px-2 py-1.5 text-sm font-mono" />
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="flex flex-wrap gap-3 mt-2 text-xs text-stone-500 dark:text-stone-400">
-                  <span><strong className="text-stone-700 dark:text-stone-200 font-mono">{p.views != null ? Number(p.views).toLocaleString() : '—'}</strong> views</span>
-                  <span><strong className="text-stone-700 dark:text-stone-200 font-mono">{(p.likes || 0).toLocaleString()}</strong> likes</span>
-                  <span><strong className="text-stone-700 dark:text-stone-200 font-mono">{(p.comments || 0).toLocaleString()}</strong> comments</span>
-                  <span><strong className="text-stone-700 dark:text-stone-200 font-mono">{(p.saves || 0).toLocaleString()}</strong> saves</span>
-                  {p.totalPlays > 0 && <span><strong className="text-stone-700 dark:text-stone-200 font-mono">{p.totalPlays.toLocaleString()}</strong> plays</span>}
-                  {p.avgWatchTimeMs > 0 && <span><strong className="text-violet-600 dark:text-violet-400 font-mono">{(p.avgWatchTimeMs / 1000).toFixed(1)}s</strong> avg watch</span>}
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
-
-      </> /* end analytics tab */}
     </div>
   );
 };
