@@ -8601,7 +8601,7 @@ const PostAnalytics = ({ onOpenSettings }) => {
               </button>
             ))}
           </div>
-          {ytConnected && (
+          {(igConnected || ytConnected) && (
             <button onClick={syncAll} disabled={syncing}
               className="flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-500 text-white font-bold text-sm hover:bg-emerald-600 disabled:opacity-50 transition-colors">
               {syncing ? <><Loader2 size={14} className="animate-spin" />Syncing…</> : <><Zap size={14} />Sync Now</>}
@@ -8632,6 +8632,7 @@ const PostAnalytics = ({ onOpenSettings }) => {
       <div className="flex gap-1 bg-stone-100 dark:bg-stone-800/80 rounded-2xl p-1.5 overflow-x-auto">
         {[
           ['overview', 'Overview'],
+          ['instagram', igConnected ? 'Instagram ●' : 'Instagram'],
           ['youtube', ytConnected ? 'YouTube ●' : 'YouTube'],
           ['tiktok', tiktokData ? 'TikTok ●' : 'TikTok'],
           ['ads', 'Ads Manager'],
@@ -8726,7 +8727,7 @@ const PostAnalytics = ({ onOpenSettings }) => {
                 try {
                   const r = await fetch('/api/ai/generate', {
                     method: 'POST', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ mode: 'analytics', topic: `Analytics for ${businessName}`, analyticsData: { brandName: businessName, posts: bizPosts } })
+                    body: JSON.stringify({ mode: 'analytics', topic: `Analytics for ${businessName}`, analyticsData: { brandName: businessName, posts: bizPosts, account: igProfile, growth: igGrowth, insights: igInsights, audience: igAudience } })
                   });
                   const data = await r.json();
                   if (data.error) throw new Error(data.error);
@@ -8844,6 +8845,172 @@ const PostAnalytics = ({ onOpenSettings }) => {
         </div>
       )}
 
+      {/* ── INSTAGRAM TAB ── */}
+      {platformTab === 'instagram' && (
+        <div className="space-y-5">
+          <div className="bg-white dark:bg-stone-800 border border-stone-100 dark:border-stone-700 rounded-2xl p-6 shadow-sm">
+            <div className="flex items-center justify-between flex-wrap gap-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-pink-400 to-violet-500 flex items-center justify-center"><Instagram size={20} className="text-white" /></div>
+                <div>
+                  <h3 className="font-bold text-stone-800 dark:text-stone-100">Instagram</h3>
+                  <p className="text-xs text-stone-400">{igConnected ? `Connected${igProfile ? ` · @${igProfile.username}` : ''}` : 'Not connected'}</p>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <button onClick={connectInstagram} className={`flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-sm border-2 transition-all ${igConnected ? 'border-pink-400 bg-pink-50 dark:bg-pink-900/20 text-pink-700 dark:text-pink-300' : 'border-stone-300 dark:border-stone-600 text-stone-600 dark:text-stone-300 hover:border-pink-400 hover:text-pink-600'}`}>
+                  <Instagram size={14} />{igConnected ? 'Reconnect' : 'Connect'}
+                </button>
+                {igConnected && <button onClick={syncAll} disabled={syncing} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-500 text-white font-bold text-sm hover:bg-emerald-600 disabled:opacity-50">
+                  {syncing ? <Loader2 size={14} className="animate-spin" /> : <Zap size={14} />}Sync
+                </button>}
+              </div>
+            </div>
+          </div>
+
+          {igProfile ? (
+            <>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                {[
+                  { label: 'Followers', value: (igProfile.followers||0).toLocaleString(), color: 'pink' },
+                  { label: 'New (30d)', value: igGrowth?.newFollowers30d != null ? `${igGrowth.newFollowers30d >= 0 ? '+' : ''}${igGrowth.newFollowers30d}` : '—', color: 'violet' },
+                  { label: 'Reach (30d)', value: (igGrowth?.reach30d||0).toLocaleString(), color: 'amber' },
+                  { label: 'Profile Views', value: (igGrowth?.profileViews30d||0).toLocaleString(), color: 'emerald' },
+                ].map(({ label, value, color }) => (
+                  <div key={label} className={`bg-${color}-50 dark:bg-${color}-900/20 rounded-2xl p-4 text-center`}>
+                    <p className={`text-2xl font-bold text-${color}-600 dark:text-${color}-400`}>{value}</p>
+                    <p className="text-xs text-stone-500 mt-1">{label}</p>
+                  </div>
+                ))}
+              </div>
+
+              {igInsights && (
+                <div className="bg-white dark:bg-stone-800 border border-stone-100 dark:border-stone-700 rounded-2xl p-5 shadow-sm">
+                  <h4 className="font-bold text-stone-800 dark:text-stone-100 mb-4 flex items-center gap-2"><Flame size={14} className="text-violet-400" />What works for you</h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {igInsights.avgReelEngagement > igInsights.avgImageEngagement ? (
+                      <div className="p-3 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl">
+                        <p className="text-emerald-700 dark:text-emerald-400 text-xs">Reels get <strong>{igInsights.avgReelEngagement}</strong> avg engagement vs <strong>{igInsights.avgImageEngagement}</strong> for images — post more Reels</p>
+                      </div>
+                    ) : igInsights.avgImageEngagement > 0 ? (
+                      <div className="p-3 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl">
+                        <p className="text-emerald-700 dark:text-emerald-400 text-xs">Images get <strong>{igInsights.avgImageEngagement}</strong> avg engagement — strong photo content</p>
+                      </div>
+                    ) : null}
+                    {igInsights.bestPostingHour && (
+                      <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl">
+                        <p className="text-blue-700 dark:text-blue-400 text-xs">Best time to post: <strong>{igInsights.bestPostingHour}</strong></p>
+                      </div>
+                    )}
+                    {igInsights.topPost && (
+                      <div className="p-3 bg-amber-50 dark:bg-amber-900/20 rounded-xl sm:col-span-2">
+                        <p className="text-amber-800 dark:text-amber-300 text-xs">Top post: "<strong>{igInsights.topPost.title?.slice(0,60)}</strong>" — {igInsights.topPost.engagement} engagement
+                          {igInsights.topPost.permalink && <a href={igInsights.topPost.permalink} target="_blank" rel="noopener noreferrer" className="ml-2 text-violet-500 underline">View</a>}
+                        </p>
+                      </div>
+                    )}
+                    {igProfile.followers > 0 && igGrowth?.newFollowers30d != null && (
+                      <div className="p-3 bg-stone-50 dark:bg-stone-700/40 rounded-xl sm:col-span-2">
+                        <p className="text-stone-600 dark:text-stone-400 text-xs">Growth rate: <strong>{((igGrowth.newFollowers30d / igProfile.followers) * 100).toFixed(1)}%</strong> this month
+                          {igGrowth.newFollowers30d < 0 ? ' — lost followers. Post more consistently.' : igGrowth.newFollowers30d === 0 ? ' — flat. Try a new format.' : ' — keep it up!'}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {igAudience && (igAudience.topCountries?.length > 0 || Object.keys(igAudience.genderAge || {}).length > 0) && (
+                <div className="bg-white dark:bg-stone-800 border border-stone-100 dark:border-stone-700 rounded-2xl p-5 shadow-sm">
+                  <h4 className="font-bold text-stone-800 dark:text-stone-100 mb-4 flex items-center gap-2"><Users size={14} className="text-violet-400" />Audience</h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                    {igAudience.topCountries?.length > 0 && (
+                      <div>
+                        <p className="text-xs font-bold text-stone-400 uppercase mb-2">Top Countries</p>
+                        <div className="space-y-2">
+                          {igAudience.topCountries.map(({ name, count }) => {
+                            const total = igAudience.topCountries.reduce((s,c) => s+c.count, 0);
+                            const pct = total ? Math.round((count/total)*100) : 0;
+                            return (
+                              <div key={name}>
+                                <div className="flex justify-between text-xs mb-0.5"><span className="text-stone-700 dark:text-stone-200">{name}</span><span className="text-stone-400">{pct}%</span></div>
+                                <div className="h-1.5 bg-stone-100 dark:bg-stone-700 rounded-full"><div className="h-full bg-violet-400 rounded-full" style={{ width: `${pct}%` }} /></div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                    {igAudience.topCities?.length > 0 && (
+                      <div>
+                        <p className="text-xs font-bold text-stone-400 uppercase mb-2">Top Cities</p>
+                        <div className="space-y-2">
+                          {igAudience.topCities.map(({ name, count }) => {
+                            const total = igAudience.topCities.reduce((s,c) => s+c.count, 0);
+                            const pct = total ? Math.round((count/total)*100) : 0;
+                            return (
+                              <div key={name}>
+                                <div className="flex justify-between text-xs mb-0.5"><span className="text-stone-700 dark:text-stone-200">{name}</span><span className="text-stone-400">{pct}%</span></div>
+                                <div className="h-1.5 bg-stone-100 dark:bg-stone-700 rounded-full"><div className="h-full bg-amber-400 rounded-full" style={{ width: `${pct}%` }} /></div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                    {Object.keys(igAudience.genderAge || {}).length > 0 && (
+                      <div className="sm:col-span-2">
+                        <p className="text-xs font-bold text-stone-400 uppercase mb-2">Age & Gender</p>
+                        <div className="flex flex-wrap gap-2">
+                          {Object.entries(igAudience.genderAge).sort((a,b) => b[1]-a[1]).slice(0,8).map(([key, count]) => (
+                            <span key={key} className="px-2.5 py-1 bg-stone-50 dark:bg-stone-700 border border-stone-200 dark:border-stone-600 rounded-lg text-xs">
+                              <span className={key.startsWith('F') ? 'text-pink-500' : 'text-blue-500'}>{key.startsWith('F') ? '♀' : '♂'}</span> {key.replace('F.','').replace('M.','')} · {count}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {bizPosts.filter(p => p.platform === 'instagram').length > 0 && (
+                <div className="space-y-2">
+                  <h4 className="font-bold text-stone-400 text-xs uppercase tracking-wide">Instagram Posts</h4>
+                  {[...bizPosts.filter(p => p.platform === 'instagram')].reverse().map(p => (
+                    <div key={p.id} className="bg-white dark:bg-stone-800 border border-stone-100 dark:border-stone-700 rounded-xl p-4 shadow-sm">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0"><p className="font-bold text-stone-800 dark:text-stone-100 truncate text-sm">{p.title}</p><p className="text-xs text-stone-400">{p.postedAt}</p></div>
+                        <div className="flex gap-1 shrink-0">
+                          <button onClick={() => editingId === p.id ? saveEdit(p.id) : startEdit(p)} className={`px-3 py-1.5 rounded-lg text-xs font-bold ${editingId === p.id ? 'bg-violet-500 text-white' : 'bg-stone-100 dark:bg-stone-700 text-stone-600 dark:text-stone-300'}`}>{editingId === p.id ? 'Save' : 'Edit'}</button>
+                          <button onClick={() => removePost(p.id)} className="p-1.5 rounded-lg text-stone-300 hover:text-red-500"><Trash2 size={13} /></button>
+                        </div>
+                      </div>
+                      {editingId === p.id ? (
+                        <div className="grid grid-cols-4 gap-2 mt-3">{['views','likes','comments','saves'].map(f => (<div key={f}><label className="block text-[10px] text-stone-500 uppercase font-bold mb-1">{f}</label><input type="number" value={editBuf[f]} onChange={e => setEditBuf(b => ({...b,[f]:e.target.value}))} placeholder="0" className="w-full bg-stone-100 dark:bg-stone-700 border border-stone-200 dark:border-stone-600 rounded-lg px-2 py-1.5 text-sm font-mono" /></div>))}</div>
+                      ) : (
+                        <div className="flex flex-wrap gap-3 mt-2 text-xs text-stone-400">
+                          <span><strong className="text-stone-700 dark:text-stone-200 font-mono">{(p.views||0).toLocaleString()}</strong> views</span>
+                          <span><strong className="text-stone-700 dark:text-stone-200 font-mono">{(p.likes||0).toLocaleString()}</strong> likes</span>
+                          <span><strong className="text-stone-700 dark:text-stone-200 font-mono">{(p.comments||0).toLocaleString()}</strong> comments</span>
+                          <span><strong className="text-stone-700 dark:text-stone-200 font-mono">{(p.saves||0).toLocaleString()}</strong> saves</span>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="text-center py-12 bg-stone-50 dark:bg-stone-800/50 rounded-2xl border border-dashed border-stone-200 dark:border-stone-700">
+              <Instagram size={36} className="text-pink-300 mx-auto mb-3" />
+              <p className="font-bold text-stone-600 dark:text-stone-300">Connect Instagram to see your analytics</p>
+              <p className="text-xs text-stone-400 mt-1 mb-4">Followers, reach, profile views, demographics & more</p>
+              <button onClick={connectInstagram} className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-pink-500 to-violet-500 text-white font-bold text-sm hover:opacity-90">Connect Instagram</button>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* ── YOUTUBE TAB ── */}
       {platformTab === 'youtube' && (
