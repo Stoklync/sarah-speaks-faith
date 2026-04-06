@@ -8491,7 +8491,7 @@ const PostAnalytics = ({ onOpenSettings }) => {
     const added = [];
     if (igConnected) {
       try {
-        const r = await fetch('/api/sync/instagram', { headers: { 'X-User-Key': brandKey } });
+        const r = await fetch('/api/sync?platform=instagram', { headers: { 'X-User-Key': brandKey } });
         const data = await r.json();
         if (data.account) { setIgProfileMap(p => { const n = { ...p, [brandKey]: data.account }; localStorage.setItem('kreativelync-ig-profile-map', JSON.stringify(n)); return n; }); }
         if (data.growth) { setIgGrowthMap(p => { const n = { ...p, [brandKey]: data.growth }; localStorage.setItem('kreativelync-ig-growth-map', JSON.stringify(n)); return n; }); }
@@ -8508,7 +8508,7 @@ const PostAnalytics = ({ onOpenSettings }) => {
     }
     if (ytConnected) {
       try {
-        const r = await fetch('/api/sync/youtube', { headers: { 'X-User-Key': brandKey } });
+        const r = await fetch('/api/sync?platform=youtube', { headers: { 'X-User-Key': brandKey } });
         const data = await r.json();
         if (data.posts?.length) {
           const existing = new Set(posts.map(p => p.id));
