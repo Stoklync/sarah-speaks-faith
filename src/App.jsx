@@ -22,6 +22,7 @@ import { VideoStudio } from './components/VideoStudio';
 import { VideoTab } from './components/VideoPlanner';
 import { DesignStudio } from './components/DesignStudio';
 import { BookCreator } from './components/BookCreator';
+import { RhythmBuilder } from './components/RhythmBuilder';
 import { BrandKit } from './components/BrandKit';
 import { FloatingAIChat } from './components/FloatingAIChat';
 import { 
@@ -363,6 +364,7 @@ const App = () => {
     ['video',    Film,       'AI Video'],
     ['design',   Palette,    'Design Studio'],
     ['book',     BookOpen,   'Book Creator'],
+    ['rhythm',   Music,      'Rhythm Builder'],
     ['social',   Share2,     'Social & Publish'],
     // 3. Measure & grow
     ['analytics', BarChart2, 'Analytics'],
@@ -603,6 +605,7 @@ const App = () => {
                 {activeTab === 'video' && 'AI Video Studio'}
                 {activeTab === 'design' && 'Design Studio'}
                 {activeTab === 'book' && 'Book Creator'}
+                {activeTab === 'rhythm' && 'Rhythm Builder'}
                 {activeTab === 'photo-edit' && 'Photo Editor'}
                 {activeTab === 'pro' && 'Content Studio'}
                 {activeTab === 'social' && 'Social & Podcast'}
@@ -959,12 +962,13 @@ const App = () => {
             {activeTab === 'video' && <VideoTabPage businesses={businesses} activeBusinessId={activeBusinessId} setActiveTab={setActiveTab} />}
             {activeTab === 'design' && <DesignStudio />}
             {activeTab === 'book' && <BookCreator />}
+            {activeTab === 'rhythm' && <RhythmBuilder />}
             {activeTab === 'pro' && <ProContentToolkit />}
             {activeTab === 'social' && <SocialPublisher />}
             {activeTab === 'traffic' && <TrafficHub />}
             {activeTab === 'analytics' && <PostAnalytics onOpenSettings={() => setShowSettings(true)} />}
             {activeTab === 'intel' && <CompetitorIntel businesses={businesses} activeBusinessId={activeBusinessId} />}
-            {!['start','brandkit','images','video','design','book','pro','social','traffic','analytics','intel','photo-edit'].includes(activeTab) && <StartHere setActiveTab={setActiveTab} />}
+            {!['start','brandkit','images','video','design','book','rhythm','pro','social','traffic','analytics','intel','photo-edit'].includes(activeTab) && <StartHere setActiveTab={setActiveTab} />}
           </div>
         </main>
       </div>
