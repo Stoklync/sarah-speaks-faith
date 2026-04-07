@@ -480,7 +480,9 @@ async function getAIProductionGuide(features) {
   const activeDrumLayers = ['Kick','Snare','Hi-Hat','Open Hat','Clap','Tom','Bass/808','Perc']
     .filter((_, i) => pattern[i]?.some(Boolean));
 
-  const prompt = `You are a music producer and Logic Pro expert. A student uploaded a song called "${fileName}" and wants to understand exactly how it was produced so they can recreate it in Logic Pro.
+  const presetOptions = ['Standard 4/4','Boom Bap','Trap','Gospel Groove','Afrobeats','Dancehall','UK Drill','Reggaeton','Reggae','Funk Pocket','EDM / House','Blank Canvas'];
+
+  const prompt = `You are a music producer and Logic Pro expert. A student uploaded a song called "${fileName}" and wants to understand exactly how it was produced so she can recreate it in Logic Pro. She is a beginner — explain everything in plain, simple words like you're talking to a friend, not a textbook.
 
 Here is what the audio analysis detected:
 
@@ -500,27 +502,34 @@ Frequency energy (0=silent, 1=full):
 Detected instruments: ${instruments.map(i => i.name).join(', ')}
 Drum layers with hits: ${activeDrumLayers.join(', ')}
 
-Give a complete, beginner-friendly production breakdown for someone learning Logic Pro from scratch. Structure your response exactly like this:
+Structure your response exactly like this:
 
-## What This Song Uses
-List every instrument/element you can hear based on the data, what role it plays, and what Logic Pro tool to use for it.
+## Genre & Style
+Name the genre and sub-genre (e.g. "Afrobeats", "Trap Gospel", "Dancehall", "R&B Soul", "Gospel Funk"). Describe the vibe in 2-3 sentences — what makes this style sound the way it does, what culture/tradition it comes from, and why people feel it in their body.
 
-## The Groove (Rhythm)
-Explain the rhythm pattern in plain words — where the kick sits, where the snare hits, what the hi-hats are doing, and what makes this groove feel the way it does.
+## Start Here — Copy This Preset
+From this list of presets in the Rhythm Builder tool: ${presetOptions.join(', ')}
+Pick the ONE preset that is the closest match to this song's groove. Name it exactly as it appears in the list. Then explain what 2-3 specific changes to make to that preset to get it closer to this song (e.g. "move the kick from step 1 to step 3", "add a hi-hat on every 16th note", "remove the open hat").
 
-## Key & Chords
-The key is ${keyInfo.full}. Suggest a simple 2-4 chord progression that fits this key and this genre feel. Give the chord names AND the piano/keyboard notes for each chord.
+## What This Song Uses (Every Layer)
+List every instrument/sound layer in the song. For each one say: what it is, what job it does in the mix, and which Logic Pro tool/plugin to use to make it.
 
-## How to Build This in Logic Pro — Step by Step
-Number each step. Start from opening Logic Pro, creating the project, setting BPM, then building each layer. Be specific about which Logic tools to use (Drum Machine Designer, Alchemy, ES2, etc.) and what settings to try.
+## The Groove — How the Rhythm Works
+Explain the rhythm in plain words. Where does the kick land? Where does the snare land? What are the hi-hats doing? What gives this specific groove its feel? Use the beat position names (beat 1, beat 2, "the and of 2", etc.).
 
-## The Second Chorus — How to Make It Bigger
-Explain exactly what to add or change to make a second chorus that hits harder than the first (e.g. add a layer, open the filter, add a fill, double the bass, etc.)
+## Key & Chords to Play
+Key is ${keyInfo.full}. Give a 2-4 chord progression that fits. For each chord give: the chord name, whether it's major/minor, and the exact notes to press on a piano keyboard (e.g. "C minor = C, Eb, G").
 
-## What to Learn Next
-3 specific things to study next in Logic Pro based on what this song uses.
+## Build It in Logic Pro — Step by Step
+Number every step starting from scratch. Include: create project, set BPM, which plugin to open for each sound, basic settings, and the order to build the layers. Keep steps short and clear.
 
-Keep it encouraging. She is just starting out but she has great instincts.`;
+## Second Chorus — Make It Bigger
+Exactly what to add or change so the second chorus hits harder than the first. Give 3-5 specific ideas.
+
+## 3 Things to Learn Next
+The 3 most important Logic Pro skills to study next, based specifically on what this song uses.
+
+Keep it warm and encouraging. She has great instincts and is just beginning her journey.`;
 
   try {
     const res = await fetch('/api/ai/generate', {
@@ -1064,6 +1073,34 @@ export function RhythmBuilder() {
                   </div>
                 </div>
               )}
+
+              {/* Genre + preset callout — extracted from AI guide */}
+              {analyzeResult.aiGuide && (() => {
+                const genreMatch = analyzeResult.aiGuide.match(/## Genre & Style\n([\s\S]*?)(?=\n##)/);
+                const presetMatch = analyzeResult.aiGuide.match(/## Start Here.*?\n([\s\S]*?)(?=\n##)/);
+                if (!genreMatch && !presetMatch) return null;
+                const genreText = genreMatch?.[1]?.trim().split('\n')[0] || '';
+                const presetLine = presetMatch?.[1]?.trim().split('\n')[0] || '';
+                return (
+                  <div className="bg-violet-900/30 border border-violet-700/50 rounded-xl p-4 space-y-2">
+                    {genreText && (
+                      <div className="flex items-center gap-2">
+                        <span className="text-violet-400 text-lg">🎵</span>
+                        <span className="text-white font-bold text-sm">{genreText}</span>
+                      </div>
+                    )}
+                    {presetLine && (
+                      <div className="flex items-start gap-2">
+                        <span className="text-amber-400 text-lg flex-shrink-0">👆</span>
+                        <div>
+                          <span className="text-amber-300 font-semibold text-sm">Click this preset to start copying: </span>
+                          <span className="text-white text-sm">{presetLine}</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
 
               {/* Tabs: AI Guide | Drum Grid */}
               <div className="flex gap-2 border-b border-stone-700 pb-0">
