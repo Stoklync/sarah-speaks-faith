@@ -321,6 +321,222 @@ function playClick(ctx,t) {
 const PLAY_FNS=[playKick,playSnare,(c,t)=>playHihat(c,t,false),(c,t)=>playHihat(c,t,true),playClap,playTom,playBass,playPerc];
 
 // ─── Audio Analysis Engine ────────────────────────────────────────────────────
+
+// ── Pitch / Key detection via chroma features ────────────────────────────────
+const NOTE_NAMES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+
+// Compute chroma vector from a slice of mono PCM using FFT via OfflineAudioContext
+async function computeChroma(mono, sampleRate) {
+  const fftSize = 4096;
+  const hopSize = 2048;
+  const chroma = new Float32Array(12).fill(0);
+  let frames = 0;
+
+  for (let start = 0; start + fftSize < mono.length; start += hopSize) {
+    // Use Web Audio AnalyserNode on tiny offline context
+    try {
+      const ctx = new OfflineAudioContext(1, fftSize, sampleRate);
+      const buf = ctx.createBuffer(1, fftSize, sampleRate);
+      buf.getChannelData(0).set(mono.slice(start, start + fftSize));
+      const src = ctx.createBufferSource();
+      src.buffer = buf;
+      const analyser = ctx.createAnalyser();
+      analyser.fftSize = fftSize;
+      src.connect(analyser); analyser.connect(ctx.destination);
+      src.start(0);
+      await ctx.startRendering();
+      const freqData = new Float32Array(analyser.frequencyBinCount);
+      analyser.getFloatFrequencyData(freqData);
+
+      // Map FFT bins to chroma bins
+      for (let bin = 1; bin < freqData.length; bin++) {
+        const freq = bin * sampleRate / fftSize;
+        if (freq < 60 || freq > 4000) continue;
+        const mag = Math.pow(10, freqData[bin] / 20);
+        const midiNote = Math.round(12 * Math.log2(freq / 440) + 69);
+        const chromaIdx = ((midiNote % 12) + 12) % 12;
+        chroma[chromaIdx] += mag;
+      }
+      frames++;
+    } catch (_) { break; }
+    if (frames >= 8) break; // enough frames
+  }
+
+  // Normalize
+  const max = Math.max(...chroma, 1e-6);
+  return chroma.map(v => v / max);
+}
+
+// Detect key from chroma using Krumhansl-Schmuckler profiles
+function detectKey(chroma) {
+  const majorProfile = [6.35,2.23,3.48,2.33,4.38,4.09,2.52,5.19,2.39,3.66,2.29,2.88];
+  const minorProfile = [6.33,2.68,3.52,5.38,2.60,3.53,2.54,4.75,3.98,2.69,3.34,3.17];
+
+  let bestKey = 'C', bestMode = 'major', bestScore = -Infinity;
+
+  for (let root = 0; root < 12; root++) {
+    // Major
+    let scoreM = 0;
+    for (let i = 0; i < 12; i++) scoreM += chroma[(i + root) % 12] * majorProfile[i];
+    if (scoreM > bestScore) { bestScore = scoreM; bestKey = NOTE_NAMES[root]; bestMode = 'major'; }
+    // Minor
+    let scoreN = 0;
+    for (let i = 0; i < 12; i++) scoreN += chroma[(i + root) % 12] * minorProfile[i];
+    if (scoreN > bestScore) { bestScore = scoreN; bestKey = NOTE_NAMES[root]; bestMode = 'minor'; }
+  }
+  return { key: bestKey, mode: bestMode, full: `${bestKey} ${bestMode}` };
+}
+
+// ── Energy by frequency band ──────────────────────────────────────────────────
+function analyzeEnergyBands(mono, sampleRate) {
+  const bands = { subBass: [20,80], bass: [80,250], lowMid: [250,500], mid: [500,2000], highMid: [2000,4000], high: [4000,16000] };
+  const fftSize = 2048;
+  const freqRes = sampleRate / fftSize;
+  const energy = {};
+
+  // Take middle section of audio
+  const startSample = Math.floor(mono.length * 0.2);
+  const slice = mono.slice(startSample, startSample + fftSize * 4);
+
+  // Simple DFT magnitude per band (approx)
+  for (const [name, [lo, hi]] of Object.entries(bands)) {
+    const loBin = Math.floor(lo / freqRes);
+    const hiBin = Math.min(Math.floor(hi / freqRes), fftSize / 2 - 1);
+    let sum = 0, count = 0;
+    for (let bin = loBin; bin <= hiBin; bin++) {
+      // Goertzel-like: just use windowed samples as proxy
+      let re = 0, im = 0;
+      const k = bin;
+      for (let n = 0; n < Math.min(fftSize, slice.length); n++) {
+        const angle = 2 * Math.PI * k * n / fftSize;
+        re += slice[n] * Math.cos(angle);
+        im += slice[n] * Math.sin(angle);
+      }
+      sum += Math.sqrt(re * re + im * im);
+      count++;
+    }
+    energy[name] = count > 0 ? sum / count : 0;
+  }
+
+  // Normalize to 0-1
+  const maxE = Math.max(...Object.values(energy), 1e-6);
+  const norm = {};
+  for (const k of Object.keys(energy)) norm[k] = energy[k] / maxE;
+  return norm;
+}
+
+// ── Song structure detection (intro/verse/chorus/outro) ──────────────────────
+function detectStructure(mono, sampleRate, bpm) {
+  const barDur = (60 / bpm) * 4;
+  const barSamples = Math.floor(barDur * sampleRate);
+  const numBars = Math.floor(mono.length / barSamples);
+  if (numBars < 2) return [{ section: 'Full Song', bars: '1-' + numBars }];
+
+  const barEnergy = [];
+  for (let b = 0; b < numBars; b++) {
+    const start = b * barSamples;
+    let sum = 0;
+    for (let i = start; i < start + barSamples && i < mono.length; i++) sum += mono[i] ** 2;
+    barEnergy.push(Math.sqrt(sum / barSamples));
+  }
+
+  const avgE = barEnergy.reduce((a, b) => a + b, 0) / barEnergy.length;
+  const sections = [];
+  let currentSection = null, sectionStart = 0;
+
+  barEnergy.forEach((e, b) => {
+    const isHigh = e > avgE * 1.15;
+    const label = isHigh ? 'Chorus / Drop' : b < 2 ? 'Intro' : b >= numBars - 2 ? 'Outro' : 'Verse / Bridge';
+    if (label !== currentSection) {
+      if (currentSection) sections.push({ section: currentSection, bars: `${sectionStart + 1}–${b}` });
+      currentSection = label; sectionStart = b;
+    }
+  });
+  if (currentSection) sections.push({ section: currentSection, bars: `${sectionStart + 1}–${numBars}` });
+  return sections;
+}
+
+// ── Instrument presence heuristics ───────────────────────────────────────────
+function detectInstruments(energyBands, pattern) {
+  const instruments = [];
+  const hasDrums = pattern.flat().some(Boolean);
+  const { subBass, bass, lowMid, mid, highMid, high } = energyBands;
+
+  if (hasDrums) instruments.push({ name: 'Drums / Percussion', confidence: 'high', logicTool: 'Drum Machine Designer or Drummer' });
+  if (subBass > 0.3) instruments.push({ name: '808 / Sub Bass', confidence: subBass > 0.6 ? 'high' : 'medium', logicTool: 'ES2 or Retro Synth — triangle wave, pitch envelope' });
+  if (bass > 0.4 && subBass < 0.5) instruments.push({ name: 'Bass Guitar / Synth Bass', confidence: 'medium', logicTool: 'Bass Amp Designer or Retro Synth' });
+  if (mid > 0.5 && lowMid > 0.4) instruments.push({ name: 'Chord Pads / Keys', confidence: 'medium', logicTool: 'Alchemy or ES2 — pad preset, sustain long' });
+  if (highMid > 0.5) instruments.push({ name: 'Lead Melody / Synth Lead', confidence: 'medium', logicTool: 'Retro Synth or Alchemy — saw or square wave' });
+  if (high > 0.4) instruments.push({ name: 'Hi-Hats / Cymbals / Strings', confidence: 'medium', logicTool: 'Drummer or EXS24 string samples' });
+  if (mid > 0.6 && highMid > 0.6) instruments.push({ name: 'Vocals / Vocal Chops', confidence: 'medium', logicTool: 'Audio track — record or drag in sample' });
+
+  return instruments;
+}
+
+// ── Call AI backend for full production breakdown ─────────────────────────────
+async function getAIProductionGuide(features) {
+  const { bpm, keyInfo, energyBands, instruments, structure, pattern, duration, fileName } = features;
+
+  const activeDrumLayers = ['Kick','Snare','Hi-Hat','Open Hat','Clap','Tom','Bass/808','Perc']
+    .filter((_, i) => pattern[i]?.some(Boolean));
+
+  const prompt = `You are a music producer and Logic Pro expert. A student uploaded a song called "${fileName}" and wants to understand exactly how it was produced so they can recreate it in Logic Pro.
+
+Here is what the audio analysis detected:
+
+BPM: ${bpm}
+Key: ${keyInfo.full}
+Duration analyzed: ${Math.round(duration)}s
+Song structure: ${structure.map(s => `${s.section} (bars ${s.bars})`).join(', ')}
+
+Frequency energy (0=silent, 1=full):
+- Sub-bass (20-80Hz): ${energyBands.subBass?.toFixed(2)}
+- Bass (80-250Hz): ${energyBands.bass?.toFixed(2)}
+- Low-mid (250-500Hz): ${energyBands.lowMid?.toFixed(2)}
+- Mid (500-2kHz): ${energyBands.mid?.toFixed(2)}
+- High-mid (2-4kHz): ${energyBands.highMid?.toFixed(2)}
+- High (4kHz+): ${energyBands.high?.toFixed(2)}
+
+Detected instruments: ${instruments.map(i => i.name).join(', ')}
+Drum layers with hits: ${activeDrumLayers.join(', ')}
+
+Give a complete, beginner-friendly production breakdown for someone learning Logic Pro from scratch. Structure your response exactly like this:
+
+## What This Song Uses
+List every instrument/element you can hear based on the data, what role it plays, and what Logic Pro tool to use for it.
+
+## The Groove (Rhythm)
+Explain the rhythm pattern in plain words — where the kick sits, where the snare hits, what the hi-hats are doing, and what makes this groove feel the way it does.
+
+## Key & Chords
+The key is ${keyInfo.full}. Suggest a simple 2-4 chord progression that fits this key and this genre feel. Give the chord names AND the piano/keyboard notes for each chord.
+
+## How to Build This in Logic Pro — Step by Step
+Number each step. Start from opening Logic Pro, creating the project, setting BPM, then building each layer. Be specific about which Logic tools to use (Drum Machine Designer, Alchemy, ES2, etc.) and what settings to try.
+
+## The Second Chorus — How to Make It Bigger
+Explain exactly what to add or change to make a second chorus that hits harder than the first (e.g. add a layer, open the filter, add a fill, double the bass, etc.)
+
+## What to Learn Next
+3 specific things to study next in Logic Pro based on what this song uses.
+
+Keep it encouraging. She is just starting out but she has great instincts.`;
+
+  try {
+    const res = await fetch('/api/ai/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mode: 'custom', prompt }),
+    });
+    if (!res.ok) throw new Error('AI request failed');
+    const data = await res.json();
+    return data.result || data.text || '';
+  } catch (err) {
+    console.error('AI guide error:', err);
+    return null;
+  }
+}
+
 // Simple IIR low-pass filter on raw PCM
 function iirLowPass(samples, cutoff, sampleRate) {
   const alpha = Math.min(0.999, 1 / (1 + sampleRate / (2 * Math.PI * cutoff)));
@@ -430,11 +646,11 @@ function mapToGrid(onsets, classes, bpm, startTime) {
   return pattern;
 }
 
-// Full analysis pipeline — returns { bpm, pattern, onsetCount, duration }
-async function analyzeAudioBuffer(audioBuffer) {
-  // Mix to mono, take first 10 seconds
+// Full analysis pipeline — returns complete song breakdown
+async function analyzeAudioBuffer(audioBuffer, fileName, onProgress) {
   const sampleRate = audioBuffer.sampleRate;
-  const maxSamples = Math.min(audioBuffer.length, sampleRate * 10);
+  // Use up to 45 seconds for structure, 10s for chroma
+  const maxSamples = Math.min(audioBuffer.length, sampleRate * 45);
   const mono = new Float32Array(maxSamples);
   const nCh = audioBuffer.numberOfChannels;
   for (let ch = 0; ch < nCh; ch++) {
@@ -442,24 +658,42 @@ async function analyzeAudioBuffer(audioBuffer) {
     for (let i = 0; i < maxSamples; i++) mono[i] += chData[i] / nCh;
   }
 
-  const onsets = detectOnsets(mono, sampleRate);
+  onProgress?.('Detecting beats & BPM…');
+  const shortMono = mono.slice(0, sampleRate * 10);
+  const onsets = detectOnsets(shortMono, sampleRate);
   const bpm = estimateBPM(onsets);
-  const classes = classifyOnsets(mono, onsets, sampleRate);
+  const classes = classifyOnsets(shortMono, onsets, sampleRate);
 
-  // Find the densest bar (most onsets) as the representative beat
+  // Best representative bar
   const barDur = (60 / bpm) * 4;
-  const numBars = Math.floor((maxSamples / sampleRate) / barDur);
+  const numBars = Math.floor((shortMono.length / sampleRate) / barDur);
   let bestBar = 0, bestCount = 0;
   for (let b = 0; b < Math.max(1, numBars); b++) {
-    const barStart = b * barDur;
-    const barEnd = barStart + barDur;
+    const barStart = b * barDur, barEnd = barStart + barDur;
     const count = onsets.filter(t => t >= barStart && t < barEnd).length;
     if (count > bestCount) { bestCount = count; bestBar = b; }
   }
-  const startTime = bestBar * barDur;
-  const pattern = mapToGrid(onsets, classes, bpm, startTime);
+  const pattern = mapToGrid(onsets, classes, bpm, bestBar * barDur);
 
-  return { bpm, pattern, onsetCount: onsets.length, duration: maxSamples / sampleRate };
+  onProgress?.('Detecting key & chords…');
+  const chroma = await computeChroma(shortMono, sampleRate);
+  const keyInfo = detectKey(chroma);
+
+  onProgress?.('Analysing frequency layers…');
+  const energyBands = analyzeEnergyBands(mono, sampleRate);
+
+  onProgress?.('Mapping song structure…');
+  const structure = detectStructure(mono, sampleRate, bpm);
+  const instruments = detectInstruments(energyBands, pattern);
+
+  onProgress?.('Asking AI for production guide…');
+  const aiGuide = await getAIProductionGuide({ bpm, keyInfo, energyBands, instruments, structure, pattern, duration: maxSamples / sampleRate, fileName: fileName || 'your song' });
+
+  return {
+    bpm, pattern, onsetCount: onsets.length,
+    duration: maxSamples / sampleRate,
+    keyInfo, energyBands, instruments, structure, aiGuide,
+  };
 }
 
 // ─── DNA Analysis ─────────────────────────────────────────────────────────────
@@ -489,9 +723,11 @@ export function RhythmBuilder() {
 
   // Analysis state
   const [analyzing, setAnalyzing] = useState(false);
+  const [analyzeProgress, setAnalyzeProgress] = useState('');
   const [analyzeResult, setAnalyzeResult] = useState(null);
   const [analyzeError, setAnalyzeError] = useState('');
   const [dragOver, setDragOver] = useState(false);
+  const [guideTab, setGuideTab] = useState('guide');
   const fileInputRef = useRef(null);
 
   // Tap mode state
@@ -569,18 +805,18 @@ export function RhythmBuilder() {
     const isAudioVideo = file.type.startsWith('audio/') || file.type.startsWith('video/');
     if (!isAudioVideo) { setAnalyzeError('Please upload an audio or video file (MP4, MOV, MP3, WAV, M4A…)'); return; }
 
-    setAnalyzing(true); setAnalyzeError(''); setAnalyzeResult(null);
+    setAnalyzing(true); setAnalyzeError(''); setAnalyzeResult(null); setAnalyzeProgress('Loading audio…');
     try {
       const ctx = getCtx(audioCtxRef);
       const arrayBuffer = await file.arrayBuffer();
       const audioBuffer = await ctx.decodeAudioData(arrayBuffer);
-      const result = await analyzeAudioBuffer(audioBuffer);
+      const result = await analyzeAudioBuffer(audioBuffer, file.name, setAnalyzeProgress);
       setAnalyzeResult({ ...result, fileName: file.name });
     } catch (err) {
       setAnalyzeError('Could not decode this file. Try an MP3, WAV, or M4A audio file exported from CapCut.');
       console.error(err);
     } finally {
-      setAnalyzing(false);
+      setAnalyzing(false); setAnalyzeProgress('');
     }
   };
 
@@ -732,8 +968,8 @@ export function RhythmBuilder() {
             {analyzing ? (
               <>
                 <Loader className="w-8 h-8 text-violet-400 animate-spin"/>
-                <p className="text-violet-300 font-semibold">Listening to the rhythm…</p>
-                <p className="text-stone-500 text-sm">Detecting beats, mapping to grid</p>
+                <p className="text-violet-300 font-semibold">{analyzeProgress || 'Analysing…'}</p>
+                <p className="text-stone-500 text-sm">Detecting beats, key, instruments, and building your Logic Pro guide</p>
               </>
             ) : (
               <>
@@ -751,95 +987,158 @@ export function RhythmBuilder() {
           {/* Analysis Result */}
           {analyzeResult && !analyzing && (
             <div className="space-y-4">
-              <div className="flex items-center gap-3 flex-wrap">
-                <div className="bg-violet-600/20 border border-violet-600/40 rounded-xl px-4 py-2 text-center">
+              {/* Stats row */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                <div className="bg-violet-600/20 border border-violet-600/40 rounded-xl px-3 py-2 text-center">
                   <div className="text-2xl font-black text-violet-300">{analyzeResult.bpm}</div>
-                  <div className="text-xs text-stone-400">BPM detected</div>
+                  <div className="text-xs text-stone-400">BPM</div>
                 </div>
-                <div className="bg-stone-800 border border-stone-700 rounded-xl px-4 py-2 text-center">
-                  <div className="text-2xl font-black text-white">{analyzeResult.onsetCount}</div>
-                  <div className="text-xs text-stone-400">hits found</div>
+                <div className="bg-stone-800 border border-stone-700 rounded-xl px-3 py-2 text-center">
+                  <div className="text-xl font-black text-white">{analyzeResult.keyInfo?.full || '—'}</div>
+                  <div className="text-xs text-stone-400">Key</div>
                 </div>
-                <div className="bg-stone-800 border border-stone-700 rounded-xl px-4 py-2 text-center">
+                <div className="bg-stone-800 border border-stone-700 rounded-xl px-3 py-2 text-center">
                   <div className="text-2xl font-black text-white">{Math.round(analyzeResult.duration)}s</div>
-                  <div className="text-xs text-stone-400">analyzed</div>
+                  <div className="text-xs text-stone-400">Duration</div>
                 </div>
-                <div className="text-stone-500 text-xs flex-1">
-                  From: <span className="text-stone-300">{analyzeResult.fileName}</span>
+                <div className="bg-stone-800 border border-stone-700 rounded-xl px-3 py-2 text-center">
+                  <div className="text-2xl font-black text-white">{analyzeResult.onsetCount}</div>
+                  <div className="text-xs text-stone-400">Hits detected</div>
                 </div>
               </div>
 
-              {/* Extracted pattern preview */}
-              <div className="bg-stone-800 rounded-xl p-4 border border-stone-700 space-y-2">
-                <div className="text-xs text-stone-400 font-medium mb-3">Extracted pattern — bones and flesh</div>
-
-                {/* Beat labels */}
-                <div className="flex items-center gap-2">
-                  <div className="w-20 flex-shrink-0"/>
-                  <div className="flex gap-0.5 flex-1">
-                    {BEAT_LABELS.map((l,i) => (
-                      <div key={i} className={`flex-1 text-center text-[8px] font-mono ${i%4===0?'text-stone-300 ml-0.5':'text-stone-700'}`}>
-                        {i%4===0?l:'·'}
+              {/* Song structure */}
+              {analyzeResult.structure?.length > 0 && (
+                <div className="bg-stone-800 rounded-xl p-3 border border-stone-700">
+                  <div className="text-[10px] text-stone-400 font-semibold uppercase tracking-wide mb-2">Song Structure</div>
+                  <div className="flex flex-wrap gap-2">
+                    {analyzeResult.structure.map((s, i) => (
+                      <div key={i} className="flex items-center gap-1.5 bg-stone-900 rounded-lg px-2.5 py-1 border border-stone-700">
+                        <span className="text-xs text-white font-medium">{s.section}</span>
+                        <span className="text-[10px] text-stone-500">bars {s.bars}</span>
                       </div>
                     ))}
                   </div>
                 </div>
+              )}
 
-                {TRACKS.map((track, ti) => {
-                  const hasHits = analyzeResult.pattern[ti].some(Boolean);
-                  return (
-                    <div key={ti} className={`flex items-center gap-2 ${hasHits?'opacity-100':'opacity-25'}`}>
-                      <div className="w-20 flex-shrink-0 text-right">
-                        <span className="text-[10px] text-stone-400">{track.label}</span>
-                        <span className="text-[9px] text-stone-600 block">{track.logicNote}</span>
+              {/* Instruments detected */}
+              {analyzeResult.instruments?.length > 0 && (
+                <div className="bg-stone-800 rounded-xl p-3 border border-stone-700">
+                  <div className="text-[10px] text-stone-400 font-semibold uppercase tracking-wide mb-2">Instruments Detected</div>
+                  <div className="space-y-1.5">
+                    {analyzeResult.instruments.map((inst, i) => (
+                      <div key={i} className="flex items-start gap-2">
+                        <div className={`w-1.5 h-1.5 rounded-full mt-1.5 flex-shrink-0 ${inst.confidence === 'high' ? 'bg-emerald-400' : 'bg-amber-400'}`}/>
+                        <div>
+                          <span className="text-xs text-white font-medium">{inst.name}</span>
+                          <span className="text-[10px] text-stone-500 ml-2">→ Logic Pro: {inst.logicTool}</span>
+                        </div>
                       </div>
-                      <div className="flex gap-0.5 flex-1">
-                        {analyzeResult.pattern[ti].map((s, si) => (
-                          <div key={si} className={`flex-1 h-7 rounded-sm ${si%4===0?'ml-0.5':''} ${
-                            s ? `${track.color}` : 'bg-stone-700'
-                          }`}/>
-                        ))}
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Frequency energy bars */}
+              {analyzeResult.energyBands && (
+                <div className="bg-stone-800 rounded-xl p-3 border border-stone-700">
+                  <div className="text-[10px] text-stone-400 font-semibold uppercase tracking-wide mb-2">Frequency Layers</div>
+                  <div className="space-y-1">
+                    {[
+                      { key: 'subBass',  label: 'Sub Bass (808/Kick body)', color: 'bg-violet-500' },
+                      { key: 'bass',     label: 'Bass (bass guitar/synth)', color: 'bg-emerald-500' },
+                      { key: 'lowMid',   label: 'Low Mids (chords/pads)', color: 'bg-blue-400' },
+                      { key: 'mid',      label: 'Mids (vocals/keys/melody)', color: 'bg-amber-400' },
+                      { key: 'highMid',  label: 'High Mids (synth lead/guitar)', color: 'bg-orange-400' },
+                      { key: 'high',     label: 'Highs (hi-hats/strings/air)', color: 'bg-rose-400' },
+                    ].map(({ key, label, color }) => (
+                      <div key={key} className="flex items-center gap-2">
+                        <div className="text-[10px] text-stone-500 w-40 flex-shrink-0">{label}</div>
+                        <div className="flex-1 bg-stone-700 rounded-full h-2">
+                          <div className={`h-2 rounded-full ${color} transition-all`} style={{ width: `${Math.round((analyzeResult.energyBands[key] || 0) * 100)}%` }}/>
+                        </div>
+                        <div className="text-[10px] text-stone-500 w-8 text-right">{Math.round((analyzeResult.energyBands[key] || 0) * 100)}%</div>
                       </div>
-                      <div className="w-6 text-[10px] text-stone-600 text-center">
-                        {analyzeResult.pattern[ti].filter(Boolean).length}
-                      </div>
-                    </div>
-                  );
-                })}
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Tabs: AI Guide | Drum Grid */}
+              <div className="flex gap-2 border-b border-stone-700 pb-0">
+                {[
+                  { id: 'guide', label: '🎛 Full Production Guide' },
+                  { id: 'grid',  label: '🥁 Drum Grid' },
+                ].map(({ id, label }) => (
+                  <button key={id} onClick={() => setGuideTab(id)}
+                    className={`px-4 py-2 text-sm font-semibold rounded-t-lg transition-all ${
+                      guideTab === id ? 'bg-stone-800 text-white border border-b-transparent border-stone-700' : 'text-stone-500 hover:text-stone-300'
+                    }`}>{label}</button>
+                ))}
               </div>
 
-              {/* Logic Pro mapping */}
-              <div className="bg-stone-800/50 rounded-xl p-3 border border-stone-700">
-                <div className="text-[10px] text-stone-400 font-semibold uppercase tracking-wide mb-1.5">Logic Pro — where to find each sound</div>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                  {TRACKS.filter((_,i) => analyzeResult.pattern[i].some(Boolean)).map((track, _i) => {
-                    const actualIdx = TRACKS.indexOf(track);
+              {/* AI Production Guide */}
+              {guideTab === 'guide' && (
+                <div className="bg-stone-800 rounded-xl p-4 border border-stone-700">
+                  {analyzeResult.aiGuide ? (
+                    <div className="prose prose-invert prose-sm max-w-none text-stone-300 space-y-3">
+                      {analyzeResult.aiGuide.split('\n').map((line, i) => {
+                        if (line.startsWith('## ')) return <h3 key={i} className="text-violet-300 font-bold text-sm mt-4 mb-1 first:mt-0">{line.replace('## ', '')}</h3>;
+                        if (line.match(/^\d+\./)) return <p key={i} className="text-stone-300 text-sm pl-2 border-l-2 border-violet-800">{line}</p>;
+                        if (line.startsWith('- ')) return <p key={i} className="text-stone-400 text-sm pl-2">• {line.slice(2)}</p>;
+                        if (!line.trim()) return null;
+                        return <p key={i} className="text-stone-300 text-sm">{line}</p>;
+                      })}
+                    </div>
+                  ) : (
+                    <p className="text-stone-500 text-sm">AI guide could not be generated. Check your API connection.</p>
+                  )}
+                </div>
+              )}
+
+              {/* Drum Grid */}
+              {guideTab === 'grid' && (
+                <div className="bg-stone-800 rounded-xl p-4 border border-stone-700 space-y-2">
+                  <div className="text-xs text-stone-400 font-medium mb-2">Drum pattern — extracted from audio</div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-20 flex-shrink-0"/>
+                    <div className="flex gap-0.5 flex-1">
+                      {BEAT_LABELS.map((l,i) => (
+                        <div key={i} className={`flex-1 text-center text-[8px] font-mono ${i%4===0?'text-stone-300 ml-0.5':'text-stone-700'}`}>{i%4===0?l:'·'}</div>
+                      ))}
+                    </div>
+                  </div>
+                  {TRACKS.map((track, ti) => {
+                    const hasHits = analyzeResult.pattern[ti].some(Boolean);
                     return (
-                      <div key={actualIdx} className="flex items-center gap-2">
-                        <div className={`w-2 h-2 rounded-full ${track.dot} flex-shrink-0`}/>
-                        <span className="text-xs text-stone-400">{track.label}</span>
-                        <span className="text-xs text-stone-600 font-mono ml-auto">{track.logicNote}</span>
+                      <div key={ti} className={`flex items-center gap-2 ${hasHits?'opacity-100':'opacity-25'}`}>
+                        <div className="w-20 flex-shrink-0 text-right">
+                          <span className="text-[10px] text-stone-400">{track.label}</span>
+                          <span className="text-[9px] text-stone-600 block font-mono">{track.logicNote}</span>
+                        </div>
+                        <div className="flex gap-0.5 flex-1">
+                          {analyzeResult.pattern[ti].map((s, si) => (
+                            <div key={si} className={`flex-1 h-7 rounded-sm ${si%4===0?'ml-0.5':''} ${s?track.color:'bg-stone-700'}`}/>
+                          ))}
+                        </div>
+                        <div className="w-6 text-[10px] text-stone-600 text-center">{analyzeResult.pattern[ti].filter(Boolean).length}</div>
                       </div>
                     );
                   })}
                 </div>
-              </div>
+              )}
 
               <div className="flex gap-2">
                 <button onClick={applyAnalysisToGrid}
                   className="flex-1 bg-violet-600 hover:bg-violet-500 text-white rounded-xl py-3 font-semibold text-sm transition-colors flex items-center justify-center gap-2">
-                  <Zap className="w-4 h-4"/>
-                  Apply to Sequencer — edit & play
+                  <Zap className="w-4 h-4"/> Apply drum grid to Sequencer
                 </button>
                 <button onClick={() => { setAnalyzeResult(null); setAnalyzeError(''); }}
                   className="px-4 py-3 rounded-xl bg-stone-800 hover:bg-stone-700 text-stone-400 text-sm font-semibold border border-stone-700 transition-colors">
                   New
                 </button>
               </div>
-
-              <p className="text-stone-600 text-xs text-center">
-                Not 100% perfect — AI beat detection is good but not magic. Use Sequence mode to fix any steps that are off.
-              </p>
             </div>
           )}
         </div>
