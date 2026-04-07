@@ -718,6 +718,139 @@ function analyzePattern(pattern) {
   return { density, onBeat, offBeat, activeTracks, groove };
 }
 
+// ─── Sound Library ───────────────────────────────────────────────────────────
+// Per-genre sound recommendations for every track
+const SOUND_LIBRARY = {
+  default: [
+    {
+      track: 'Kick', emoji: '🥁',
+      role: 'The foundation. Every other sound in the mix is built around the kick.',
+      sounds: [
+        { name: 'Big Room Kick', where: 'Logic → Drum Machine Designer → Browse → "Kick" → Big Room Kick 01', tip: 'Best all-purpose kick. Punchy low-end, works for pop, gospel, R&B.' },
+        { name: 'Vintage Room Kick', where: 'Drum Machine Designer → Browse → "Kick" → Vintage Room Kick', tip: 'Warmer, old-school feel. Good for gospel and funk.' },
+        { name: '808 Kick (pitched)', where: 'ES2 plugin → Init → Oscillator: Sine → add pitch envelope (fast decay)', tip: 'The deep chest-punch 808 kick. Tune it to the root note of your key.' },
+      ],
+      logicPath: 'Drum Machine Designer → Pad 1 (C1) → Browse Samples',
+      settings: 'Volume: 0dB. Add a Compressor (Ratio 4:1, Attack 10ms, Release 50ms) on the kick channel to make it punch through.',
+      freeSource: 'Looperman.com → Drum Samples → Kicks (free download)',
+    },
+    {
+      track: 'Snare', emoji: '🪘',
+      role: 'The backbeat — this is what makes people nod their heads and clap along.',
+      sounds: [
+        { name: 'Tight Snare', where: 'Drum Machine Designer → Browse → "Snare" → Tight Snare 01', tip: 'Sharp and cutting. Works for trap, hip-hop, pop.' },
+        { name: 'Fat Snare', where: 'Drum Machine Designer → Browse → "Snare" → Fat Snare', tip: 'Big gospel/R&B snare with body. Hits hard on beat 2 and 4.' },
+        { name: 'Clap + Snare layered', where: 'Use TWO pads — one snare + one clap on the same step', tip: 'Layer a clap on top of the snare for that church/pop snap.' },
+      ],
+      logicPath: 'Drum Machine Designer → Pad 2 (D1) → Browse Samples',
+      settings: 'Add a short Reverb (Room size: Small, Wet: 15%) to give it air without muddying the mix.',
+      freeSource: 'splice.com free samples → "snare" search',
+    },
+    {
+      track: 'Hi-Hat (Closed)', emoji: '🎩',
+      role: 'The pulse — hi-hats are what keep the groove moving forward between the kicks and snares.',
+      sounds: [
+        { name: 'Tight Closed Hat', where: 'Drum Machine Designer → Browse → "Hi-Hat" → Tight Closed Hat', tip: 'Standard hi-hat. Put it on every 8th note (steps 1,3,5,7,9,11,13,15) to start.' },
+        { name: 'Vintage Closed Hat', where: 'Drum Machine Designer → Browse → "Hi-Hat" → Vintage Closed Hat', tip: 'Has a slight swing — good for gospel and funk.' },
+      ],
+      logicPath: 'Drum Machine Designer → Pad 3 (F#1) → Browse Samples',
+      settings: 'Lower the velocity of off-beat hi-hats slightly (80 vs 100) — makes them feel human and not robotic.',
+      freeSource: 'Any free drum pack — hi-hats are the most common free sample',
+    },
+    {
+      track: 'Hi-Hat (Open)', emoji: '🔔',
+      role: 'Adds air and space — the open hat breathes in between the closed hats.',
+      sounds: [
+        { name: 'Open Hi-Hat', where: 'Drum Machine Designer → Browse → "Hi-Hat" → Open Hi-Hat 01', tip: 'Use sparingly — 1-2 hits per bar. Put it on the "and" of beat 4 for a natural breath.' },
+      ],
+      logicPath: 'Drum Machine Designer → Pad 4 (A#1) → Browse Samples',
+      settings: 'Keep velocity around 70-80. Too loud and it drowns everything.',
+      freeSource: 'Same drum packs as closed hat — usually come together',
+    },
+    {
+      track: 'Clap', emoji: '👏',
+      role: 'Accent and attitude. The clap emphasises key moments and adds a human feel.',
+      sounds: [
+        { name: 'Stadium Clap', where: 'Drum Machine Designer → Browse → "Clap" → Stadium Clap', tip: 'Big, wide clap — great for gospel and uplifting moments.' },
+        { name: 'Tight Clap', where: 'Drum Machine Designer → Browse → "Clap" → Tight Clap 01', tip: 'Sharp pop clap. Good for trap and hip-hop.' },
+        { name: 'Hand Clap (real)', where: 'Drum Machine Designer → Browse → "Clap" → Hand Clap', tip: 'Sounds like a real congregation clapping — perfect for gospel and worship.' },
+      ],
+      logicPath: 'Drum Machine Designer → Pad 5 (D#1) → Browse Samples',
+      settings: 'Add a tiny Delay (1/16 note, 10-15% wet) to give it width across the stereo field.',
+      freeSource: 'Splice free tier → "gospel clap" or "hand clap"',
+    },
+    {
+      track: 'Tom', emoji: '🪗',
+      role: 'Movement and drama — toms create fills that signal a section change is coming.',
+      sounds: [
+        { name: 'Floor Tom', where: 'Drum Machine Designer → Browse → "Tom" → Floor Tom 01', tip: 'Low, deep tom. Use at the end of a bar to signal the chorus.' },
+        { name: 'Mid Tom', where: 'Drum Machine Designer → Browse → "Tom" → Mid Tom', tip: 'Classic fill tom. Go Floor → Mid → Snare for a 3-hit fill.' },
+      ],
+      logicPath: 'Drum Machine Designer → Pad 6 (A1) → Browse Samples',
+      settings: 'Use toms in fills only — last 2 steps of bar 4 before the chorus hits.',
+      freeSource: 'GarageBand (free on Mac) has excellent tom samples',
+    },
+    {
+      track: 'Bass / 808', emoji: '🔊',
+      role: 'The lowest sound in the mix. The bass is what you feel in your chest. It locks with the kick.',
+      sounds: [
+        { name: 'ES2 Sub Bass (Logic synth)', where: 'New Software Instrument track → ES2 → Preset: "Sub Bass" or "808 Bass"', tip: 'Tune the bass note to match your key. If key is A minor, bass root note = A.' },
+        { name: 'Retro Synth Bass', where: 'New Software Instrument track → Retro Synth → Wave: Sawtooth → turn filter down', tip: 'More growly, moving bass. Good for funk and R&B.' },
+        { name: 'Alchemy 808', where: 'New Software Instrument → Alchemy → Search "808" → pick 808 Bass', tip: 'Best Logic 808. Has the pitch slide built in. Tune to your key.' },
+      ],
+      logicPath: 'Create NEW Software Instrument track (not in Drum Machine Designer)',
+      settings: 'Pan: Center. Add a Low Cut EQ at 30Hz. Sidechain compress the bass to duck slightly when the kick hits.',
+      freeSource: 'Logic Pro ships with excellent 808 presets in Alchemy — no download needed',
+    },
+    {
+      track: 'Perc', emoji: '🪇',
+      role: 'Texture and groove — shakers, tambourines, cowbells, and rim shots fill the spaces the drums leave.',
+      sounds: [
+        { name: 'Shaker', where: 'Drum Machine Designer → Browse → "Percussion" → Shaker 01', tip: 'Put shaker on every "and" (steps 3,7,11,15) for a constant forward motion.' },
+        { name: 'Tambourine', where: 'Drum Machine Designer → Browse → "Percussion" → Tambourine', tip: 'Gospel essential. Put on beats 2 and 4 — same as snare — for church feel.' },
+        { name: 'Cowbell / Rim', where: 'Drum Machine Designer → Browse → "Percussion" → Rim Shot or Cowbell', tip: 'Afrobeats and Latin use cowbell on specific offbeats for polyrhythm texture.' },
+      ],
+      logicPath: 'Drum Machine Designer → Pad 8 (C#2) → Browse Samples → Percussion folder',
+      settings: 'Keep perc at 60-70 velocity — it should sit under the main drums, not compete.',
+      freeSource: 'Logic Pro has a full Percussion folder with shakers, tambourines, congas, cowbells included free',
+    },
+  ],
+  // Genre overrides — these replace/extend the default for specific presets
+  trap: [
+    { track: 'Kick', override: true, sounds: [
+      { name: 'TR-808 Kick (pitched down)', where: 'Drum Machine Designer → Browse → "Kick" → 808 Kick → lower pitch to -5 semitones', tip: 'Trap kick is deep and boomy. Pitch it down for extra weight.' },
+      { name: 'Vinyl Kick', where: 'Drum Machine Designer → Browse → "Kick" → Vinyl Kick', tip: 'Has the distorted trap character built in.' },
+    ]},
+    { track: 'Hi-Hat (Closed)', override: true, sounds: [
+      { name: 'Trap Hi-Hat', where: 'Drum Machine Designer → Browse → "Hi-Hat" → Trap Hi-Hat or Hi-Hat Tight', tip: 'Put on ALL 16 steps for the signature trap density.' },
+      { name: 'Hi-Hat Roll', where: 'Same hi-hat — in the sequencer, put 3-4 hits close together at the end of the bar', tip: 'Steps 13,14,15 together = the trap hi-hat roll.' },
+    ]},
+  ],
+  gospel: [
+    { track: 'Snare', override: true, sounds: [
+      { name: 'Gospel Snare (layered)', where: 'Use TWO pads: Fat Snare + Hand Clap on same steps', tip: 'Gospel snare is THICK. Always layer a real clap on the snare.' },
+      { name: 'Ghost Snare', where: 'Same snare sample, but drag velocity down to 30-40 on in-between steps', tip: 'Ghost hits are what give gospel drums that human shuffle feel.' },
+    ]},
+    { track: 'Perc', override: true, sounds: [
+      { name: 'Tambourine (gospel)', where: 'Drum Machine Designer → Browse → Percussion → Tambourine → on beats 2 & 4', tip: 'Tambourine is the most iconic gospel percussion sound. Essential.' },
+      { name: 'Shaker (16th notes)', where: 'Drum Machine Designer → Shaker on every 16th note step', tip: 'Running shaker under everything holds the gospel groove together.' },
+    ]},
+  ],
+};
+
+function getSoundsForPreset(presetName) {
+  const name = presetName.toLowerCase();
+  const overrides = name.includes('trap') || name.includes('drill') ? SOUND_LIBRARY.trap
+    : name.includes('gospel') ? SOUND_LIBRARY.gospel
+    : [];
+
+  return SOUND_LIBRARY.default.map(trackSounds => {
+    const override = overrides.find(o => o.track === trackSounds.track);
+    if (override?.override) return { ...trackSounds, sounds: override.sounds };
+    return trackSounds;
+  });
+}
+
 // ─── Main Component ───────────────────────────────────────────────────────────
 export function RhythmBuilder() {
   const [selectedPreset, setSelectedPreset] = useState(0);
@@ -926,6 +1059,7 @@ export function RhythmBuilder() {
             { id:'tap',      icon:Mic,      label:'Tap' },
             { id:'build',    icon:BookOpen, label:'Build' },
             { id:'sequence', icon:Grid,     label:'Sequence' },
+            { id:'sounds',   icon:Zap,      label:'Sounds' },
             { id:'dna',      icon:Eye,      label:'DNA' },
           ].map(({ id, icon: Icon, label }) => (
             <button key={id} onClick={() => setMode(id)}
@@ -1372,6 +1506,110 @@ export function RhythmBuilder() {
           <div className="bg-stone-800/50 rounded-xl p-3 border border-stone-700 text-xs text-stone-400">
             <span className="text-stone-300 font-semibold">Logic Pro: </span>
             Steps 1–16 = one bar of 16th notes. Beat 1 = step 1, beat 2 = step 5, beat 3 = step 9, beat 4 = step 13. The Logic note column shows which MIDI note triggers each drum sound in Drum Machine Designer.
+          </div>
+        </div>
+      )}
+
+      {/* ── SOUNDS MODE ──────────────────────────────────────────────────── */}
+      {mode==='sounds' && (
+        <div className="bg-stone-900 rounded-2xl border border-stone-800 p-5 space-y-5">
+          <div>
+            <h2 className="text-base font-bold text-white flex items-center gap-2 mb-1">
+              <Zap className="w-4 h-4 text-violet-400"/>
+              Sound Library — {preset.name}
+            </h2>
+            <p className="text-stone-400 text-sm">
+              Every sound you need to build this rhythm. Where to find it in Logic Pro, how to set it up, and where to download it if you need more options.
+            </p>
+          </div>
+
+          {/* Where to get sounds — paid & free */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {[
+              { label: '✅ Built into Logic Pro', desc: 'Logic ships with thousands of free sounds. Everything listed below is available right now — no download needed.', tag: 'FREE', tagColor: 'bg-emerald-500/20 text-emerald-300 border-emerald-700/50' },
+              { label: '🎧 Splice', desc: 'The biggest sample store. $7.99/mo gets you credits to download any sound — kicks, 808s, hi-hats, pads, vocals, everything.', tag: 'PAID', tagColor: 'bg-amber-500/20 text-amber-300 border-amber-700/50' },
+              { label: '🆓 Looperman', desc: 'Free drum samples, loops, one-shots. Search by genre. No signup needed to download. Great for extra kicks and percs.', tag: 'FREE', tagColor: 'bg-emerald-500/20 text-emerald-300 border-emerald-700/50' },
+              { label: '🎹 Splice Sounds', desc: 'Specific packs: "808 Mafia Drum Kit", "Gospel Drum Kit Vol 2", "Afrobeats Essential Drums". Search by genre on Splice.', tag: 'PAID', tagColor: 'bg-amber-500/20 text-amber-300 border-amber-700/50' },
+              { label: '📦 Native Instruments', desc: 'Battery 4 and Maschine packs — professional producer-grade drums used on major label records. Expensive but industry standard.', tag: 'PAID', tagColor: 'bg-amber-500/20 text-amber-300 border-amber-700/50' },
+              { label: '🎸 Sample Focus', desc: 'Free one-shots and loops. High quality. You can filter by BPM, key, genre. samplefocus.com', tag: 'FREE', tagColor: 'bg-emerald-500/20 text-emerald-300 border-emerald-700/50' },
+            ].map(({ label, desc, tag, tagColor }) => (
+              <div key={label} className="bg-stone-800 rounded-xl p-3 border border-stone-700">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-sm font-semibold text-white">{label}</span>
+                  <span className={`text-[9px] font-black px-1.5 py-0.5 rounded border ${tagColor}`}>{tag}</span>
+                </div>
+                <p className="text-stone-400 text-xs">{desc}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Per-track sound guide */}
+          <div className="space-y-4">
+            {getSoundsForPreset(preset.name).map((trackSound, i) => (
+              <div key={i} className="bg-stone-800 rounded-xl border border-stone-700 overflow-hidden">
+                {/* Track header */}
+                <div className={`flex items-center gap-3 px-4 py-3 ${TRACKS[i].color} bg-opacity-20`} style={{background: 'rgba(0,0,0,0.3)'}}>
+                  <span className="text-xl">{trackSound.emoji}</span>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-white font-bold text-sm">{trackSound.track}</span>
+                      <span className={`w-2 h-2 rounded-full ${TRACKS[i].dot}`}/>
+                      <span className="text-stone-400 text-xs font-mono">Logic note: {TRACKS[i].logicNote}</span>
+                    </div>
+                    <p className="text-stone-400 text-xs">{trackSound.role}</p>
+                  </div>
+                </div>
+
+                <div className="p-4 space-y-3">
+                  {/* Sound options */}
+                  <div className="space-y-2">
+                    {trackSound.sounds.map((s, si) => (
+                      <div key={si} className="bg-stone-900 rounded-lg p-3 border border-stone-700">
+                        <div className="flex items-start gap-2">
+                          <span className="text-violet-400 font-bold text-xs mt-0.5 flex-shrink-0">#{si + 1}</span>
+                          <div className="flex-1">
+                            <p className="text-white font-semibold text-sm">{s.name}</p>
+                            <p className="text-violet-300 text-xs mt-0.5 font-mono">{s.where}</p>
+                            <p className="text-stone-400 text-xs mt-1">{s.tip}</p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Settings */}
+                  <div className="bg-stone-950/50 rounded-lg p-3 border border-stone-700/50">
+                    <span className="text-[10px] text-amber-400 font-semibold uppercase tracking-wide">Logic Pro settings: </span>
+                    <span className="text-stone-300 text-xs">{trackSound.settings}</span>
+                  </div>
+
+                  {/* Where to load it */}
+                  <div className="bg-stone-950/50 rounded-lg p-3 border border-stone-700/50">
+                    <span className="text-[10px] text-emerald-400 font-semibold uppercase tracking-wide">How to load: </span>
+                    <span className="text-stone-300 text-xs font-mono">{trackSound.logicPath}</span>
+                  </div>
+
+                  {/* Free source */}
+                  <div className="bg-stone-950/50 rounded-lg p-3 border border-stone-700/50">
+                    <span className="text-[10px] text-blue-400 font-semibold uppercase tracking-wide">Free download: </span>
+                    <span className="text-stone-300 text-xs">{trackSound.freeSource}</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* How to add a downloaded sound */}
+          <div className="bg-violet-900/20 border border-violet-800/40 rounded-xl p-4">
+            <p className="text-violet-300 text-sm font-semibold mb-2">How to load a downloaded sound into Logic Pro</p>
+            <ol className="space-y-1 text-stone-400 text-sm">
+              <li>1. Download the .wav or .mp3 file to your Mac</li>
+              <li>2. Open Logic Pro → open your Drum Machine Designer</li>
+              <li>3. Click the pad you want to change (e.g. the Kick pad)</li>
+              <li>4. In the top-left of the pad: click the waveform icon → "Load Sample"</li>
+              <li>5. Navigate to your downloaded file → click Open</li>
+              <li>6. Done — that pad now plays your custom sound</li>
+            </ol>
           </div>
         </div>
       )}
