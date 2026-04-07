@@ -662,6 +662,10 @@ Return ONLY a raw JSON object — no markdown fences, no explanation, no text be
   "tip": "One powerful, specific tip tailored to this exact book type and audience that will make the biggest single impact"
 }`;
 
+  } else if (mode === 'custom') {
+    // Raw prompt passthrough — used by Rhythm Builder production guide
+    prompt = req.body.prompt || '';
+
   } else {
     // Content generation mode — brand-type aware
     const cgType = brandType || 'faith';
