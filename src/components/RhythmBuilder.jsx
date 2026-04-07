@@ -792,15 +792,47 @@ const SOUND_LIBRARY = {
     },
     {
       track: 'Bass / 808', emoji: '🔊',
-      role: 'The lowest sound in the mix. The bass is what you feel in your chest. It locks with the kick.',
+      role: 'The lowest sound in the mix — felt in your chest. There are MANY different 808 types. Each one does a different job.',
       sounds: [
-        { name: 'ES2 Sub Bass (Logic synth)', where: 'New Software Instrument track → ES2 → Preset: "Sub Bass" or "808 Bass"', tip: 'Tune the bass note to match your key. If key is A minor, bass root note = A.' },
-        { name: 'Retro Synth Bass', where: 'New Software Instrument track → Retro Synth → Wave: Sawtooth → turn filter down', tip: 'More growly, moving bass. Good for funk and R&B.' },
-        { name: 'Alchemy 808', where: 'New Software Instrument → Alchemy → Search "808" → pick 808 Bass', tip: 'Best Logic 808. Has the pitch slide built in. Tune to your key.' },
+        {
+          name: '① Classic 808 Bass (long, pitched, sliding)',
+          where: 'Logic → New Software Instrument → Alchemy → search "808" → "808 Bass Sub"',
+          tip: 'This is the most common 808 you hear in trap, hip-hop, and modern gospel. It holds a long note and can SLIDE between pitches. You MUST tune it to your key — if the song is in A minor, the root note is A2 on the keyboard.',
+        },
+        {
+          name: '② 808 Kick (short, punchy, deep thump)',
+          where: 'Drum Machine Designer → Browse → "Kick" → 808 Kick or TR-808 Kick',
+          tip: 'This is a SHORT 808 used as the kick drum itself — not a bass note. It hits and cuts off fast. Most trap beats use this as the kick. Different from the long 808 bass above.',
+        },
+        {
+          name: '③ Distorted / Clipped 808',
+          where: 'Alchemy "808 Bass Sub" → add Pedalboard plugin → Amp setting "Overdrive" → turn Drive to 30-40%',
+          tip: 'The growly, aggressive 808 you hear in hard rap and drill. Saturate the clean 808 to make it bite. The harder the song, the more distortion.',
+        },
+        {
+          name: '④ Sub Bass (clean sine wave — no 808 character)',
+          where: 'ES2 → Init patch → Oscillator 1: Sine wave → Amp Env: long sustain, medium release',
+          tip: 'Pure clean sub — just low frequency, no 808 punch. Used in gospel, R&B, and soul where you feel the bass but don\'t hear it distort. Very smooth and warm.',
+        },
+        {
+          name: '⑤ Synth Bass (moving, melodic)',
+          where: 'Retro Synth → Wave: Sawtooth → Filter: Lowpass → Cutoff: 40% → Resonance: 20%',
+          tip: 'The growling bass that moves with the chord changes. Not an 808 — this is more like a Moog or synth bass. Used in funk, gospel funk, and Afrobeats.',
+        },
+        {
+          name: '⑥ Gospel / Church Bass (warm low end)',
+          where: 'EXS24 → Load → "Gospel Bass" or "Electric Bass" → play in key of song',
+          tip: 'Warm, rich, human-sounding bass. Sounds like a real bass guitar but played by a keyboardist. This is the sound of Sunday morning church service.',
+        },
+        {
+          name: '⑦ 808 with Pitch Slide (the "wobbly" 808)',
+          where: 'Alchemy 808 Bass → in Piano Roll, place TWO notes close together → right-click first note → Glide/Portamento ON',
+          tip: 'The signature trap 808 that bends from one note to another. You place the notes in the piano roll and turn on Portamento (glide). The 808 slides between them — this is that famous "woooo" sound.',
+        },
       ],
-      logicPath: 'Create NEW Software Instrument track (not in Drum Machine Designer)',
-      settings: 'Pan: Center. Add a Low Cut EQ at 30Hz. Sidechain compress the bass to duck slightly when the kick hits.',
-      freeSource: 'Logic Pro ships with excellent 808 presets in Alchemy — no download needed',
+      logicPath: 'Create a NEW Software Instrument track (separate from Drum Machine Designer). This is NOT a drum pad — it lives on its own track.',
+      settings: '⚠️ MUST TUNE to your key. In Piano Roll, place notes on the correct pitch. Pan: Center. EQ: Cut below 30Hz (too low for speakers). Sidechain: Compressor on bass triggered by kick so bass ducks when kick hits — keeps them from clashing.',
+      freeSource: 'Splice free → search "808 bass" | Free808.com — 100% free 808 one-shots in every style | Logic Pro Alchemy — already free inside Logic',
     },
     {
       track: 'Perc', emoji: '🪇',
@@ -1521,6 +1553,28 @@ export function RhythmBuilder() {
             <p className="text-stone-400 text-sm">
               Every sound you need to build this rhythm. Where to find it in Logic Pro, how to set it up, and where to download it if you need more options.
             </p>
+          </div>
+
+          {/* 808 types callout */}
+          <div className="bg-amber-900/20 border border-amber-700/40 rounded-xl p-4 space-y-2">
+            <p className="text-amber-300 font-bold text-sm">🔊 The 808 — There are 7 different types</p>
+            <p className="text-stone-400 text-sm">When people say "808" they don't always mean the same thing. Scroll down to the <span className="text-white font-semibold">Bass / 808</span> section to see all 7 types explained — from the short punchy kick 808 to the long sliding bass 808 to the distorted aggressive 808. Each one has a different sound, a different job, and a different way to make it in Logic Pro.</p>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
+              {[
+                { name: '① Classic sliding bass', use: 'Trap, Hip-hop, Gospel' },
+                { name: '② Short kick 808', use: 'Trap kick drum' },
+                { name: '③ Distorted 808', use: 'Drill, Hard rap' },
+                { name: '④ Clean sub bass', use: 'Gospel, R&B, Soul' },
+                { name: '⑤ Synth bass (moving)', use: 'Funk, Afrobeats' },
+                { name: '⑥ Church/gospel bass', use: 'Gospel, Worship' },
+                { name: '⑦ Pitch slide 808', use: 'Trap "woooo" sound' },
+              ].map(({ name, use }) => (
+                <div key={name} className="bg-stone-900 rounded-lg p-2 border border-stone-700">
+                  <p className="text-white text-xs font-semibold">{name}</p>
+                  <p className="text-stone-500 text-[10px]">{use}</p>
+                </div>
+              ))}
+            </div>
           </div>
 
           {/* Where to get sounds — paid & free */}
