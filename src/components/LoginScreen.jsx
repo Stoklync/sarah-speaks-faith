@@ -68,7 +68,7 @@ export function LoginScreen({ onLogin }) {
         </div>
 
         {/* Card */}
-        <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-8 shadow-2xl">
+        <div className="bg-black/30 backdrop-blur-xl border border-white/10 rounded-3xl p-8 shadow-2xl">
 
           <h2 className="text-lg font-bold text-white mb-6">Sign in to your studio</h2>
 
@@ -88,7 +88,7 @@ export function LoginScreen({ onLogin }) {
                   placeholder="admin"
                   autoComplete="username"
                   required
-                  className="w-full bg-white/8 border border-white/15 rounded-xl pl-10 pr-4 py-3 text-white placeholder-stone-600 text-sm focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500 transition-all"
+                  className="w-full bg-black/40 border border-white/15 rounded-xl pl-10 pr-4 py-3 text-white placeholder-stone-500 text-sm focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500 transition-all"
                 />
               </div>
             </div>
