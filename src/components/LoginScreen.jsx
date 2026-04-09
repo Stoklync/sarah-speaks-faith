@@ -107,7 +107,7 @@ export function LoginScreen({ onLogin }) {
                   placeholder="••••••••••"
                   autoComplete="current-password"
                   required
-                  className="w-full bg-white/8 border border-white/15 rounded-xl pl-10 pr-12 py-3 text-white placeholder-stone-600 text-sm focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500 transition-all"
+                  className="w-full bg-black/40 border border-white/15 rounded-xl pl-10 pr-12 py-3 text-white placeholder-stone-500 text-sm focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500 transition-all"
                 />
                 <button
                   type="button"
