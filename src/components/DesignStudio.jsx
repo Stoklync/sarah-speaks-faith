@@ -3,8 +3,10 @@ import { Stage, Layer, Rect, Text, Image as KonvaImage, Transformer } from 'reac
 import {
   Sparkles, Download, Trash2, Type, Image as ImageIcon, Loader2,
   AlignLeft, AlignCenter, AlignRight, Bold, Italic, ChevronDown, ChevronRight, Square,
+  Zap, PenTool,
 } from 'lucide-react';
 import { useStudio } from '../App';
+import { GraphicMaker } from './GraphicMaker';
 
 // ─── Platform Formats ────────────────────────────────────────────────────────
 const FORMATS = [
@@ -316,6 +318,9 @@ export function DesignStudio() {
   const [elements,   setElements]   = useState([]);
   const [selectedId, setSelectedId] = useState(null);
 
+  // ── Mode ──
+  const [studioMode,  setStudioMode]  = useState('templates'); // 'templates' | 'canvas'
+
   // ── UI state ──
   const [formatCat,   setFormatCat]   = useState('Social');
   const [aiLoading,   setAiLoading]   = useState(false);
@@ -557,6 +562,24 @@ export function DesignStudio() {
   // ─────────────────────────────────────────────────────────────────────────
   return (
     <div className="max-w-screen-xl mx-auto space-y-4 px-2">
+
+      {/* Mode Switcher */}
+      <div className="flex gap-2 p-1 bg-stone-100 dark:bg-stone-800 rounded-2xl w-fit">
+        <button onClick={() => setStudioMode('templates')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all ${studioMode === 'templates' ? 'bg-white dark:bg-stone-700 text-violet-600 shadow' : 'text-stone-500 hover:text-stone-700 dark:hover:text-stone-300'}`}>
+          <Zap size={15} /> Quick Templates
+        </button>
+        <button onClick={() => setStudioMode('canvas')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all ${studioMode === 'canvas' ? 'bg-white dark:bg-stone-700 text-violet-600 shadow' : 'text-stone-500 hover:text-stone-700 dark:hover:text-stone-300'}`}>
+          <PenTool size={15} /> Canvas Editor
+        </button>
+      </div>
+
+      {/* Quick Templates mode */}
+      {studioMode === 'templates' && <GraphicMaker />}
+
+      {/* Canvas Editor mode */}
+      {studioMode === 'canvas' && <>
 
       {/* Header */}
       <div className="bg-gradient-to-br from-violet-50 to-indigo-50 dark:from-stone-800 dark:to-stone-800 border-2 border-violet-200 dark:border-violet-800 rounded-3xl p-5 flex items-center justify-between">
@@ -938,6 +961,7 @@ export function DesignStudio() {
         </div>
 
       </div>
+      </>}
     </div>
   );
 }

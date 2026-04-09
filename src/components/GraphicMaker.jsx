@@ -3,169 +3,617 @@ import { Download, Sparkles, Loader2 } from 'lucide-react';
 import { useStudio } from '../App';
 
 const FORMATS = [
-  { id: 'reel',   label: '📱 Reel',    w: 1080, h: 1920 },
-  { id: 'square', label: '⬜ Square',   w: 1080, h: 1080 },
-  { id: 'story',  label: '📖 Story',    w: 1080, h: 1920 },
-  { id: 'flyer',  label: '🗒️ Flyer',    w: 1080, h: 1350 },
+  { id: 'square', label: '⬜ Square',  w: 1080, h: 1080 },
+  { id: 'story',  label: '📱 Story',   w: 1080, h: 1920 },
+  { id: 'flyer',  label: '🗒️ Flyer',   w: 1080, h: 1350 },
 ];
 
+// layout types: checklist | comparison | tips | quote | announcement | question
 const TEMPLATES = [
-  { id: 'quote',     label: 'Quote Card',          bg: ['#1e1b4b','#4c1d95'], accent: '#a78bfa', textColor: '#ffffff', headline: 'Your powerful quote goes here', subtext: '— Your Name', cta: '' },
-  { id: 'announce',  label: 'Announcement',         bg: ['#0f172a','#1e3a5f'], accent: '#38bdf8', textColor: '#ffffff', headline: 'New Episode Out Now', subtext: 'Tap the link in bio to listen', cta: '🎙️ Listen Now' },
-  { id: 'promo',     label: 'Product Promo',        bg: ['#064e3b','#065f46'], accent: '#34d399', textColor: '#ffffff', headline: 'Now Available', subtext: 'Wholesale prices for your business', cta: 'Shop Now →' },
-  { id: 'scripture', label: 'Scripture',            bg: ['#78350f','#92400e'], accent: '#fcd34d', textColor: '#ffffff', headline: '"For I know the plans I have for you"', subtext: 'Jeremiah 29:11', cta: '' },
-  { id: 'sale',      label: 'Sale / Offer',         bg: ['#7f1d1d','#991b1b'], accent: '#fca5a5', textColor: '#ffffff', headline: '20% OFF Today Only', subtext: 'Limited stock available', cta: 'Order Now →' },
-  { id: 'tip',       label: 'Tip / Value Post',     bg: ['#1e3a2f','#14532d'], accent: '#86efac', textColor: '#ffffff', headline: '3 Tips to Save More This Month', subtext: 'Swipe to learn more ›', cta: '' },
-  { id: 'podcast',   label: 'Podcast Episode',      bg: ['#2e1065','#3b0764'], accent: '#e879f9', textColor: '#ffffff', headline: 'Episode 12: Your Title Here', subtext: 'Her Stewardship Podcast', cta: '🎧 Out Now' },
-  { id: 'minimal',   label: 'Clean / Minimal',      bg: ['#f8fafc','#f1f5f9'], accent: '#7c3aed', textColor: '#1e293b', headline: 'Your Message Here', subtext: 'Supporting line of text', cta: '' },
+  {
+    id: 'checklist', label: '✅ Benefits Checklist', layout: 'checklist',
+    bg: ['#071b3e','#0d3060'], accent: '#f59e0b', textColor: '#ffffff',
+    headline: 'Why Choose Us?',
+    subtext: 'Save money every month|Trusted by thousands|Easy to get started',
+    cta: 'GET STARTED TODAY',
+  },
+  {
+    id: 'myth_fact', label: '⚡ Myth vs Fact', layout: 'comparison',
+    bg: ['#071b3e','#0d3060'], accent: '#f59e0b', textColor: '#ffffff',
+    leftColor: '#b91c1c', rightColor: '#1d4ed8',
+    headline: 'Know The Truth',
+    subtext: "It's too expensive to start.|You can start for less than you think.",
+    cta: '',
+  },
+  {
+    id: 'tips', label: '💡 Tip List', layout: 'tips',
+    bg: ['#0d2b1a','#0a3d22'], accent: '#22c55e', textColor: '#ffffff',
+    headline: '3 Tips for This Week',
+    subtext: 'Track every dollar you spend|Set a weekly savings goal|Cut one unused subscription',
+    cta: 'Save This Post ↓',
+  },
+  {
+    id: 'question', label: '❓ Bold Question', layout: 'question',
+    bg: ['#0a0a1a','#1a1a3e'], accent: '#f59e0b', textColor: '#ffffff',
+    leftColor: '#1d4ed8', rightColor: '#b91c1c',
+    headline: 'WHICH WOULD YOU CHOOSE?',
+    subtext: 'Option A — saves you money|Option B — costs you money',
+    cta: '',
+  },
+  {
+    id: 'quote', label: '✝️ Scripture / Quote', layout: 'quote',
+    bg: ['#1a0800','#3d1500'], accent: '#f59e0b', textColor: '#ffffff',
+    headline: '"For I know the plans I have for you"',
+    subtext: '— Jeremiah 29:11',
+    cta: '',
+  },
+  {
+    id: 'announce', label: '📣 Announcement', layout: 'announcement',
+    bg: ['#0f172a','#1e3a5f'], accent: '#38bdf8', textColor: '#ffffff',
+    headline: 'New Episode Out Now!',
+    subtext: 'Available on all major platforms',
+    cta: 'Listen Now →',
+  },
+  {
+    id: 'promo', label: '🛍️ Product Promo', layout: 'announcement',
+    bg: ['#064e3b','#065f46'], accent: '#34d399', textColor: '#ffffff',
+    headline: 'Now Available',
+    subtext: 'Premium quality · Unbeatable price',
+    cta: 'Order Now →',
+  },
+  {
+    id: 'podcast', label: '🎙️ Podcast Drop', layout: 'announcement',
+    bg: ['#1e0a3c','#2d0f5e'], accent: '#c084fc', textColor: '#ffffff',
+    headline: 'Episode 12: Your Title Here',
+    subtext: 'Drop a comment with your biggest takeaway',
+    cta: '🎧 Listen Free',
+  },
 ];
 
-function drawCanvas({ canvas, template, headline, subtext, cta, format, brandColor }) {
-  const ctx = canvas.getContext('2d');
-  const { w, h } = format;
-  canvas.width = w;
-  canvas.height = h;
+const LIST_LAYOUTS = new Set(['checklist', 'tips', 'comparison', 'question']);
 
-  // Background gradient
-  const grad = ctx.createLinearGradient(0, 0, 0, h);
-  grad.addColorStop(0, template.bg[0]);
-  grad.addColorStop(1, template.bg[1]);
-  ctx.fillStyle = grad;
-  ctx.fillRect(0, 0, w, h);
+// ─── Canvas helpers ───────────────────────────────────────────────────────────
 
-  // Accent bar at top
-  ctx.fillStyle = brandColor || template.accent;
-  ctx.fillRect(0, 0, w, Math.round(h * 0.008));
-
-  // Accent bar at bottom
-  ctx.fillRect(0, h - Math.round(h * 0.008), w, Math.round(h * 0.008));
-
-  // Decorative circle (top right)
+function roundRect(ctx, x, y, w, h, r) {
   ctx.beginPath();
-  ctx.arc(w * 0.85, h * 0.15, w * 0.28, 0, Math.PI * 2);
-  ctx.fillStyle = (brandColor || template.accent) + '18';
-  ctx.fill();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.arcTo(x + w, y,     x + w, y + r,     r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.arcTo(x + w, y + h, x + w - r, y + h, r);
+  ctx.lineTo(x + r, y + h);
+  ctx.arcTo(x,     y + h, x,     y + h - r, r);
+  ctx.lineTo(x, y + r);
+  ctx.arcTo(x, y,         x + r, y,         r);
+  ctx.closePath();
+}
 
-  // Decorative circle (bottom left)
-  ctx.beginPath();
-  ctx.arc(w * 0.15, h * 0.88, w * 0.2, 0, Math.PI * 2);
-  ctx.fillStyle = (brandColor || template.accent) + '12';
-  ctx.fill();
-
-  const centerX = w / 2;
-  const isSquare = format.id === 'square' || format.id === 'flyer';
-  const baseY = isSquare ? h * 0.38 : h * 0.42;
-  const headlineSize = isSquare ? Math.round(w * 0.065) : Math.round(w * 0.072);
-  const subtextSize  = isSquare ? Math.round(w * 0.038) : Math.round(w * 0.042);
-  const ctaSize      = isSquare ? Math.round(w * 0.034) : Math.round(w * 0.038);
-  const maxWidth = w * 0.82;
-
-  // Helper: wrap text
-  function wrapText(text, fontSize, fontWeight, maxW) {
-    ctx.font = `${fontWeight} ${fontSize}px 'Arial', sans-serif`;
-    const words = text.split(' ');
-    const lines = [];
-    let line = '';
-    for (const word of words) {
-      const test = line ? `${line} ${word}` : word;
-      if (ctx.measureText(test).width > maxW && line) {
-        lines.push(line);
-        line = word;
-      } else {
-        line = test;
-      }
+function wrapText(ctx, text, maxWidth) {
+  const words = (text || '').split(' ');
+  const lines = [];
+  let line = '';
+  for (const word of words) {
+    const test = line ? `${line} ${word}` : word;
+    if (ctx.measureText(test).width > maxWidth && line) {
+      lines.push(line);
+      line = word;
+    } else {
+      line = test;
     }
-    if (line) lines.push(line);
-    return lines;
   }
+  if (line) lines.push(line);
+  return lines.length ? lines : [''];
+}
+
+function drawCheck(ctx, cx, cy, r, color) {
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.fillStyle = color;
+  ctx.fill();
+  ctx.strokeStyle = '#fff';
+  ctx.lineWidth = r * 0.22;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.beginPath();
+  ctx.moveTo(cx - r * 0.42, cy + r * 0.02);
+  ctx.lineTo(cx - r * 0.08, cy + r * 0.42);
+  ctx.lineTo(cx + r * 0.44, cy - r * 0.34);
+  ctx.stroke();
+}
+
+function drawBg(ctx, w, h, bg) {
+  const g = ctx.createLinearGradient(0, 0, 0, h);
+  g.addColorStop(0, bg[0]);
+  g.addColorStop(1, bg[1]);
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, w, h);
+}
+
+function topBar(ctx, w, accent) {
+  ctx.fillStyle = accent;
+  ctx.fillRect(0, 0, w, Math.round(w * 0.007));
+}
+
+function bottomBar(ctx, w, h, accent) {
+  ctx.fillStyle = accent;
+  ctx.fillRect(0, h - Math.round(w * 0.007), w, Math.round(w * 0.007));
+}
+
+function brandHeader(ctx, w, headerCenterY, bizName, accent, textColor) {
+  const s = w / 1080;
+  const fs = Math.round(s * 36);
+  ctx.font = `900 ${fs}px Arial, Helvetica, sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  const nameW = ctx.measureText(bizName.toUpperCase()).width;
+
+  // Accent side lines
+  const lineW = Math.max((w * 0.5 - nameW / 2 - s * 36) / 2, s * 20);
+  const lineY = headerCenterY;
+  ctx.fillStyle = accent + '99';
+  ctx.fillRect(s * 40, lineY - s * 2, lineW, s * 4);
+  ctx.fillRect(w - s * 40 - lineW, lineY - s * 2, lineW, s * 4);
+
+  ctx.fillStyle = textColor;
+  ctx.fillText(bizName.toUpperCase(), w / 2, headerCenterY);
+}
+
+function footerStrip(ctx, w, h, bizName, accent, textColor) {
+  const s = w / 1080;
+  const fh = Math.round(s * 58);
+  const fy = h - fh;
+  ctx.fillStyle = 'rgba(0,0,0,0.35)';
+  ctx.fillRect(0, fy, w, fh);
+  ctx.font = `600 ${Math.round(s * 22)}px Arial, Helvetica, sans-serif`;
+  ctx.fillStyle = textColor + '99';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(bizName, w / 2, fy + fh / 2);
+}
+
+// ─── CHECKLIST ────────────────────────────────────────────────────────────────
+function drawChecklist(ctx, { w, h, template, headline, items, cta, bizName, accent }) {
+  const s = w / 1080;
+  drawBg(ctx, w, h, template.bg);
+
+  // Soft decorative blobs
+  ctx.fillStyle = accent + '10';
+  ctx.beginPath(); ctx.arc(w * 0.88, h * 0.1, w * 0.28, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(w * 0.08, h * 0.93, w * 0.16, 0, Math.PI * 2); ctx.fill();
+
+  topBar(ctx, w, accent);
+  brandHeader(ctx, w, h * 0.072, bizName, accent, template.textColor);
+
+  // Thin rule under brand
+  ctx.fillStyle = accent + '50';
+  ctx.fillRect(w * 0.28, h * 0.108, w * 0.44, s * 2);
 
   // Headline
-  const hlLines = wrapText(headline || '', headlineSize, '800', maxWidth);
-  const lineH = headlineSize * 1.3;
-  let y = baseY - ((hlLines.length - 1) * lineH) / 2;
-
+  const hSize = Math.round(s * 60);
+  ctx.font = `800 ${hSize}px Arial, Helvetica, sans-serif`;
   ctx.fillStyle = template.textColor;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  hlLines.forEach(line => {
-    ctx.font = `800 ${headlineSize}px 'Arial', sans-serif`;
-    ctx.fillText(line, centerX, y);
-    y += lineH;
+  const hlLines = wrapText(ctx, headline, w * 0.82);
+  const hlY0 = h * 0.175;
+  const hlLH = hSize * 1.25;
+  hlLines.forEach((l, i) => ctx.fillText(l, w / 2, hlY0 + i * hlLH));
+  const afterHL = hlY0 + hlLines.length * hlLH + s * 14;
+
+  // Accent underline
+  ctx.fillStyle = accent;
+  ctx.fillRect(w / 2 - s * 70, afterHL, s * 140, s * 4);
+
+  // Item rows
+  const itemH   = Math.round(h * 0.082);
+  const itemGap = Math.round(h * 0.016);
+  const itemX   = Math.round(s * 52);
+  const itemW   = w - itemX * 2;
+  const checkR  = Math.round(itemH * 0.28);
+  const ifs     = Math.round(itemH * 0.37);
+  const rowsStartY = afterHL + s * 28;
+
+  items.slice(0, 4).forEach((item, i) => {
+    const iy  = rowsStartY + i * (itemH + itemGap);
+    const icY = iy + itemH / 2;
+
+    roundRect(ctx, itemX, iy, itemW, itemH, s * 14);
+    ctx.fillStyle = 'rgba(255,255,255,0.07)';
+    ctx.fill();
+
+    const checkX = itemX + checkR + s * 24;
+    drawCheck(ctx, checkX, icY, checkR, accent);
+
+    ctx.font = `600 ${ifs}px Arial, Helvetica, sans-serif`;
+    ctx.fillStyle = template.textColor;
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(item, checkX + checkR + s * 18, icY);
   });
 
-  y += subtextSize * 0.8;
-
-  // Accent divider
-  if (subtext) {
-    ctx.fillStyle = brandColor || template.accent;
-    ctx.fillRect(centerX - w * 0.06, y, w * 0.12, Math.round(subtextSize * 0.18));
-    y += subtextSize * 1.2;
+  // CTA bar
+  if (cta) {
+    const cbH = Math.round(s * 72);
+    const cbY = h - Math.round(s * 70) - cbH - Math.round(s * 58);
+    roundRect(ctx, s * 52, cbY, w - s * 104, cbH, s * 12);
+    ctx.fillStyle = accent;
+    ctx.fill();
+    ctx.font = `800 ${Math.round(s * 30)}px Arial, Helvetica, sans-serif`;
+    ctx.fillStyle = 'rgba(0,0,0,0.8)';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(cta.toUpperCase(), w / 2, cbY + cbH / 2);
   }
+
+  footerStrip(ctx, w, h, bizName, accent, template.textColor);
+  bottomBar(ctx, w, h, accent);
+}
+
+// ─── COMPARISON (Myth vs Fact) ────────────────────────────────────────────────
+function drawComparison(ctx, { w, h, template, headline, items, cta, bizName, accent }) {
+  const s = w / 1080;
+  drawBg(ctx, w, h, template.bg);
+  topBar(ctx, w, accent);
+  brandHeader(ctx, w, h * 0.072, bizName, accent, template.textColor);
+
+  ctx.fillStyle = accent + '50';
+  ctx.fillRect(w * 0.28, h * 0.108, w * 0.44, s * 2);
+
+  // Headline
+  const hSize = Math.round(s * 52);
+  ctx.font = `800 ${hSize}px Arial, Helvetica, sans-serif`;
+  ctx.fillStyle = template.textColor;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  const hlLines = wrapText(ctx, headline, w * 0.82);
+  const hlY0 = h * 0.175;
+  const hlLH = hSize * 1.25;
+  hlLines.forEach((l, i) => ctx.fillText(l, w / 2, hlY0 + i * hlLH));
+  const afterHL = hlY0 + hlLines.length * hlLH + s * 16;
+
+  ctx.fillStyle = accent;
+  ctx.fillRect(w / 2 - s * 55, afterHL, s * 110, s * 4);
+
+  // Two panels
+  const gap    = Math.round(s * 18);
+  const panX   = Math.round(s * 40);
+  const panW   = (w - panX * 2 - gap) / 2;
+  const panY   = afterHL + s * 32;
+  const panH   = Math.round(h * 0.44);
+  const panR   = Math.round(s * 18);
+  const lColor = template.leftColor  || '#b91c1c';
+  const rColor = template.rightColor || '#1d4ed8';
+  const labelFSize = Math.round(s * 44);
+  const bodyFSize  = Math.round(s * 28);
+
+  const drawPanel = (px, color, label, text) => {
+    roundRect(ctx, px, panY, panW, panH, panR);
+    ctx.fillStyle = color; ctx.fill();
+
+    // Label
+    ctx.font = `900 ${labelFSize}px Arial, Helvetica, sans-serif`;
+    ctx.fillStyle = '#fff';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    ctx.fillText(label, px + panW / 2, panY + s * 28);
+
+    // Rule
+    ctx.fillStyle = 'rgba(255,255,255,0.35)';
+    ctx.fillRect(px + s * 22, panY + s * 86, panW - s * 44, s * 2);
+
+    // Body text
+    ctx.font = `400 ${bodyFSize}px Arial, Helvetica, sans-serif`;
+    ctx.fillStyle = 'rgba(255,255,255,0.85)';
+    ctx.textBaseline = 'top';
+    const lines = wrapText(ctx, text || '', panW - s * 44);
+    lines.forEach((l, i) => ctx.fillText(l, px + panW / 2, panY + s * 104 + i * bodyFSize * 1.4));
+  };
+
+  drawPanel(panX,              lColor, 'MYTH', items[0] || '');
+  drawPanel(panX + panW + gap, rColor, 'FACT', items[1] || '');
+
+  footerStrip(ctx, w, h, bizName, accent, template.textColor);
+  bottomBar(ctx, w, h, accent);
+}
+
+// ─── TIPS ─────────────────────────────────────────────────────────────────────
+function drawTips(ctx, { w, h, template, headline, items, cta, bizName, accent }) {
+  const s = w / 1080;
+  drawBg(ctx, w, h, template.bg);
+
+  ctx.fillStyle = accent + '09';
+  ctx.beginPath(); ctx.arc(w * 0.85, h * 0.1, w * 0.24, 0, Math.PI * 2); ctx.fill();
+
+  topBar(ctx, w, accent);
+  brandHeader(ctx, w, h * 0.072, bizName, accent, template.textColor);
+
+  ctx.fillStyle = accent + '50';
+  ctx.fillRect(w * 0.28, h * 0.108, w * 0.44, s * 2);
+
+  // Headline in accent colour
+  const hSize = Math.round(s * 58);
+  ctx.font = `800 ${hSize}px Arial, Helvetica, sans-serif`;
+  ctx.fillStyle = accent;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  const hlLines = wrapText(ctx, headline, w * 0.82);
+  const hlY0 = h * 0.175;
+  const hlLH = hSize * 1.25;
+  hlLines.forEach((l, i) => ctx.fillText(l, w / 2, hlY0 + i * hlLH));
+  const afterHL = hlY0 + hlLines.length * hlLH + s * 14;
+
+  ctx.fillStyle = template.textColor + '28';
+  ctx.fillRect(s * 52, afterHL, w - s * 104, s * 2);
+
+  const itemH   = Math.round(h * 0.086);
+  const itemGap = Math.round(h * 0.016);
+  const itemX   = Math.round(s * 52);
+  const itemW   = w - itemX * 2;
+  const numR    = Math.round(itemH * 0.3);
+  const ifs     = Math.round(itemH * 0.36);
+  const rowsY   = afterHL + s * 28;
+
+  items.slice(0, 4).forEach((item, i) => {
+    const iy  = rowsY + i * (itemH + itemGap);
+    const icY = iy + itemH / 2;
+
+    roundRect(ctx, itemX, iy, itemW, itemH, s * 14);
+    ctx.fillStyle = 'rgba(255,255,255,0.06)'; ctx.fill();
+
+    const numX = itemX + numR + s * 24;
+    ctx.beginPath();
+    ctx.arc(numX, icY, numR, 0, Math.PI * 2);
+    ctx.fillStyle = accent; ctx.fill();
+
+    ctx.font = `900 ${Math.round(numR * 0.92)}px Arial, Helvetica, sans-serif`;
+    ctx.fillStyle = '#000';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(`${i + 1}`, numX, icY);
+
+    ctx.font = `600 ${ifs}px Arial, Helvetica, sans-serif`;
+    ctx.fillStyle = template.textColor;
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(item, numX + numR + s * 18, icY);
+  });
+
+  if (cta) {
+    ctx.font = `700 ${Math.round(s * 26)}px Arial, Helvetica, sans-serif`;
+    ctx.fillStyle = accent + 'cc';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(cta, w / 2, h - Math.round(s * 100));
+  }
+
+  footerStrip(ctx, w, h, bizName, accent, template.textColor);
+  bottomBar(ctx, w, h, accent);
+}
+
+// ─── QUESTION (two option cards) ──────────────────────────────────────────────
+function drawQuestion(ctx, { w, h, template, headline, items, bizName, accent }) {
+  const s = w / 1080;
+  drawBg(ctx, w, h, template.bg);
+  topBar(ctx, w, accent);
+  brandHeader(ctx, w, h * 0.072, bizName, accent, template.textColor);
+
+  ctx.fillStyle = accent + '50';
+  ctx.fillRect(w * 0.28, h * 0.108, w * 0.44, s * 2);
+
+  // Headline
+  const hSize = Math.round(s * 60);
+  ctx.font = `900 ${hSize}px Arial, Helvetica, sans-serif`;
+  ctx.fillStyle = template.textColor;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  const hlLines = wrapText(ctx, headline, w * 0.82);
+  const hlY0 = h * 0.2;
+  const hlLH = hSize * 1.2;
+  hlLines.forEach((l, i) => ctx.fillText(l, w / 2, hlY0 + i * hlLH));
+  const afterHL = hlY0 + hlLines.length * hlLH + s * 18;
+
+  ctx.fillStyle = accent;
+  ctx.fillRect(w / 2 - s * 50, afterHL, s * 100, s * 4);
+
+  // Two cards
+  const cardGap = Math.round(s * 20);
+  const cardX   = Math.round(s * 40);
+  const cardW   = (w - cardX * 2 - cardGap) / 2;
+  const cardY   = afterHL + s * 38;
+  const cardH   = Math.round(h * 0.32);
+  const lColor  = template.leftColor  || '#1d4ed8';
+  const rColor  = template.rightColor || '#b91c1c';
+  const cfs     = Math.round(s * 30);
+
+  const drawCard = (cx, color, text) => {
+    roundRect(ctx, cx, cardY, cardW, cardH, s * 20);
+    ctx.fillStyle = color; ctx.fill();
+
+    ctx.font = `700 ${cfs}px Arial, Helvetica, sans-serif`;
+    ctx.fillStyle = '#fff';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    const lines = wrapText(ctx, text || '', cardW - s * 40);
+    lines.forEach((l, i) => {
+      ctx.fillText(l, cx + cardW / 2, cardY + cardH / 2 + (i - (lines.length - 1) / 2) * cfs * 1.4);
+    });
+  };
+
+  drawCard(cardX,              lColor, items[0] || 'Option A');
+  drawCard(cardX + cardW + cardGap, rColor, items[1] || 'Option B');
+
+  // "OR" badge
+  ctx.beginPath();
+  ctx.arc(w / 2, cardY + cardH / 2, Math.round(s * 28), 0, Math.PI * 2);
+  ctx.fillStyle = accent; ctx.fill();
+  ctx.font = `900 ${Math.round(s * 20)}px Arial, Helvetica, sans-serif`;
+  ctx.fillStyle = '#000';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('OR', w / 2, cardY + cardH / 2);
+
+  footerStrip(ctx, w, h, bizName, accent, template.textColor);
+  bottomBar(ctx, w, h, accent);
+}
+
+// ─── QUOTE / SCRIPTURE ────────────────────────────────────────────────────────
+function drawQuote(ctx, { w, h, template, headline, subtext, bizName, accent }) {
+  const s = w / 1080;
+  drawBg(ctx, w, h, template.bg);
+
+  // Large decorative quote mark
+  ctx.font = `900 ${Math.round(s * 300)}px Georgia, serif`;
+  ctx.fillStyle = accent + '16';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'top';
+  ctx.fillText('\u201C', s * -8, s * 10);
+
+  topBar(ctx, w, accent);
+  brandHeader(ctx, w, h * 0.08, bizName, accent, template.textColor);
+
+  // Quote text — italic serif
+  const qSize = Math.round(s * 58);
+  ctx.font = `italic 700 ${qSize}px Georgia, serif`;
+  ctx.fillStyle = template.textColor;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  const qLines = wrapText(ctx, headline, w * 0.8);
+  const qLH = qSize * 1.3;
+  const qY0 = h * 0.44 - ((qLines.length - 1) * qLH) / 2;
+  qLines.forEach((l, i) => ctx.fillText(l, w / 2, qY0 + i * qLH));
+  const afterQ = qY0 + qLines.length * qLH + s * 28;
+
+  // Accent rule
+  ctx.fillStyle = accent;
+  ctx.fillRect(w / 2 - s * 55, afterQ, s * 110, s * 4);
+
+  // Attribution
+  if (subtext) {
+    ctx.font = `400 ${Math.round(s * 34)}px Georgia, serif`;
+    ctx.fillStyle = accent;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(subtext, w / 2, afterQ + s * 44);
+  }
+
+  footerStrip(ctx, w, h, bizName, accent, template.textColor);
+  bottomBar(ctx, w, h, accent);
+}
+
+// ─── ANNOUNCEMENT ─────────────────────────────────────────────────────────────
+function drawAnnouncement(ctx, { w, h, template, headline, subtext, cta, bizName, accent }) {
+  const s = w / 1080;
+  drawBg(ctx, w, h, template.bg);
+
+  // Decorative blobs
+  ctx.fillStyle = accent + '12';
+  ctx.beginPath(); ctx.arc(w * 0.82, h * 0.18, w * 0.32, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(w * 0.12, h * 0.78, w * 0.2, 0, Math.PI * 2); ctx.fill();
+
+  // Diagonal accent stripe
+  ctx.save();
+  ctx.fillStyle = accent + '08';
+  ctx.beginPath();
+  ctx.moveTo(0, h * 0.55); ctx.lineTo(w, h * 0.35);
+  ctx.lineTo(w, h * 0.44); ctx.lineTo(0, h * 0.64);
+  ctx.closePath(); ctx.fill();
+  ctx.restore();
+
+  topBar(ctx, w, accent);
+  brandHeader(ctx, w, h * 0.08, bizName, accent, template.textColor);
+
+  // Big headline
+  const hSize = Math.round(s * 72);
+  ctx.font = `900 ${hSize}px Arial, Helvetica, sans-serif`;
+  ctx.fillStyle = template.textColor;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  const hlLines = wrapText(ctx, headline, w * 0.84);
+  const hlLH = hSize * 1.2;
+  const hlTH = hlLines.length * hlLH;
+  const hlY0 = h * 0.44 - hlTH / 2;
+  hlLines.forEach((l, i) => ctx.fillText(l, w / 2, hlY0 + i * hlLH + hlLH / 2));
+  const afterHL = hlY0 + hlTH + s * 18;
+
+  // Divider
+  ctx.fillStyle = accent;
+  ctx.fillRect(w / 2 - s * 60, afterHL, s * 120, s * 4);
 
   // Subtext
   if (subtext) {
-    const stLines = wrapText(subtext, subtextSize, '400', maxWidth);
+    ctx.font = `400 ${Math.round(s * 34)}px Arial, Helvetica, sans-serif`;
     ctx.fillStyle = template.textColor + 'cc';
-    stLines.forEach(line => {
-      ctx.font = `400 ${subtextSize}px 'Arial', sans-serif`;
-      ctx.fillText(line, centerX, y);
-      y += subtextSize * 1.4;
-    });
-    y += ctaSize * 0.4;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    const stLines = wrapText(ctx, subtext, w * 0.75);
+    stLines.forEach((l, i) => ctx.fillText(l, w / 2, afterHL + s * 32 + i * s * 44));
   }
 
   // CTA pill
   if (cta) {
-    ctx.font = `700 ${ctaSize}px 'Arial', sans-serif`;
-    const ctaW = ctx.measureText(cta).width + ctaSize * 2.4;
-    const ctaH = ctaSize * 2.2;
-    const ctaX = centerX - ctaW / 2;
-    const ctaY = y - ctaH / 2;
-    const r = ctaH / 2;
-    ctx.beginPath();
-    ctx.moveTo(ctaX + r, ctaY);
-    ctx.lineTo(ctaX + ctaW - r, ctaY);
-    ctx.quadraticCurveTo(ctaX + ctaW, ctaY, ctaX + ctaW, ctaY + r);
-    ctx.lineTo(ctaX + ctaW, ctaY + ctaH - r);
-    ctx.quadraticCurveTo(ctaX + ctaW, ctaY + ctaH, ctaX + ctaW - r, ctaY + ctaH);
-    ctx.lineTo(ctaX + r, ctaY + ctaH);
-    ctx.quadraticCurveTo(ctaX, ctaY + ctaH, ctaX, ctaY + ctaH - r);
-    ctx.lineTo(ctaX, ctaY + r);
-    ctx.quadraticCurveTo(ctaX, ctaY, ctaX + r, ctaY);
-    ctx.closePath();
-    ctx.fillStyle = brandColor || template.accent;
-    ctx.fill();
-    ctx.fillStyle = template.bg[0];
-    ctx.fillText(cta, centerX, y);
+    const cfs = Math.round(s * 36);
+    ctx.font = `700 ${cfs}px Arial, Helvetica, sans-serif`;
+    const ctaW = ctx.measureText(cta).width + s * 80;
+    const ctaH = cfs * 1.8;
+    const ctaX = w / 2 - ctaW / 2;
+    const ctaY = h - Math.round(s * 58) - ctaH - s * 80;
+    roundRect(ctx, ctaX, ctaY, ctaW, ctaH, ctaH / 2);
+    ctx.fillStyle = accent; ctx.fill();
+    ctx.fillStyle = 'rgba(0,0,0,0.8)';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(cta, w / 2, ctaY + ctaH / 2);
+  }
+
+  footerStrip(ctx, w, h, bizName, accent, template.textColor);
+  bottomBar(ctx, w, h, accent);
+}
+
+// ─── Router ───────────────────────────────────────────────────────────────────
+function drawCanvas({ canvas, template, headline, subtext, cta, format, brandColor, bizName }) {
+  const ctx = canvas.getContext('2d');
+  const { w, h } = format;
+  canvas.width  = w;
+  canvas.height = h;
+
+  const accent = brandColor || template.accent;
+  const items  = (subtext || '').split('|').map(s => s.trim()).filter(Boolean);
+  const args   = { w, h, template, headline, subtext, items, cta, bizName, accent };
+
+  switch (template.layout) {
+    case 'checklist':   drawChecklist(ctx, args);   break;
+    case 'comparison':  drawComparison(ctx, args);  break;
+    case 'tips':        drawTips(ctx, args);         break;
+    case 'question':    drawQuestion(ctx, args);    break;
+    case 'quote':       drawQuote(ctx, args);        break;
+    case 'announcement':
+    default:            drawAnnouncement(ctx, args); break;
   }
 }
 
+// ─── Component ────────────────────────────────────────────────────────────────
 export function GraphicMaker() {
   const { businesses, activeBusinessId } = useStudio();
   const activeBiz = (businesses || []).find(b => b?.id === activeBusinessId);
-  const bizName = activeBiz?.name || 'Your Brand';
+  const bizName   = activeBiz?.name || 'Your Brand';
 
-  const [template, setTemplate]   = useState(TEMPLATES[0]);
-  const [format, setFormat]       = useState(FORMATS[0]);
-  const [headline, setHeadline]   = useState(TEMPLATES[0].headline);
-  const [subtext, setSubtext]     = useState(TEMPLATES[0].subtext);
-  const [cta, setCta]             = useState(TEMPLATES[0].cta);
-  const [brandColor, setBrandColor] = useState('#7c3aed');
-  const [aiLoading, setAiLoading] = useState(false);
+  const [template,   setTemplate]   = useState(TEMPLATES[0]);
+  const [format,     setFormat]     = useState(FORMATS[0]);
+  const [headline,   setHeadline]   = useState(TEMPLATES[0].headline);
+  const [subtext,    setSubtext]    = useState(TEMPLATES[0].subtext);
+  const [cta,        setCta]        = useState(TEMPLATES[0].cta);
+  const [brandColor, setBrandColor] = useState('#f59e0b');
+  const [aiLoading,  setAiLoading]  = useState(false);
 
-  const canvasRef = useRef(null);
+  const canvasRef  = useRef(null);
   const previewRef = useRef(null);
 
-  // Redraw whenever inputs change
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    drawCanvas({ canvas, template, headline, subtext, cta, format, brandColor });
-    // Update preview img
-    if (previewRef.current) {
-      previewRef.current.src = canvas.toDataURL('image/png');
-    }
-  }, [template, headline, subtext, cta, format, brandColor]);
+    drawCanvas({ canvas, template, headline, subtext, cta, format, brandColor, bizName });
+    if (previewRef.current) previewRef.current.src = canvas.toDataURL('image/png');
+  }, [template, headline, subtext, cta, format, brandColor, bizName]);
 
   const pickTemplate = (t) => {
     setTemplate(t);
@@ -175,10 +623,8 @@ export function GraphicMaker() {
   };
 
   const download = () => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
     const a = document.createElement('a');
-    a.href = canvas.toDataURL('image/png');
+    a.href = canvasRef.current.toDataURL('image/png');
     a.download = `kreativelync-graphic-${Date.now()}.png`;
     a.click();
   };
@@ -186,52 +632,53 @@ export function GraphicMaker() {
   const generateWithAI = async () => {
     setAiLoading(true);
     try {
-      const bizType = activeBiz?.type || 'faith';
-      const bizDesc = activeBiz?.description || '';
+      const isList = LIST_LAYOUTS.has(template.layout);
       const r = await fetch('/api/ai/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           mode: 'chat',
           brandName: bizName,
-          brandType: bizType,
+          brandType: activeBiz?.type || 'business',
           chatHistory: [{
             role: 'user',
-            text: `Create text for a social media graphic for ${bizName} (${bizType} brand). ${bizDesc ? `Brand info: ${bizDesc}` : ''}
-Template style: ${template.label}.
-Reply in this exact JSON format, nothing else:
-{"headline":"short powerful headline max 8 words","subtext":"supporting line max 12 words","cta":"call to action max 4 words or empty string"}`
+            text: `Create social media graphic text for ${bizName}.
+Template: ${template.label} (layout: ${template.layout}).
+${isList ? 'The subtext field must be 3 pipe-separated items, e.g. "Item one|Item two|Item three".' : ''}
+Reply ONLY in this JSON format:
+{"headline":"max 8 words","subtext":"${isList ? '3 items separated by | max 6 words each' : 'supporting line max 12 words'}","cta":"call to action max 5 words or empty string"}`
           }]
         })
       });
       const data = await r.json();
-      const text = data.reply || '';
-      const match = text.match(/\{[\s\S]*\}/);
+      const match = (data.reply || '').match(/\{[\s\S]*\}/);
       if (match) {
-        const parsed = JSON.parse(match[0]);
-        if (parsed.headline) setHeadline(parsed.headline);
-        if (parsed.subtext !== undefined) setSubtext(parsed.subtext);
-        if (parsed.cta !== undefined) setCta(parsed.cta);
+        const p = JSON.parse(match[0]);
+        if (p.headline)          setHeadline(p.headline);
+        if (p.subtext !== undefined) setSubtext(p.subtext);
+        if (p.cta    !== undefined) setCta(p.cta);
       }
     } catch (_) {}
     setAiLoading(false);
   };
+
+  const isList = LIST_LAYOUTS.has(template.layout);
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
       {/* Header */}
       <div className="bg-gradient-to-br from-violet-50 to-amber-50 dark:from-stone-800 dark:to-stone-800 border-2 border-violet-200 dark:border-violet-800 rounded-3xl p-6">
         <h2 className="text-2xl font-bold text-stone-800 dark:text-stone-100 mb-1">🎨 Graphic Maker</h2>
-        <p className="text-stone-500 dark:text-stone-400 text-sm">Pick a template → edit the text → download. Done.</p>
+        <p className="text-stone-500 dark:text-stone-400 text-sm">Pick a layout → edit text → download. Your brand name is shown automatically.</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* LEFT — controls */}
+        {/* Controls */}
         <div className="space-y-5">
 
           {/* Step 1 — Template */}
           <div className="bg-white dark:bg-stone-800 border border-violet-100 dark:border-stone-700 rounded-2xl p-5">
-            <p className="text-xs font-bold text-stone-400 uppercase tracking-widest mb-3">1 · Pick a Template</p>
+            <p className="text-xs font-bold text-stone-400 uppercase tracking-widest mb-3">1 · Choose a Layout</p>
             <div className="grid grid-cols-2 gap-2">
               {TEMPLATES.map(t => (
                 <button key={t.id} onClick={() => pickTemplate(t)}
@@ -254,24 +701,31 @@ Reply in this exact JSON format, nothing else:
             </div>
             <div>
               <label className="text-xs text-stone-500 font-medium block mb-1">Headline</label>
-              <input value={headline} onChange={e => setHeadline(e.target.value)} maxLength={80}
+              <input value={headline} onChange={e => setHeadline(e.target.value)} maxLength={100}
                 className="w-full bg-stone-50 dark:bg-stone-700 border border-stone-200 dark:border-stone-600 rounded-xl px-3 py-2.5 text-sm text-stone-800 dark:text-stone-100" />
             </div>
             <div>
-              <label className="text-xs text-stone-500 font-medium block mb-1">Subtext</label>
-              <input value={subtext} onChange={e => setSubtext(e.target.value)} maxLength={100}
+              <label className="text-xs text-stone-500 font-medium block mb-1">
+                {isList ? 'List Items' : 'Subtext'}
+                {isList && <span className="text-stone-400 ml-1">(separate with |)</span>}
+              </label>
+              <input value={subtext} onChange={e => setSubtext(e.target.value)} maxLength={200}
+                placeholder={isList ? 'Item one|Item two|Item three' : 'Supporting line of text'}
                 className="w-full bg-stone-50 dark:bg-stone-700 border border-stone-200 dark:border-stone-600 rounded-xl px-3 py-2.5 text-sm text-stone-800 dark:text-stone-100" />
+              {isList && (
+                <p className="text-xs text-stone-400 mt-1">Each item separated by a pipe | becomes a row</p>
+              )}
             </div>
             <div>
               <label className="text-xs text-stone-500 font-medium block mb-1">Call to Action <span className="text-stone-400">(optional)</span></label>
-              <input value={cta} onChange={e => setCta(e.target.value)} maxLength={50} placeholder="e.g. Follow for more"
+              <input value={cta} onChange={e => setCta(e.target.value)} maxLength={50} placeholder="e.g. Get Started Today"
                 className="w-full bg-stone-50 dark:bg-stone-700 border border-stone-200 dark:border-stone-600 rounded-xl px-3 py-2.5 text-sm text-stone-800 dark:text-stone-100" />
             </div>
           </div>
 
           {/* Step 3 — Format & Color */}
           <div className="bg-white dark:bg-stone-800 border border-violet-100 dark:border-stone-700 rounded-2xl p-5 space-y-4">
-            <p className="text-xs font-bold text-stone-400 uppercase tracking-widest">3 · Format & Color</p>
+            <p className="text-xs font-bold text-stone-400 uppercase tracking-widest">3 · Format & Accent Color</p>
             <div className="flex flex-wrap gap-2">
               {FORMATS.map(f => (
                 <button key={f.id} onClick={() => setFormat(f)}
@@ -284,8 +738,8 @@ Reply in this exact JSON format, nothing else:
               <label className="text-xs text-stone-500 font-medium">Accent Color</label>
               <input type="color" value={brandColor} onChange={e => setBrandColor(e.target.value)}
                 className="w-10 h-10 rounded-xl border-2 border-stone-200 dark:border-stone-600 cursor-pointer" />
-              <div className="flex gap-2">
-                {['#7c3aed','#2563eb','#059669','#dc2626','#d97706','#db2777'].map(c => (
+              <div className="flex gap-2 flex-wrap">
+                {['#f59e0b','#22c55e','#3b82f6','#ef4444','#ec4899','#a855f7','#ffffff'].map(c => (
                   <button key={c} onClick={() => setBrandColor(c)}
                     className="w-7 h-7 rounded-lg border-2 border-white dark:border-stone-700 shadow hover:scale-110 transition-transform"
                     style={{ backgroundColor: c }} />
@@ -302,7 +756,7 @@ Reply in this exact JSON format, nothing else:
           </button>
         </div>
 
-        {/* RIGHT — live preview */}
+        {/* Live preview */}
         <div className="flex flex-col items-center gap-3">
           <p className="text-xs font-bold text-stone-400 uppercase tracking-widest self-start">Live Preview</p>
           <div className="w-full flex justify-center">
@@ -314,7 +768,6 @@ Reply in this exact JSON format, nothing else:
         </div>
       </div>
 
-      {/* Hidden canvas for rendering */}
       <canvas ref={canvasRef} style={{ display: 'none' }} />
     </div>
   );

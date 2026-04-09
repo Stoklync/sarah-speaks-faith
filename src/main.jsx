@@ -1,8 +1,9 @@
-import React, { Component } from 'react'
+import React, { Component, useState } from 'react'
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.jsx'
+import { LoginScreen, isAuthenticated } from './components/LoginScreen.jsx'
 
 class ErrorBoundary extends Component {
   state = { hasError: false, error: null, mountKey: 0 }
@@ -33,10 +34,18 @@ class ErrorBoundary extends Component {
   }
 }
 
-createRoot(document.getElementById('root')).render(
-  <StrictMode>
+function Root() {
+  const [authed, setAuthed] = useState(isAuthenticated());
+  if (!authed) return <LoginScreen onLogin={() => setAuthed(true)} />;
+  return (
     <ErrorBoundary>
       {key => <App key={key} />}
     </ErrorBoundary>
+  );
+}
+
+createRoot(document.getElementById('root')).render(
+  <StrictMode>
+    <Root />
   </StrictMode>,
 )

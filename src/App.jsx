@@ -22,6 +22,7 @@ import { VideoStudio } from './components/VideoStudio';
 import { VideoTab } from './components/VideoPlanner';
 import { DesignStudio } from './components/DesignStudio';
 import { BookCreator } from './components/BookCreator';
+import { logout } from './components/LoginScreen';
 import { RhythmBuilder } from './components/RhythmBuilder';
 import { BrandKit } from './components/BrandKit';
 import { FloatingAIChat } from './components/FloatingAIChat';
@@ -88,7 +89,8 @@ import {
   Users,
   Brain,
   BookOpen,
-  Briefcase
+  Briefcase,
+  LogOut
 } from 'lucide-react';
 
 // --- App Context ---
@@ -577,6 +579,10 @@ const App = () => {
                 <Settings size={14} />
                 <span>Settings</span>
               </button>
+              <button onClick={logout} className="flex items-center gap-2 text-red-400 hover:text-red-600 text-xs w-full px-2.5 py-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
+                <LogOut size={14} />
+                <span>Sign Out</span>
+              </button>
             </div>
           )}
           {sidebarCollapsed && (
@@ -586,6 +592,9 @@ const App = () => {
               </button>
               <button onClick={() => setShowSettings(true)} title="Settings" className="p-2 rounded-lg text-stone-400 hover:text-stone-700 dark:hover:text-stone-100 hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors">
                 <Settings size={15} />
+              </button>
+              <button onClick={logout} title="Sign Out" className="p-2 rounded-lg text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
+                <LogOut size={15} />
               </button>
             </div>
           )}
