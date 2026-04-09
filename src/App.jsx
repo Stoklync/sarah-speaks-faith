@@ -21,9 +21,7 @@ import { ImageStudio } from './components/ImageStudio';
 import { VideoStudio } from './components/VideoStudio';
 import { VideoTab } from './components/VideoPlanner';
 import { DesignStudio } from './components/DesignStudio';
-import { BookCreator } from './components/BookCreator';
 import { logout } from './components/LoginScreen';
-import { RhythmBuilder } from './components/RhythmBuilder';
 import { BrandKit } from './components/BrandKit';
 import { FloatingAIChat } from './components/FloatingAIChat';
 import { 
@@ -88,7 +86,6 @@ import {
   Flame,
   Users,
   Brain,
-  BookOpen,
   Briefcase,
   LogOut
 } from 'lucide-react';
@@ -365,8 +362,6 @@ const App = () => {
     ['images',   ImageIcon,  'AI Images'],
     ['video',    Film,       'AI Video'],
     ['design',   Palette,    'Design Studio'],
-    ['book',     BookOpen,   'Book Creator'],
-    ['rhythm',   Music,      'Rhythm Builder'],
     ['social',   Share2,     'Social & Publish'],
     // 3. Measure & grow
     ['analytics', BarChart2, 'Analytics'],
@@ -970,8 +965,7 @@ const App = () => {
             {activeTab === 'images' && <ImageStudio />}
             {activeTab === 'video' && <VideoTabPage businesses={businesses} activeBusinessId={activeBusinessId} setActiveTab={setActiveTab} />}
             {activeTab === 'design' && <DesignStudio />}
-            {activeTab === 'book' && <BookCreator />}
-            {activeTab === 'rhythm' && <RhythmBuilder />}
+
             {activeTab === 'pro' && <ProContentToolkit />}
             {activeTab === 'social' && <SocialPublisher />}
             {activeTab === 'traffic' && <TrafficHub />}
